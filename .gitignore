@@ -1,0 +1,51 @@
+# Maven
+HELP.md
+pom.xml.bak
+target/
+.mvn/
+!.mvn/wrapper/maven-wrapper.jar
+!**/src/main/**/target/
+!**/src/test/**/target/
+
+
+# Eclipse / STS (Spring Tool Suite)
+*.classpath
+*.factorypath
+*.project
+*.settings/
+*.sts4-cache
+
+# IntelliJ IDEA
+.idea/
+*.iws
+*.iml
+*.ipr
+out/
+
+# VS Code
+.vscode/
+
+# NetBeans
+nbproject/private/
+nbbuild/
+dist/
+nbdist/
+.nb-gradle/
+
+# SDK Man
+.sdkmanrc
+
+# Logs
+logs/
+*.log
+
+# Archivos de configuración local
+.env
+*.local
+
+# CSS y archivos estáticos (actualizado)
+_site/
+*.css
+
+#MariaDB password
+src/main/resources/application-mysql.properties
