@@ -15,14 +15,14 @@ import lombok.Setter;
 @Getter
 @Setter
 @Entity 
-@Table(name = "owner")
+@Table(name = "owners")
 public class Owner extends Person {
 
     @Column(name = "experienceYears", nullable = false)
     private Integer experienceYears;
 
     @JsonIgnore
-    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Accommodation> accommodations;
 
 }

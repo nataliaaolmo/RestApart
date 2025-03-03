@@ -1,22 +1,15 @@
 package com.eventbride.model;
 
 import java.time.LocalDate;
-import java.util.List;
 
 import org.springframework.format.annotation.DateTimeFormat;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
-import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.MappedSuperclass;
-import jakarta.persistence.OneToMany;
-import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
@@ -46,16 +39,15 @@ public class Person extends BaseEntity {
 	@Email
     private String email;
 
-	@Column(name = "telephone", nullable = false)
-    @NotNull 
-	@Digits(integer = 9, fraction = 0)
-    private Integer telephone;
+    @Column(name = "telephone", nullable = false, length = 15)
+    @NotBlank
+    private String telephone;
 
     @Column(name = "password", nullable = false)
     @NotBlank
     private String password;
 
-    @Column(name = "dateOfBirth", nullable = false)
+    @Column(name = "date_of_birth", nullable = false)
     @NotBlank
 	@DateTimeFormat(pattern = "yyyy/MM/dd")
     private LocalDate dateOfBirth;
@@ -70,11 +62,11 @@ public class Person extends BaseEntity {
     @Column(name = "photo", nullable = false)
     private String photo;
 
-    @Column(name = "isVerified", nullable = false)
+    @Column(name = "is_verified", nullable = false)
     private Boolean isVerified;
 
-    @JsonIgnore
-    @OneToMany(cascade = CascadeType.ALL)
-    private List<Comment> ratings;
+    public enum Gender {
+        WOMAN,MAN,OTHER
+    }
 
 }
