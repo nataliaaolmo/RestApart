@@ -11,6 +11,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import lombok.Getter;
@@ -19,10 +20,11 @@ import lombok.Setter;
 @Getter
 @Setter
 @Entity 
-@Table(name = "bookingStudent")
+@Table(name = "booking_students",
+       uniqueConstraints = { @UniqueConstraint(columnNames = { "student_id", "booking_id" }) })
 public class BookingStudent extends BaseEntity {
 
-    @Column(name = "bookingDate", nullable = false)
+    @Column(name = "booking_date", nullable = false)
     @NotNull
 	@DateTimeFormat(pattern = "yyyy/MM/dd")
     private LocalDate bookingDate;
@@ -33,12 +35,12 @@ public class BookingStudent extends BaseEntity {
     private Double price;
 
     @ManyToOne(optional = false)
-    @JoinColumn(name = "studentId", referencedColumnName = "id")
+    @JoinColumn(name = "student_id", referencedColumnName = "id")
 	@OnDelete(action = OnDeleteAction.CASCADE)
 	private Student student;
 
     @ManyToOne(optional = false)
-    @JoinColumn(name = "bookingId", referencedColumnName = "id")
+    @JoinColumn(name = "booking_id", referencedColumnName = "id")
 	@OnDelete(action = OnDeleteAction.CASCADE)
 	private Booking booking;
 

@@ -5,13 +5,12 @@ import java.util.List;
 import org.hibernate.annotations.OnDelete;
 import org.hibernate.annotations.OnDeleteAction;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
@@ -24,7 +23,7 @@ import lombok.Setter;
 @Getter
 @Setter
 @Entity 
-@Table(name = "accommodation")
+@Table(name = "accommodations")
 public class Accommodation extends BaseEntity {
 
     @Column(name = "rooms", nullable = false)
@@ -35,12 +34,12 @@ public class Accommodation extends BaseEntity {
     @NotBlank 
     private Integer beds;
 
-    @Column(name = "pricePerDay", nullable = false)
+    @Column(name = "price_per_day", nullable = false)
     @NotBlank 
     @Positive
     private Double pricePerDay;
 
-    @Column(name = "pricePerMonth", nullable = false)
+    @Column(name = "price_per_month", nullable = false)
     @NotBlank 
     @Positive
     private Double pricePerMonth;
@@ -67,7 +66,7 @@ public class Accommodation extends BaseEntity {
     @Column(name = "wifi", nullable = false)
     private Boolean wifi;
 
-    @Column(name = "isEasyParking", nullable = false)
+    @Column(name = "is_easy_parking", nullable = false)
     private Boolean isEasyParking;
 
     @OneToOne(cascade = { CascadeType.DETACH, CascadeType.REFRESH, CascadeType.PERSIST })
@@ -75,8 +74,11 @@ public class Accommodation extends BaseEntity {
 	@OnDelete(action = OnDeleteAction.CASCADE)
 	private Advertisement advertisement;
 
-    @JsonIgnore
-    @OneToMany(cascade = CascadeType.ALL)
-    private List<Comment> ratings;
+    @ManyToOne
+    @JoinColumn(name = "owner_id", referencedColumnName = "id", nullable = false)
+    private Owner owner;
+
+    @OneToMany(mappedBy = "accommodation", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Comment> comments;
 
 }

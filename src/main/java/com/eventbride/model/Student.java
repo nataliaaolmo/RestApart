@@ -16,15 +16,15 @@ import lombok.Setter;
 @Getter
 @Setter
 @Entity 
-@Table(name = "student")
+@Table(name = "students")
 public class Student extends Person {
 
     @Column(name = "isSmoker", nullable = false)
     private Boolean isSmoker;
 
-    @Column(name = "academic_career", nullable = false)
+    @Column(name = "academicCareer", nullable = false)
     @NotBlank 
-    private String academic_career;
+    private String academicCareer;
 
     @Column(name = "hobbies", nullable = false)
     @NotBlank 
@@ -34,7 +34,7 @@ public class Student extends Person {
     @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, orphanRemoval = true)
 	private List<BookingStudent> bookingStudent;
 
-    @JsonIgnore
-    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Comment> comments;
+    @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Comment> writtenComments;
+    
 }
