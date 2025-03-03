@@ -1,7 +1,18 @@
 package com.eventbride.model;
 
+import java.time.LocalDate;
+import java.util.List;
+
+import org.springframework.format.annotation.DateTimeFormat;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.MappedSuperclass;
+import jakarta.persistence.OneToMany;
 import jakarta.validation.constraints.Digits;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -43,5 +54,27 @@ public class Person extends BaseEntity {
     @Column(name = "password", nullable = false)
     @NotBlank
     private String password;
+
+    @Column(name = "dateOfBirth", nullable = false)
+    @NotBlank
+	@DateTimeFormat(pattern = "yyyy/MM/dd")
+    private LocalDate dateOfBirth;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "gender", nullable = false)
+    private Gender gender;
+
+    @Column(name = "description", nullable = false)
+    private String description;
+
+    @Column(name = "photo", nullable = false)
+    private String photo;
+
+    @Column(name = "isVerified", nullable = false)
+    private Boolean isVerified;
+
+    @JsonIgnore
+    @OneToMany(cascade = CascadeType.ALL)
+    private List<Comment> ratings;
 
 }
