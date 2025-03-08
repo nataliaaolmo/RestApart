@@ -29,11 +29,6 @@ public class Person extends BaseEntity {
 	@Size(min = 1, max = 16)
     private String lastName;
 
-    @Column(name = "username", nullable = false, unique = true)
-    @NotBlank
-	@Size(min = 1, max = 16)
-    private String username;
-
 	@Column(name = "email", nullable = false, unique = true)
     @NotBlank
 	@Email
@@ -42,10 +37,6 @@ public class Person extends BaseEntity {
     @Column(name = "telephone", nullable = false, length = 15)
     @NotBlank
     private String telephone;
-
-    @Column(name = "password", nullable = false)
-    @NotBlank
-    private String password;
 
     @Column(name = "date_of_birth", nullable = false)
     @NotBlank
