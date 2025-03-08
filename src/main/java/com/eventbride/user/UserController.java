@@ -69,7 +69,7 @@ public class UserController {
     @PutMapping("/{id}")
     public ResponseEntity<?> updateUser(@PathVariable Integer id, @Valid @RequestBody User userDetails) {
         try {
-            User updatedUser = userService.updateUser(id, userDetails);
+            User updatedUser = userService.updateUser(userDetails, id);
             return ResponseEntity.ok(updatedUser);
         } catch (RuntimeException e) {
             return ResponseEntity.status(404).body(e.getMessage());

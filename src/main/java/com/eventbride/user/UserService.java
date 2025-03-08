@@ -1,9 +1,12 @@
 package com.eventbride.user;
 
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import jakarta.validation.Valid;
 
 import java.util.List;
 import java.util.Optional;
@@ -35,10 +38,6 @@ public class UserService {
         return userRepository.existsByUsername(username);
     }
 
-    public boolean isEmailTaken(String email) {
-        return userRepository.existsByEmail(email);
-    }
-
     @Transactional
     public User registerUser(User user) {
         if (user.getId() != null) {
@@ -48,10 +47,6 @@ public class UserService {
         if (userRepository.existsByUsername(user.getUsername())) {
             throw new RuntimeException("El username ya está en uso");
         }
-    
-        if (userRepository.existsByEmail(user.getEmail())) {
-            throw new RuntimeException("El email ya está registrado");
-        }
         
         String hashedPassword = passwordEncoder.encode(user.getPassword());
         user.setPassword(hashedPassword);
@@ -59,19 +54,20 @@ public class UserService {
         return userRepository.save(user);
     }
 
-    @Transactional
-    public User updateUser(Integer id, User userDetails) {
-        User user = userRepository.findById(id)
-            .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+	@Transactional(readOnly = true)
+	public User findUser(Integer id) {
+		return userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
+	}
+
+	@Transactional
+	public User updateUser(@Valid User user, Integer idToUpdate) {
+		User toUpdate = findUser(idToUpdate);
+		BeanUtils.copyProperties(user, toUpdate, "id");
+		userRepository.save(toUpdate);
+
+		return toUpdate;
+	}
     
-        user.setUsername(userDetails.getUsername());
-        user.setEmail(userDetails.getEmail());
-        user.setFirstName(userDetails.getFirstName());
-        user.setLastName(userDetails.getLastName());
-        user.setTelephone(userDetails.getTelephone());
-    
-        return userRepository.save(user);
-    }
 
     @Transactional
     public void deleteUser(Integer id) {

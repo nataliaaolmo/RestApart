@@ -2,12 +2,17 @@ package com.eventbride.model;
 
 import java.util.List;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
+
+import com.eventbride.user.User;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.JoinColumn;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Getter;
@@ -19,10 +24,15 @@ import lombok.Setter;
 @Table(name = "students")
 public class Student extends Person {
 
-    @Column(name = "isSmoker", nullable = false)
+    @OneToOne(cascade = { CascadeType.DETACH, CascadeType.REFRESH, CascadeType.PERSIST })
+	@JoinColumn(name = "user_id", referencedColumnName = "id")
+	@OnDelete(action = OnDeleteAction.CASCADE)
+	private User user;
+
+    @Column(name = "is_smoker", nullable = false)
     private Boolean isSmoker;
 
-    @Column(name = "academicCareer", nullable = false)
+    @Column(name = "academic_career", nullable = false)
     @NotBlank 
     private String academicCareer;
 
@@ -30,7 +40,6 @@ public class Student extends Person {
     @NotBlank 
     private String hobbies;
 
-    @JsonIgnore
     @OneToMany(mappedBy = "student", cascade = CascadeType.ALL, orphanRemoval = true)
 	private List<BookingStudent> bookingStudent;
 

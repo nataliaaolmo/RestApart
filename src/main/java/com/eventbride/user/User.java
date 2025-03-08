@@ -1,31 +1,44 @@
 package com.eventbride.user;
 
-import java.util.List;
+import com.eventbride.model.BaseEntity;
 
-import com.eventbride.model.Comment;
-import com.eventbride.model.Message;
-import com.eventbride.model.Person;
-
-import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.OneToMany;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
+import jakarta.validation.constraints.NotNull;
 import lombok.Getter;
 import lombok.Setter;
 
 @Entity
-@Table(name = "users")
+@Table(name = "users",uniqueConstraints = @UniqueConstraint(columnNames = "username"))
 @Getter
 @Setter
-public class User extends Person{
+public class User extends BaseEntity{
+    
+	@Column(unique = true)
+	String username;
 
-   @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Comment> receivedComments;
+	String password;
 
-    @OneToMany(mappedBy = "sender")
-    private List<Message> sentMessages;
+	@NotNull
+	@ManyToOne(optional = false)
+	@JoinColumn(name = "authority")
+	Authorities authority;
 
-    @OneToMany(mappedBy = "receiver")
-    private List<Message> receivedMessages;
+	public Boolean hasAuthority(String auth) {
+		return authority.getAuthority().equals(auth);
+	}
+
+	public Boolean hasAnyAuthority(String... authorities) {
+		Boolean cond = false;
+		for (String auth : authorities) {
+			if (auth.equals(authority.getAuthority()))
+				cond = true;
+		}
+		return cond;
+	}
     
 }
