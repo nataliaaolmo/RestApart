@@ -1,21 +1,22 @@
-/* eslint-disable no-unused-vars */
 import React, { useEffect, useState } from "react";
 import 'bootstrap/dist/css/bootstrap.min.css';
 import Helmet from "react-helmet";
-import "../static/resources/css/Home.css"
+import "../static/resources/css/Home.css";
 
-// eslint-disable-next-line react/prop-types
 function Home({ user }) {
   const [currentUser, setCurrentUser] = useState(user);
 
   useEffect(() => {
-    if (!user) {
-      const storedUser = localStorage.getItem("user");
-      if (storedUser) {
-        setCurrentUser(JSON.parse(storedUser));
-      }
+    const storedUser = localStorage.getItem("user");
+
+    if (storedUser) {
+        try {
+            setCurrentUser(JSON.parse(storedUser)); 
+        } catch (error) {
+            localStorage.removeItem("user"); 
+        }
     }
-  }, [user]);
+  }, []);
 
   return (
     <div className="home-container">
@@ -27,6 +28,5 @@ function Home({ user }) {
     </div>
   );
 }
-
 
 export default Home;

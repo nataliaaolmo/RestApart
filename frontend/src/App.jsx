@@ -1,4 +1,3 @@
-// eslint-disable-next-line no-unused-vars
 import React, { useState, useEffect } from "react";
 import { BrowserRouter as Router, Route, Routes, Navigate } from "react-router-dom";
 import Login from "./pages/Login";
@@ -11,11 +10,16 @@ function App() {
 
   useEffect(() => {
     const storedUser = localStorage.getItem("user");
+  
     if (storedUser) {
-      setUser(JSON.parse(storedUser));
+      try {
+        setUser(JSON.parse(storedUser));
+      } catch (error) {
+        localStorage.removeItem("user");
+      }
     }
   }, []);
-
+  
   return (
     <div className="app-container"> 
       <Router>
