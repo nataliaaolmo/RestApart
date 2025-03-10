@@ -35,11 +35,14 @@ public class ReqRes {
     private String description;
     private String profilePicture;
     private String role;
+    private Integer experienceYears;
+    private Boolean isSmoker;
+    private String academicCareer;
+    private String hobbies;
 
     private UserDTO user;
     private List<User> usersList;
 
-    // ✅ New constructor for status code and message
     public ReqRes(int statusCode, String message) {
         this.statusCode = statusCode;
         this.message = message;

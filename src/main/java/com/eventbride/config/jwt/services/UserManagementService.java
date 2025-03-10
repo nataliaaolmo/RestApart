@@ -14,6 +14,7 @@ import com.eventbride.config.jwt.JWTUtils;
 import com.eventbride.dto.ReqRes;
 import com.eventbride.dto.UserDTO;
 import com.eventbride.model.Owner;
+import com.eventbride.model.Person;
 import com.eventbride.model.Student;
 import com.eventbride.user.User;
 import com.eventbride.user.UserRepository;
@@ -43,29 +44,43 @@ public class UserManagementService {
             user.setPassword(passwordEncoder.encode(registrationRequest.getPassword()));
             user.setRole(registrationRequest.getRole());
     
+            Person person;
             if ("OWNER".equalsIgnoreCase(registrationRequest.getRole())) {
                 Owner owner = new Owner();
                 owner.setFirstName(registrationRequest.getFirstName());
                 owner.setLastName(registrationRequest.getLastName());
                 owner.setEmail(registrationRequest.getEmail());
                 owner.setTelephone(registrationRequest.getTelephone());
+                owner.setDateOfBirth(registrationRequest.getDateOfBirth());
+                owner.setGender(registrationRequest.getGender());
+                owner.setDescription(registrationRequest.getDescription());
                 owner.setPhoto(registrationRequest.getProfilePicture());
-                owner.setExperienceYears(5); // Puedes inicializarlo con un valor predeterminado
-                user.setOwner(owner); // Usa el nuevo método para relacionarlo
+                owner.setIsVerified(false);
+                owner.setExperienceYears(registrationRequest.getExperienceYears());
+                person = owner;
             } else if ("STUDENT".equalsIgnoreCase(registrationRequest.getRole())) {
                 Student student = new Student();
                 student.setFirstName(registrationRequest.getFirstName());
                 student.setLastName(registrationRequest.getLastName());
                 student.setEmail(registrationRequest.getEmail());
                 student.setTelephone(registrationRequest.getTelephone());
+                student.setDateOfBirth(registrationRequest.getDateOfBirth());
+                student.setGender(registrationRequest.getGender());
+                student.setDescription(registrationRequest.getDescription());
                 student.setPhoto(registrationRequest.getProfilePicture());
-                student.setAcademicCareer("Undefined");
-                student.setHobbies("None");
-                student.setIsSmoker(false);
-                user.setStudent(student); // Usa el nuevo método para relacionarlo
+                student.setIsVerified(false);
+                student.setAcademicCareer(registrationRequest.getAcademicCareer());
+                student.setHobbies(registrationRequest.getHobbies());
+                student.setIsSmoker(registrationRequest.getIsSmoker());
+                person = student;
+            } else {
+                throw new IllegalArgumentException("Rol inválido");
             }
+
+            user.setPerson(person);
+            person.setUser(user);
     
-            userRepo.save(user); // Guarda el usuario con su relación creada
+            user = userRepo.save(user);
     
             resp.setUser(new UserDTO(user));
             resp.setMessage("Usuario registrado exitosamente");

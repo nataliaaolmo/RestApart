@@ -20,7 +20,7 @@ public abstract class Person extends BaseEntity {
 
     @OneToOne
     @JoinColumn(name = "user_id", referencedColumnName = "id", unique = true, nullable = false)
-    private User user; // Relación con User
+    private User user;
 
     @Column(name = "first_name", nullable = false)
     @NotBlank 
@@ -41,21 +41,21 @@ public abstract class Person extends BaseEntity {
     @NotBlank
     private String telephone;
 
-    @Column(name = "date_of_birth", nullable = false)
-    @DateTimeFormat(pattern = "yyyy/MM/dd")
+    @Column(name = "date_of_birth")
+    @DateTimeFormat(pattern = "yyyy-MM-dd")
     private LocalDate dateOfBirth;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "gender", nullable = false)
+    @Column(name = "gender")
     private Gender gender;
 
-    @Column(name = "description", nullable = false)
+    @Column(name = "description")
     private String description;
 
-    @Column(name = "photo", nullable = false)
+    @Column(name = "photo")
     private String photo;
 
-    @Column(name = "is_verified", nullable = false)
+    @Column(name = "is_verified")
     private Boolean isVerified;
 
     public enum Gender {

@@ -13,17 +13,16 @@ class UserService{
         }
     }
 
-    static async register(userData, token){
-        try{
-            const response = await axios.post(`${UserService.BASE_URL}/auth/register`, userData, 
-            {
-                headers: {Authorization: `Bearer ${token}`}
-            })
+    static async register(userData) {
+        try {
+            const response = await axios.post(`${UserService.BASE_URL}/auth/register`, userData);
             return response.data;
-        }catch(err){
+        } catch (err) {
             throw err;
         }
     }
+    
+    
 
     static async getAllUsers(token){
         try{
