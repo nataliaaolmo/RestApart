@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Route, Routes, Navigate } from "react-router-d
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Home from "./pages/Home";
+import AppNavbar from "./components/AppNavBar.jsx"; 
 import "./App.css"; 
 
 function App() {
@@ -23,9 +24,9 @@ function App() {
   return (
     <div className="app-container"> 
       <Router>
+        {user && <AppNavbar />}  
         <div className="content">
           <Routes>
-            <Route path="/user"  />
             <Route path="/" element={user ? <Home user={user} /> : <Navigate to="/login" />} />
             <Route path="/login" element={<Login setUser={setUser} />} />
             <Route path="/register" element={<Register />} />

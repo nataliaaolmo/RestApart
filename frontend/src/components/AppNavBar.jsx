@@ -1,94 +1,47 @@
-/* eslint-disable no-unused-vars */
 import "../static/resources/css/AppNavBar.css";
-import logo from "../static/resources/images/logo-eventbride.png";
-import carta from "../static/resources/images/carta.png";
-import usuario from "../static/resources/images/user.png";
-import React, { useState } from 'react';
-
+import logo from "../static/resources/images/logo.png";
+import React from "react";
+import { Link } from "react-router-dom";
 
 function Navbar() {
-  //const {currentUser, loading} = useCurrentUser(null)
-  const [isOpen, setIsOpen] = useState(false);
-
-  // Obtener datos user desde localStorage
   const currentUser = JSON.parse(localStorage.getItem("user"));
 
-  const toggleDropdown = () => {
-    setIsOpen(!isOpen);
-  };
-
-  const renderNavList = () => {
-    if (!currentUser) {
-      return (
-        null
-      );
-    }
-    // TODO cambiar este tipo de implicaciones por el role correcto
-    if (currentUser.role === "CLIENT") {
-      return (
-        <div className="navbar-flex">
-          <p className="navbar-list"><a href="/my-events">Mis eventos</a></p>
-          <p className="navbar-list" onClick={toggleDropdown}>
-            <a href="#">Crear evento</a>
-            {isOpen && (
-            <div className="dropdown">
-              <p><a href="/create-events">Desde cero</a></p>
-              <p><a href="/quiz">Cuestionario</a></p>
-        </div>
-        )}
-          </p>
-          <p className="navbar-list"><a href="/lugares">Recintos</a></p>
-          <p className="navbar-list"><a href="/proveedores">Otros servicios</a></p>
-          <p className="navbar-list"><a href="/invitaciones">Invitaciones</a></p>
-          <p className="navbar-list"><a href="/terminos-y-condiciones">Términos y Condiciones</a></p>
-        </div>
-      );
-    }
-
-    if (currentUser.role === "SUPPLIER") {
-      return (
-        <div className="navbar-flex">
-          <p className="navbar-list"><a href="/misservicios">Mis servicios</a></p>
-          <p className="navbar-list"><a href="/terminos-y-condiciones">Términos y Condiciones</a></p>
-        </div>
-      );
-    }
-
-    return null;
+  const handleLogout = () => {
+    localStorage.removeItem("jwt");
+    localStorage.removeItem("user");
+    window.location.href = "/";
   };
 
   return (
     <nav className="navbar">
+      {/* Logo e Inicio */}
       <div className="navbar-brand">
         <img src={logo} alt="Eventbride Logo" className="navbar-logo" />
-        <a href="/"><span className="navbar-title">Inicio</span></a>
+        <Link to="/" className="navbar-title">Inicio</Link>
       </div>
-      {renderNavList()}
+
+      {/* Opciones del Menú */}
       {currentUser && (
-        <>
-          <div className="navbar-card">
-            <a href="/mensajes">
-              <img src={carta} alt="Carta" className="carta" />
-            </a>
-          </div>
-          <div className="navbar-user">
-            <a href="/perfil">
-              <img src={usuario} alt="Usuario" className="usuario" />
-            </a>
-          </div>
-          <div className="navbar-user">
-            <button
-              type="button"
-              onClick={() => {
-                localStorage.removeItem("jwt");
-                localStorage.removeItem("user");
-                window.location.href = "/";
-              }}
-            >
-              Cerrar sesión
-            </button>
-          </div>
-        </>
+        <div className="navbar-flex">
+          <Link to="/mis-alojamientos" className="navbar-list">Mis alojamientos</Link>
+          <Link to="/perfil" className="navbar-list">Mi Perfil</Link>
+          <Link to="/chat" className="navbar-list">Chat</Link>
+
+          {/* Opciones específicas según el rol */}
+          {currentUser.role === "OWNER" && (
+            <Link to="/publicar-alojamiento" className="navbar-list"> Publicar Alojamiento</Link>
+          )}
+          {currentUser.role === "STUDENT" && (
+            <Link to="/buscar-alojamientos" className="navbar-list"> Buscar Alojamiento</Link>
+          )}
+        </div>
+      )}
+
+      {/* Botón de Cerrar Sesión */}
+      {currentUser && (
+        <div className="navbar-logout">
+          <button className="logout-btn" onClick={handleLogout}> Cerrar sesión</button>
+        </div>
       )}
     </nav>
   );
