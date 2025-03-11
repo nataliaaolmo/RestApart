@@ -1,13 +1,11 @@
 package com.eventbride.model;
 
 import java.time.LocalDate;
-
 import org.springframework.format.annotation.DateTimeFormat;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
-import jakarta.persistence.MappedSuperclass;
+import com.eventbride.user.User;
+
+import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
@@ -16,48 +14,52 @@ import lombok.Setter;
 
 @Getter
 @Setter
-@MappedSuperclass
-public class Person extends BaseEntity {
+@Entity
+@Inheritance(strategy = InheritanceType.JOINED) // Usa herencia JOINED para separar tablas
+public abstract class Person extends BaseEntity {
+
+    @OneToOne
+    @JoinColumn(name = "user_id", referencedColumnName = "id", unique = true, nullable = false)
+    private User user;
 
     @Column(name = "first_name", nullable = false)
     @NotBlank 
-	@Size(min = 1, max = 16)
+    @Size(min = 1, max = 16)
     private String firstName;
 
     @Column(name = "last_name", nullable = false)
     @NotBlank 
-	@Size(min = 1, max = 16)
+    @Size(min = 1, max = 16)
     private String lastName;
 
-	@Column(name = "email", nullable = false, unique = true)
+    @Column(name = "email", nullable = false, unique = true)
     @NotBlank
-	@Email
+    @Email
     private String email;
 
     @Column(name = "telephone", nullable = false, length = 15)
     @NotBlank
     private String telephone;
 
-    @Column(name = "date_of_birth", nullable = false)
-    @NotBlank
-	@DateTimeFormat(pattern = "yyyy/MM/dd")
+    @Column(name = "date_of_birth")
+    @DateTimeFormat(pattern = "yyyy-MM-dd")
     private LocalDate dateOfBirth;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "gender", nullable = false)
+    @Column(name = "gender")
     private Gender gender;
 
-    @Column(name = "description", nullable = false)
+    @Column(name = "description")
     private String description;
 
-    @Column(name = "photo", nullable = false)
+    @Column(name = "photo")
     private String photo;
 
-    @Column(name = "is_verified", nullable = false)
+    @Column(name = "is_verified")
     private Boolean isVerified;
 
     public enum Gender {
         WOMAN,MAN,OTHER
     }
-
 }
+

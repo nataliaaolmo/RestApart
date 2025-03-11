@@ -1,35 +1,44 @@
--- Inserta las autoridades primero
-INSERT INTO authorities(id, authority) VALUES (1, 'OWNER'), (2, 'STUDENT');
+-- 1️⃣ Inserta los usuarios primero
+INSERT INTO users (id, username, password, role) VALUES
+(1, 'alice123', '$2a$10$gyqEuh5bpJVhwuN44YwkjeaR6/1u2KqFTGhjYxWtH27Dmka569AmK', 'OWNER'),
+(2, 'bob456', '$2a$10$gyqEuh5bpJVhwuN44YwkjeaR6/1u2KqFTGhjYxWtH27Dmka569AmK', 'OWNER'),
+(3, 'charlie789', '$2a$10$gyqEuh5bpJVhwuN44YwkjeaR6/1u2KqFTGhjYxWtH27Dmka569AmK', 'STUDENT'),
+(4, 'diana001', '$2a$10$gyqEuh5bpJVhwuN44YwkjeaR6/1u2KqFTGhjYxWtH27Dmka569AmK', 'OWNER'),
+(5, 'edward_dev', '$2a$10$gyqEuh5bpJVhwuN44YwkjeaR6/1u2KqFTGhjYxWtH27Dmka569AmK', 'STUDENT'),
+(6, 'frank789', '$2a$10$gyqEuh5bpJVhwuN44YwkjeaR6/1u2KqFTGhjYxWtH27Dmka569AmK', 'OWNER'),
+(7, 'grace567', '$2a$10$gyqEuh5bpJVhwuN44YwkjeaR6/1u2KqFTGhjYxWtH27Dmka569AmK', 'STUDENT'),
+(8, 'harry001', '$2a$10$gyqEuh5bpJVhwuN44YwkjeaR6/1u2KqFTGhjYxWtH27Dmka569AmK', 'STUDENT'),
+(9, 'irene789', '$2a$10$gyqEuh5bpJVhwuN44YwkjeaR6/1u2KqFTGhjYxWtH27Dmka569AmK', 'STUDENT'),
+(10, 'jack456', '$2a$10$gyqEuh5bpJVhwuN44YwkjeaR6/1u2KqFTGhjYxWtH27Dmka569AmK', 'OWNER');
 
--- Inserta los usuarios primero
-INSERT INTO users (id, username, password, authority) VALUES
-(1, 'alice123', '$2a$10$gyqEuh5bpJVhwuN44YwkjeaR6/1u2KqFTGhjYxWtH27Dmka569AmK', 1),
-(2, 'bob456', '$2a$10$gyqEuh5bpJVhwuN44YwkjeaR6/1u2KqFTGhjYxWtH27Dmka569AmK', 1),
-(3, 'charlie789', '$2a$10$gyqEuh5bpJVhwuN44YwkjeaR6/1u2KqFTGhjYxWtH27Dmka569AmK', 2),
-(4, 'diana001', '$2a$10$gyqEuh5bpJVhwuN44YwkjeaR6/1u2KqFTGhjYxWtH27Dmka569AmK', 1),
-(5, 'edward_dev', '$2a$10$gyqEuh5bpJVhwuN44YwkjeaR6/1u2KqFTGhjYxWtH27Dmka569AmK', 2),
-(6, 'frank789', '$2a$10$gyqEuh5bpJVhwuN44YwkjeaR6/1u2KqFTGhjYxWtH27Dmka569AmK', 1),
-(7, 'grace567', '$2a$10$gyqEuh5bpJVhwuN44YwkjeaR6/1u2KqFTGhjYxWtH27Dmka569AmK', 2),
-(8, 'harry001', '$2a$10$gyqEuh5bpJVhwuN44YwkjeaR6/1u2KqFTGhjYxWtH27Dmka569AmK', 2),
-(9, 'irene789', '$2a$10$gyqEuh5bpJVhwuN44YwkjeaR6/1u2KqFTGhjYxWtH27Dmka569AmK', 2),
-(10, 'jack456', '$2a$10$gyqEuh5bpJVhwuN44YwkjeaR6/1u2KqFTGhjYxWtH27Dmka569AmK', 1);
-
--- Ahora sí, inserta los owners con user_id existentes en users
-INSERT INTO owners(id, first_name, last_name, email, telephone, date_of_birth, gender, description, photo, is_verified, experience_years, user_id) VALUES 
-(1, 'Alice', 'Johnson', 'alice@example.com', '123456789', '1992-03-11', 'WOMAN', 'Descripción de Alice', 'alice.jpg', true, 10, 1),
-(2, 'Bob', 'Smith', 'bob@example.com', '987654321', '1999-12-07', 'MAN', 'Descripción de Bob', 'bob.jpg', false, 5, 2),
-(4, 'Diana', 'Prince', 'diana@example.com', '654321', '1990-11-11', 'WOMAN', 'Descripción de Diana', 'diana.jpg', true, 8, 4),
-(6, 'Frank', 'Castle', 'frank@example.com', '741852963', '1985-08-13', 'MAN', 'Descripción de Frank', 'frank.jpg', true, 12, 6),
-(10, 'Jack', 'Sparrow', 'jack@example.com', '753159', '1980-12-25', 'MAN', 'Descripción de Jack', 'jack.jpg', false, 15, 10);
-
-INSERT INTO students (id, first_name, last_name, email, telephone,date_of_birth,gender,description,photo,is_verified,is_smoker, academic_career, hobbies, user_id)
+-- 2️⃣ Inserta en person y relaciona con users
+INSERT INTO person (id, user_id, first_name, last_name, email, telephone, date_of_birth, gender, description, photo, is_verified)
 VALUES 
-(3, 'Charlie', 'Brown', 'charlie@example.com', '567123890','2001-05-19', 'MAN', 'Descripción de Charlie', 'charlie.jpg', true, false, 'Computer Science', 'Chess, Coding', 3),
-(5, 'Edward', 'Snowden','edward@example.com', '321789654', '2003-04-22', 'MAN', 'Descripción de Edward', 'edward.jpg', false, true, 'Cybersecurity', 'Hacking, Reading', 5),
-(7, 'Grace', 'Hopper','grace@example.com', '369258147',  '1995-07-23', 'WOMAN', 'Descripción de Grace', 'grace.jpg', true, false, 'Mathematics', 'Puzzles, Music', 7),
-(8, 'Harry', 'Potter','harry@example.com', '852963741', '2002-09-14', 'MAN', 'Descripción de Harry', 'harry.jpg', false, true, 'Magic & Wizardry', 'Quidditch, Spells', 8),
-(9, 'Irene', 'Adler','irene@example.com', '951753468', '1994-05-06', 'WOMAN', 'Descripción de Irene', 'irene.jpg', true, false, 'Criminology', 'Mysteries, Writing', 9);
+(1, 1, 'Alice', 'Johnson', 'alice@example.com', '123456789', '1992-03-11', 'WOMAN', 'Descripción Alice', 'alice.jpg', true),
+(2, 2, 'Bob', 'Smith', 'bob@example.com', '987654321', '1999-12-07', 'MAN', 'Descripción Bob', 'bob.jpg', false),
+(3, 3, 'Charlie', 'Brown', 'charlie@example.com', '567123890', '2001-05-19', 'MAN', 'Descripción Charlie', 'charlie.jpg', true),
+(4, 4, 'Diana', 'Williams', 'diana@example.com', '456789', '1995-08-12', 'WOMAN', 'Descripción Diana', 'diana.jpg', true),
+(5, 5, 'Edward', 'Davis', 'edward@example.com', '123890', '1998-02-02', 'MAN', 'Descripción Edward', 'edward.jpg', false),
+(6, 6, 'Frank', 'Martinez', 'frank@example.com', '890123', '1990-11-20', 'MAN', 'Descripción Frank', 'frank.jpg', true),
+(7, 7, 'Grace', 'Rodriguez', 'grace@example.com', '678901', '1993-04-13', 'WOMAN', 'Descripción Grace', 'grace.jpg', true),
+(8, 8, 'Harry', 'Lopez', 'harry@example.com', '234567', '1997-06-12', 'MAN', 'Descripción Harry', 'harry.jpg', false),
+(9, 9, 'Irene', 'Garcia', 'irene@example.com', '890123', '1996-09-08', 'WOMAN', 'Descripción Irene', 'irene.jpg', true),
+(10, 10, 'Jack', 'Hernandez', 'jack@example.com', '456789', '1994-01-07', 'MAN', 'Descripción Jack', 'jack.jpg', true);
 
+-- 3️⃣ Ahora insertamos en owners y students usando el mismo ID de person
+INSERT INTO owners (id, experience_years) VALUES 
+(1, 10),
+(2, 5),
+(4, 8),
+(6, 15),
+(10, 3);
+
+INSERT INTO students (id, is_smoker, academic_career, hobbies) VALUES 
+(3, false, 'Computer Science', 'Chess'),
+(5, true, 'Engineering', 'Reading'),
+(7, false, 'Business Administration', 'Traveling'),
+(8, true, 'Medicine', 'Cooking'),
+(9, false, 'Architecture', 'Photography');
 
 INSERT IGNORE INTO advertisements (id, is_visible, title) VALUES
 (1, true, 'Oferta Especial en Madrid'),
