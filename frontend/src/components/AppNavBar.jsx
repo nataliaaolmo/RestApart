@@ -32,7 +32,7 @@ function Navbar() {
             <Link to="/publicar-alojamiento" className="navbar-list"> Publicar Alojamiento</Link>
           )}
           {currentUser.role === "STUDENT" && (
-            <Link to="/buscar-alojamientos" className="navbar-list"> Buscar Alojamiento</Link>
+            <Link to="/search" className="navbar-list"> Buscar Alojamiento</Link>
           )}
         </div>
       )}

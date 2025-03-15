@@ -1,9 +1,9 @@
 package com.eventbride.user;
 
-import com.eventbride.model.Owner;
+import com.eventbride.owner.Owner;
 import com.eventbride.model.Person;
 import com.eventbride.model.Person.Gender;
-import com.eventbride.model.Student;
+import com.eventbride.student.Student;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;

@@ -5,6 +5,7 @@ import Register from "./pages/Register";
 import Home from "./pages/Home";
 import AppNavbar from "./components/AppNavBar.jsx"; 
 import "./App.css"; 
+import SearchPage from "./pages/SearchPage.jsx";
 
 function App() {
   const [user, setUser] = useState(null);
@@ -30,6 +31,7 @@ function App() {
             <Route path="/" element={user ? <Home user={user} /> : <Navigate to="/login" />} />
             <Route path="/login" element={<Login setUser={setUser} />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/search" element={<SearchPage />} />
           </Routes>
         </div>
       </Router>
