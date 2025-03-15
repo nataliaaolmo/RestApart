@@ -33,13 +33,6 @@ INSERT INTO owners (id, experience_years) VALUES
 (6, 15),
 (10, 3);
 
-INSERT INTO students (id, is_smoker, academic_career, hobbies) VALUES 
-(3, false, 'Computer Science', 'Chess'),
-(5, true, 'Engineering', 'Reading'),
-(7, false, 'Business Administration', 'Traveling'),
-(8, true, 'Medicine', 'Cooking'),
-(9, false, 'Architecture', 'Photography');
-
 INSERT IGNORE INTO advertisements (id, is_visible, title) VALUES
 (1, true, 'Oferta Especial en Madrid'),
 (2, false, 'Apartamento en Barcelona'),
@@ -54,16 +47,23 @@ INSERT IGNORE INTO advertisements (id, is_visible, title) VALUES
 
 INSERT IGNORE INTO accommodations (id, rooms, beds, price_per_day, price_per_month, description, latitud, longitud, start_date, end_date, students, wifi, is_easy_parking, advertisement_id, owner_id) 
 VALUES 
-(1, 3, 4, 50.00, 1200.00, 'Amplio apartamento con vista al mar', '40.4168N', '3.7038W', '2025-03-01', '2025-12-31', 2, true, false, 1, 1),
-(2, 2, 3, 35.00, 900.00, 'Departamento acogedor en el centro', '41.3851N', '2.1734W', '2025-04-01', '2025-11-30', 1, true, true, 2, 2),
-(3, 4, 6, 70.00, 2000.00, 'Casa espaciosa en las afueras', '39.4699N', '0.3763W', '2025-05-15', '2025-10-15', 3, true, false, 3, 4),
-(4, 1, 1, 25.00, 600.00, 'Pequeño estudio en barrio tranquilo', '37.7749N', '122.4194W', '2025-02-01', '2025-08-31', 1, false, true, 4, 4),
-(5, 2, 3, 40.00, 1000.00, 'Apartamento en zona universitaria', '48.8566N', '2.3522W', '2025-06-01', '2025-12-15', 2, true, false, 5, 1),
-(6, 3, 4, 55.00, 1400.00, 'Departamento moderno con piscina', '51.5074N', '0.1278W', '2025-07-10', '2025-10-30', 2, true, true, 6, 6),
-(7, 5, 8, 80.00, 2500.00, 'Mansión con jardín y piscina', '34.0522N', '118.2437W', '2025-03-01', '2025-11-01', 4, true, true, 7, 2),
-(8, 1, 2, 30.00, 750.00, 'Habitación en piso compartido', '35.6895N', '139.6917E', '2025-01-15', '2025-09-30', 1, true, false, 8, 8),
-(9, 2, 2, 45.00, 1100.00, 'Ático con terraza y vistas', '55.7558N', '37.6173E', '2025-05-01', '2025-10-01', 2, true, true, 9, 2),
-(10, 4, 5, 65.00, 1800.00, 'Dúplex lujoso en el centro', '52.5200N', '13.4050E', '2025-06-15', '2025-12-31', 3, true, false, 10, 10);
+(1, 3, 4, 50.00, 1200.00, 'Apartamento en el centro de Sevilla', 37.3886, -5.9823, '2025-03-01', '2025-12-31', 2, true, false, 1, 1),
+(2, 2, 3, 35.00, 900.00, 'Piso acogedor cerca de la Giralda', 37.3879, -5.9933, '2025-04-01', '2025-11-30', 1, true, true, 2, 2),
+(3, 4, 6, 70.00, 2000.00, 'Casa espaciosa en Triana', 37.3826, -6.0004, '2025-05-15', '2025-10-15', 3, true, false, 3, 4),
+(4, 1, 1, 25.00, 600.00, 'Estudio en la Macarena', 37.4085, -5.9822, '2025-02-01', '2025-08-31', 1, false, true, 4, 4),
+(5, 2, 3, 40.00, 1000.00, 'Apartamento en la Alameda', 37.4044, -5.9869, '2025-06-01', '2025-12-15', 2, true, false, 5, 1),
+(6, 3, 4, 55.00, 1400.00, 'Piso moderno en Los Remedios', 37.3721, -5.9902, '2025-07-10', '2025-10-30', 2, true, true, 6, 6),
+(7, 5, 8, 80.00, 2500.00, 'Chalet con jardín en Nervión', 37.3828, -5.9704, '2025-03-01', '2025-11-01', 4, true, true, 7, 2),
+(8, 1, 2, 30.00, 750.00, 'Habitación en piso compartido en San Bernardo', 37.3771, -5.9873, '2025-01-15', '2025-09-30', 1, true, false, 8, 8),
+(9, 2, 2, 45.00, 1100.00, 'Ático con terraza en Sevilla Este', 37.3952, -5.9426, '2025-05-01', '2025-10-01', 2, true, true, 9, 2),
+(10, 4, 5, 65.00, 1800.00, 'Dúplex lujoso en el Arenal', 37.3863, -5.9982, '2025-06-15', '2025-12-31', 3, true, false, 10, 10);
+
+INSERT INTO students (id, is_smoker, academic_career, hobbies, accommodation_id) VALUES 
+(3, false, 'Computer Science', 'Chess, Traveling', null),
+(5, true, 'Engineering', 'Reading, Traveling', 1),
+(7, false, 'Business Administration', 'Traveling',1),
+(8, true, 'Medicine', 'Cooking, Traveling', 2),
+(9, false, 'Architecture', 'Photography, Traveling', 2);
 
 INSERT INTO bookings (link, title, advertisement_id) VALUES
 ('https://booking.example.com/reserva1', 'Reserva en Madrid - Apartamento céntrico', 1),

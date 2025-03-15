@@ -23,24 +23,23 @@ const SearchPage = () => {
 
   const findAllAccommodations = async () => {
     try {
-        const response = await apiClient.get("/api/accommodations");
+        const token = localStorage.getItem("jwt"); // Obtener JWT del almacenamiento local
 
-        // Manejo de estructura incorrecta
+        const response = await apiClient.get("/api/accommodations", {
+            headers: { Authorization: `Bearer ${token}` }, // Añadir el token manualmente
+        });
+
         if (Array.isArray(response.data)) {
             setAccommodations(response.data);
-        } else if (response.data && Array.isArray(response.data.accommodations)) {
-            setAccommodations(response.data.accommodations);
         } else {
             console.error("Error: La respuesta no es un array válido", response.data);
-            setAccommodations([]); // Evitamos un crash
+            setAccommodations([]); // Evitar fallos si la estructura no es correcta
         }
     } catch (error) {
-        console.error("Error fetching data:", error);
-        setAccommodations([]); // Evitamos undefined
+        console.error("Error fetching data:", error.response || error);
+        setAccommodations([]); // Para evitar undefined
     }
 };
-
-
 
 const getFilteredAccomodations = async () => {
     try {
@@ -144,41 +143,58 @@ const getFilteredAccomodations = async () => {
             onChange={(e) => setStudents(e.target.value)}
             style={{ padding: '10px', fontSize: '1em', margin: '10px 0', width: '100%', maxWidth: '300px', borderRadius: '5px', border: '1px solid #ddd' }}
           />
-          <input
-            type="checkbox"
-            placeholder="Wifi"
-            checked={wifi}
-            onChange={(e) => setWifi(e.target.value)}
-            style={{ padding: '10px', fontSize: '1em', margin: '10px 0', width: '100%', maxWidth: '300px', borderRadius: '5px', border: '1px solid #ddd' }}
-          />
-          <input
-            type="checkbox"
-            placeholder="Fácil Aparcar"
-            checked={isEasyParking}
-            onChange={(e) => setIsEasyParking(e.target.value)}
-            style={{ padding: '10px', fontSize: '1em', margin: '10px 0', width: '100%', maxWidth: '300px', borderRadius: '5px', border: '1px solid #ddd' }}
-          />
-          <input
-            type="checkbox"
-            placeholder="Buscar por afinidad Carrera Académica"
-            checked={academicCareerAffinity}
-            onChange={(e) => setAcademicCareerAffinity(e.target.value)}
-            style={{ padding: '10px', fontSize: '1em', margin: '10px 0', width: '100%', maxWidth: '300px', borderRadius: '5px', border: '1px solid #ddd' }}
-          />
-          <input
-            type="checkbox"
-            placeholder="Buscar por afinidad de Aficiones"
-            checked={hobbiesAffinity}
-            onChange={(e) => sethobbiesAffinity(e.target.value)}
-            style={{ padding: '10px', fontSize: '1em', margin: '10px 0', width: '100%', maxWidth: '300px', borderRadius: '5px', border: '1px solid #ddd' }}
-          />
-          <input
-            type="checkbox"
-            placeholder="No me importa que mis compañeros fumen"
-            checked={allowSmoking}
-            onChange={(e) => setAllowSmoking(e.target.value)}
-            style={{ padding: '10px', fontSize: '1em', margin: '10px 0', width: '100%', maxWidth: '300px', borderRadius: '5px', border: '1px solid #ddd' }}
-          />
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <label htmlFor="wifi" style={{ color: 'black' }}>
+              <input
+                type="checkbox"
+                id="wifi"
+                checked={wifi}
+                onChange={(e) => setWifi(e.target.checked)}
+              />
+              Wifi
+            </label>
+
+            <label htmlFor="isEasyParking" style={{ color: 'black' }}>
+              <input
+                type="checkbox"
+                id="isEasyParking"
+                checked={isEasyParking}
+                onChange={(e) => setIsEasyParking(e.target.checked)}
+              />
+              Fácil Aparcar
+            </label>
+
+            <label htmlFor="academicCareerAffinity" style={{ color: 'black' }}>
+              <input
+                type="checkbox"
+                id="academicCareerAffinity"
+                checked={academicCareerAffinity}
+                onChange={(e) => setAcademicCareerAffinity(e.target.checked)}
+              />
+              Buscar por afinidad en Carrera Académica
+            </label>
+
+            <label htmlFor="hobbiesAffinity" style={{ color: 'black' }}>
+              <input
+                type="checkbox"
+                id="hobbiesAffinity"
+                checked={hobbiesAffinity}
+                onChange={(e) => sethobbiesAffinity(e.target.checked)}
+              />
+              Buscar por afinidad de Aficiones
+            </label>
+
+            <label htmlFor="allowSmoking" style={{ color: 'black' }}>
+              <input
+                type="checkbox"
+                id="allowSmoking"
+                checked={allowSmoking}
+                onChange={(e) => setAllowSmoking(e.target.checked)}
+              />
+              No me importa que mis compañeros fumen
+            </label>
+          </div>
+
           <input
             type="number"
             placeholder="Latitud"

@@ -7,7 +7,6 @@ import java.util.stream.Collectors;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
-import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -64,19 +63,14 @@ public class AccommodationController {
         List<Accommodation> filteredAccommodations = accommodationService.getFilteredAccommodations(
                 maxPrice, startDate, endDate, students, latitude, longitude, radius);
     
-        // Convertimos las listas a Sets de IDs para una comparación eficiente
         Set<Integer> affinityAccommodationIds = accommodationsByAffinity.stream()
                 .map(Accommodation::getId)
                 .collect(Collectors.toSet());
-    
-        // 🔥 Nuevo filtrado: comparar por IDs en lugar de objetos completos
-        if (accommodationsByAffinity.isEmpty()) {
-            return filteredAccommodations; // Si no hay afinidades, devolvemos los filtrados
-        } else {
-            return filteredAccommodations.stream()
+
+        return filteredAccommodations.stream()
                     .filter(a -> affinityAccommodationIds.contains(a.getId())) // Comparar por ID
                     .collect(Collectors.toList());
-        }
+
     }
     
     

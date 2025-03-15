@@ -13,9 +13,9 @@ import org.springframework.stereotype.Service;
 import com.eventbride.config.jwt.JWTUtils;
 import com.eventbride.dto.ReqRes;
 import com.eventbride.dto.UserDTO;
-import com.eventbride.model.Owner;
+import com.eventbride.owner.Owner;
 import com.eventbride.model.Person;
-import com.eventbride.model.Student;
+import com.eventbride.student.Student;
 import com.eventbride.user.User;
 import com.eventbride.user.UserRepository;
 

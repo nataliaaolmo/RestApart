@@ -43,9 +43,12 @@ public class AccommodationService {
         List<Accommodation> visibleAccommodations = accommodationRepository.findVisibleAccommodations();
     
         // Si los 3 parámetros son false o null, se devuelven todos los alojamientos visibles sin filtrar
-        if (Boolean.FALSE.equals(matchCareer) && Boolean.FALSE.equals(matchSmoking) && Boolean.FALSE.equals(matchHobbies)) {
-            return visibleAccommodations;
+        if ((matchCareer == null || Boolean.FALSE.equals(matchCareer)) && 
+        (matchSmoking == null || Boolean.FALSE.equals(matchSmoking)) && 
+        (matchHobbies == null || Boolean.FALSE.equals(matchHobbies))) {
+        return visibleAccommodations;
         }
+    
     
         return visibleAccommodations.stream()
             .map(accommodation -> {

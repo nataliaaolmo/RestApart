@@ -2,9 +2,9 @@ package com.eventbride.dto;
 
 import java.time.LocalDate;
 
-import com.eventbride.model.Owner;
+import com.eventbride.owner.Owner;
 import com.eventbride.model.Person.Gender;
-import com.eventbride.model.Student;
+import com.eventbride.student.Student;
 import com.eventbride.user.User;
 import com.fasterxml.jackson.annotation.JsonFormat;
 
