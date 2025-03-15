@@ -2,9 +2,6 @@ package com.eventbride.accommodation;
 
 import java.util.List;
 
-import org.hibernate.annotations.OnDelete;
-import org.hibernate.annotations.OnDeleteAction;
-
 import com.eventbride.advertisement.Advertisement;
 import com.eventbride.comment.Comment;
 import com.eventbride.model.BaseEntity;
@@ -16,6 +13,7 @@ import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
@@ -34,20 +32,22 @@ import lombok.Setter;
 public class Accommodation extends BaseEntity {
 
     @Column(name = "rooms", nullable = false)
-    @NotBlank 
+    @NotNull
+    @Positive
     private Integer rooms;
 
     @Column(name = "beds", nullable = false)
-    @NotBlank 
+    @NotNull
+    @Positive
     private Integer beds;
 
     @Column(name = "price_per_day", nullable = false)
-    @NotBlank 
+    @NotNull
     @Positive
     private Double pricePerDay;
 
     @Column(name = "price_per_month", nullable = false)
-    @NotBlank 
+    @NotNull
     @Positive
     private Double pricePerMonth;
 
@@ -64,6 +64,7 @@ public class Accommodation extends BaseEntity {
     private Double longitud;
 
     @Embedded
+    @NotNull(message = "La disponibilidad no puede estar vacía")
     private DateRange availability;
 
 	@Column(name = "students", nullable = false)
@@ -77,10 +78,8 @@ public class Accommodation extends BaseEntity {
     private Boolean isEasyParking;
 
     @JsonIgnore
-    @OneToOne(cascade = { CascadeType.DETACH, CascadeType.REFRESH, CascadeType.PERSIST })
-	@JoinColumn(name = "advertisementId", referencedColumnName = "id")
-	@OnDelete(action = OnDeleteAction.CASCADE)
-	private Advertisement advertisement;
+    @OneToOne(cascade = CascadeType.MERGE, optional = false)
+    private Advertisement advertisement;    
 
     @JsonIgnore
     @ManyToOne
@@ -92,7 +91,7 @@ public class Accommodation extends BaseEntity {
     private List<Comment> comments;
 
     @JsonIgnore
-    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
     @JoinColumn(name = "accommodation_id")
     private List<Student> studentsInAccommodation;
 
