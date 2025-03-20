@@ -29,7 +29,7 @@ function Navbar() {
 
           {/* Opciones específicas según el rol */}
           {currentUser.role === "OWNER" && (
-            <Link to="/publicar-alojamiento" className="navbar-list"> Publicar Alojamiento</Link>
+            <Link to="/publish-accommodation" className="navbar-list"> Publicar Alojamiento</Link>
           )}
           {currentUser.role === "STUDENT" && (
             <Link to="/search" className="navbar-list"> Buscar Alojamiento</Link>
