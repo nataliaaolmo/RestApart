@@ -7,6 +7,8 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
 
+import com.eventbride.student.Student;
+
 
 public interface AccommodationRepository extends CrudRepository<Accommodation, Integer>{
 
@@ -19,7 +21,11 @@ public interface AccommodationRepository extends CrudRepository<Accommodation, I
     "WHERE (:maxPrice IS NULL OR a.pricePerMonth <= :maxPrice) " +
     "AND (:startDate IS NULL OR a.availability.startDate <= :startDate) " +
     "AND (:endDate IS NULL OR a.availability.endDate >= :endDate) " +
-    "AND (:students IS NULL OR a.students >= :students) " +
+    "AND (:students IS NULL OR (a.students - " +
+    "    (SELECT COUNT(b) FROM Booking b WHERE b.accommodation = a " +
+    "    AND b.stayRange.startDate < :endDate " +
+    "    AND b.stayRange.endDate > :startDate)) >= :students) " +
+    "AND a.advertisement.isVisible = true " +
     "AND (6371 * acos(" +
     "       cos(radians(:latitude)) * cos(radians(a.latitud)) * " +
     "       cos(radians(a.longitud) - radians(:longitude)) + " +
@@ -34,8 +40,14 @@ public interface AccommodationRepository extends CrudRepository<Accommodation, I
         @Param("latitude") Double latitude, 
         @Param("longitude") Double longitude,
         @Param("radius") Double radius
-);
+    );
 
+    @Query("SELECT DISTINCT b.student FROM Booking b WHERE b.accommodation.id = :accommodationId " +
+        "AND b.stayRange.startDate < :endDate " + // La reserva debe comenzar antes de que termine la búsqueda
+        "AND b.stayRange.endDate > :startDate")   // La reserva debe terminar después de que empiece la búsqueda
+    List<Student> findStudentsInAccommodationForDateRange(@Param("accommodationId") Integer accommodationId,
+                                                        @Param("startDate") LocalDate startDate,
+                                                        @Param("endDate") LocalDate endDate);
 
     
 }

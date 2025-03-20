@@ -1,13 +1,13 @@
 package com.eventbride.user;
 
 import com.eventbride.owner.Owner;
-import com.eventbride.model.Person;
 import com.eventbride.model.Person.Gender;
 import com.eventbride.student.Student;
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -34,73 +34,40 @@ public class User implements UserDetails {
     @Column(name = "role", nullable = false)
     private String role;
 
+    @Column(name = "first_name", nullable = false)
+    private String firstName;
+
+    @Column(name = "last_name", nullable = false)
+    private String lastName;
+
+    @Column(name = "email", nullable = false, unique = true)
+    private String email;
+
+    @Column(name = "telephone", nullable = false, length = 15)
+    private String telephone;
+
+    @Column(name = "date_of_birth")
+    @DateTimeFormat(pattern = "yyyy-MM-dd")
+    private LocalDate dateOfBirth;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "gender")
+    private Gender gender;
+
+    @Column(name = "description")
+    private String description;
+
+    @Column(name = "photo")
+    private String photo;
+
+    @Column(name = "is_verified")
+    private Boolean isVerified;
+
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
-    private Person person;    
+    private Student student;
 
-    public void setPerson(Person person) {
-        this.person = person;
-        person.setUser(this); 
-    }
-
-    public String getFirstName() {
-        return person != null ? person.getFirstName() : null;
-    }
-
-    public String getLastName() {
-        return person != null ? person.getLastName() : null;
-    }
-
-    public String getEmail() {
-        return person != null ? person.getEmail() : null;
-    }
-
-    public String getTelephone() {
-        return person != null ? person.getTelephone() : null;
-    }
-
-    public String getPhoto() {
-        return person != null ? person.getPhoto() : null;
-    }
-
-    public LocalDate getDateOfBirth() {
-        return person != null ? person.getDateOfBirth() : null;
-    }
-
-    public Gender getGender() {
-        return person != null ? person.getGender() : null;
-    }
-
-    public String getDescription() {
-        return person != null ? person.getDescription() : null;
-    }
-
-public Integer getExperienceYears() {
-    return "OWNER".equals(this.role) && person instanceof Owner ? ((Owner) person).getExperienceYears() : null;
-}
-
-public Boolean getIsSmoker() {
-    return "STUDENT".equals(this.role) && person instanceof Student ? ((Student) person).getIsSmoker() : null;
-}
-
-public String getAcademicCareer() {
-    return "STUDENT".equals(this.role) && person instanceof Student ? ((Student) person).getAcademicCareer() : null;
-}
-
-public String getHobbies() {
-    return "STUDENT".equals(this.role) && person instanceof Student ? ((Student) person).getHobbies() : null;
-}
-
-
-    // Métodos para asignar Student o Owner correctamente
-    public void setStudent(Student student) {
-        this.person = student;
-        student.setUser(this);
-    }
-
-    public void setOwner(Owner owner) {
-        this.person = owner;
-        owner.setUser(this);
-    }
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
+    private Owner owner;
 
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {

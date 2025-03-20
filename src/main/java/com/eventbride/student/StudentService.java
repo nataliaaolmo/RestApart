@@ -20,11 +20,5 @@ public class StudentService {
     public List<Student> findAll() {
         return studentRepository.findAll();
     }
-
-    @Transactional(readOnly = true)
-    public List<Student> searchStudentsByAccommodation(Integer accommodationId) {
-        return studentRepository.findStudentsByAccommodation(accommodationId);
-    }
-
-    
+ 
 }

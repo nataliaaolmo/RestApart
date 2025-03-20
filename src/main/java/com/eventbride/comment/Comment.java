@@ -43,12 +43,12 @@ public class Comment extends BaseEntity {
     private Accommodation accommodation;
     
     @ManyToOne
-    @JoinColumn(name = "user_id")
+    @JoinColumn(name = "author_id", referencedColumnName = "id")
     private User user;
     
     //estudiante que hace el comentario
     @ManyToOne
-    @JoinColumn(name = "student_id", nullable = false)
+    @JoinColumn(name = "student_id", referencedColumnName = "user_id", nullable = false)
     private Student student;
 
 }

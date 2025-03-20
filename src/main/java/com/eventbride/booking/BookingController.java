@@ -1,0 +1,108 @@
+package com.eventbride.booking;
+
+import java.time.LocalDate;
+import java.util.List;
+import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.beans.BeanUtils;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.web.bind.annotation.RestController;
+
+import com.eventbride.student.Student;
+import com.eventbride.student.StudentRepository;
+import com.eventbride.user.User;
+import com.eventbride.accommodation.Accommodation;
+import com.eventbride.accommodation.AccommodationRepository;
+
+import jakarta.validation.Valid;
+
+@CrossOrigin(origins = {"http://localhost:5173", "http://192.168.1.132:8081", "http://10.0.2.2:8081"})
+@RestController
+@RequestMapping("/api/bookings")
+public class BookingController {
+
+    private final BookingService bookingService;
+    private final StudentRepository studentRepository;
+    private final AccommodationRepository accommodationRepository;
+
+    @Autowired
+    public BookingController(BookingService bookingService, StudentRepository studentRepository, AccommodationRepository accommodationRepository) {
+        this.bookingService = bookingService;
+        this.studentRepository=studentRepository;
+        this.accommodationRepository = accommodationRepository;
+    }
+
+    @GetMapping
+    public List<Booking> findAllBookings() {
+        return bookingService.findAll();
+    }
+
+    @PostMapping()
+    @ResponseStatus(HttpStatus.CREATED)
+    public ResponseEntity<Booking> bookAccommodation(@RequestBody @Valid Booking booking, 
+                                                @AuthenticationPrincipal User currentUser, 
+                                                @RequestParam Integer accommodationId) {
+        Student currentStudent = studentRepository.findById(currentUser.getId())
+        .orElseThrow(() -> new RuntimeException("Estudiante no encontrado"));
+        Accommodation accommodation = accommodationRepository.findById(accommodationId)
+        .orElseThrow(() -> new RuntimeException("Alojamiento no encontrado"));
+        LocalDate startDate = booking.getStayRange().getStartDate();
+        LocalDate endDate = booking.getStayRange().getEndDate();
+    
+        long existingBookings = bookingService.countBookingsInRange(accommodation, startDate, endDate);
+        if (accommodation.getStudents() - existingBookings <= 0) {
+            throw new RuntimeException("No hay plazas disponibles en este alojamiento para estas fechas.");
+        }
+
+        Booking newBooking = new Booking();
+        BeanUtils.copyProperties(booking, newBooking, "id");
+    
+        newBooking.setAccommodation(accommodation);
+        newBooking.setStudent(currentStudent);
+        newBooking.setBookingDate(LocalDate.now());
+        newBooking.setStayRange(booking.getStayRange());
+        
+        long daysBetween = java.time.temporal.ChronoUnit.DAYS.between(startDate, endDate);
+        long monthsBetween = java.time.temporal.ChronoUnit.MONTHS.between(startDate, endDate);
+        
+        Double price = null;
+
+        if (startDate.getDayOfMonth() == endDate.getDayOfMonth() && monthsBetween > 0) {
+            price = monthsBetween * accommodation.getPricePerMonth();
+        } else {
+            price = daysBetween * accommodation.getPricePerDay();
+        }
+
+        newBooking.setPrice(price);        
+    
+        Booking savedBooking = bookingService.save(newBooking);
+        updateAccommodationVisibility(accommodation);
+        
+        return new ResponseEntity<>(savedBooking, HttpStatus.CREATED);
+    }
+
+    @Transactional
+    public void updateAccommodationVisibility(Accommodation accommodation) {
+        long activeBookings = bookingService.countBookingsInRange(accommodation, 
+            accommodation.getAvailability().getStartDate(), 
+            accommodation.getAvailability().getEndDate());
+    
+        if (activeBookings >= accommodation.getStudents()) {
+            accommodation.getAdvertisement().setIsVisible(false);
+        } else {
+            accommodation.getAdvertisement().setIsVisible(true);
+        }
+    
+        accommodationRepository.save(accommodation);
+    }    
+    
+}

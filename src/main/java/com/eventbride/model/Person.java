@@ -3,9 +3,6 @@ package com.eventbride.model;
 import java.time.LocalDate;
 import org.springframework.format.annotation.DateTimeFormat;
 
-import com.eventbride.user.User;
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -15,14 +12,7 @@ import lombok.Setter;
 
 @Getter
 @Setter
-@Entity
-@Inheritance(strategy = InheritanceType.JOINED) // Usa herencia JOINED para separar tablas
 public abstract class Person extends BaseEntity {
-
-    @JsonIgnore
-    @OneToOne
-    @JoinColumn(name = "user_id", referencedColumnName = "id", unique = true, nullable = false)
-    private User user;
 
     @Column(name = "first_name", nullable = false)
     @NotBlank 

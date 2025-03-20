@@ -6,12 +6,15 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
 
 import org.springframework.transaction.annotation.Transactional;
 
+import com.eventbride.booking.BookingRepository;
+import com.eventbride.comment.CommentRepository;
 import com.eventbride.student.Student;
 import com.eventbride.student.StudentRepository;
 
@@ -19,11 +22,15 @@ import com.eventbride.student.StudentRepository;
 public class AccommodationService {
     private AccommodationRepository accommodationRepository;
     private StudentRepository studentRepository;
+    private BookingRepository bookingRepository;
+    private CommentRepository commentRepository;
 
     @Autowired
-    public AccommodationService(AccommodationRepository accommodationRepository, StudentRepository studentRepository) {
+    public AccommodationService(AccommodationRepository accommodationRepository, StudentRepository studentRepository, BookingRepository bookingRepository, CommentRepository commentRepository) {
         this.studentRepository = studentRepository;
         this.accommodationRepository = accommodationRepository;
+        this.bookingRepository = bookingRepository;
+        this.commentRepository= commentRepository;
     }
 
     @Transactional(readOnly = true)
@@ -39,11 +46,18 @@ public class AccommodationService {
     @Transactional(readOnly = true)
     List<Accommodation> getFilteredAccommodations(Double maxPrice, LocalDate startDate, LocalDate endDate,
             Integer students, Double latitude, Double longitude, Double radius) {
-        return accommodationRepository.findFilteredAccommodations(maxPrice, startDate, endDate, students, latitude, longitude, radius);
+    
+        List<Accommodation> accommodations = accommodationRepository.findFilteredAccommodations(
+            maxPrice, startDate, endDate, students, latitude, longitude, radius);
+    
+        return accommodations.stream()
+            .filter(a -> a.getAdvertisement().getIsVisible()) 
+            .collect(Collectors.toList());
     }
+    
 
     @Transactional(readOnly = true)
-    public List<Accommodation> findAccommodationsByAffinity(Integer currentStudentId, Boolean matchCareer, Boolean matchSmoking, Boolean matchHobbies) {
+    public List<Accommodation> findAccommodationsByAffinity(Integer currentStudentId, Boolean matchCareer, Boolean matchSmoking, Boolean matchHobbies, LocalDate startDate, LocalDate endDate) {
         Student currentStudent = studentRepository.findById(currentStudentId)
                 .orElseThrow(() -> new RuntimeException("Estudiante no encontrado"));
     
@@ -58,7 +72,7 @@ public class AccommodationService {
     
         return visibleAccommodations.stream()
             .map(accommodation -> {
-                List<Student> students = accommodation.getStudentsInAccommodation();
+                List<Student> students = getStudentsInAccommodationForDateRange(accommodation, startDate, endDate);
     
                 int score = 0; 
     
@@ -90,6 +104,32 @@ public class AccommodationService {
         List<String> hobbiesStudent = Arrays.asList(s.getHobbies().split(","));
         return hobbiesUser.stream().anyMatch(hobbiesStudent::contains);
     }
+
+    @Transactional(readOnly = true)
+    public List<Student> getStudentsInAccommodationForDateRange(Accommodation accommodation, LocalDate startDate, LocalDate endDate) {
+        return accommodationRepository.findStudentsInAccommodationForDateRange(accommodation.getId(), startDate, endDate);
+    }
+    
+    @Transactional
+    public Accommodation update(Integer id, Accommodation accommodation){
+        Accommodation newAccommodation = accommodationRepository.findById(id).orElseThrow(() -> new RuntimeException("No se ha encontrado ningún apartamento con esa Id"));
+
+        BeanUtils.copyProperties(accommodation, newAccommodation, "id", "comments", "advertisement", "owner");
+ 
+        return accommodationRepository.save(newAccommodation);
+
+    }
+
+	@Transactional
+	public void delete(Integer id) {
+		Accommodation accommodation = accommodationRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Alojamiento no encontrado"));
+
+        bookingRepository.deleteByAccommodation(accommodation);
+        commentRepository.deleteByAccommodation(accommodation);
+
+        accommodationRepository.delete(accommodation);
+	}
 
     @Transactional
     public Accommodation save(Accommodation accommodation) throws DataAccessException {

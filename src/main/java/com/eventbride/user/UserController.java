@@ -3,16 +3,26 @@ package com.eventbride.user;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+
+import com.eventbride.dto.UserDTO;
+
 import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.validation.Valid;
+
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-@CrossOrigin(origins = "http://localhost:5173")
+@CrossOrigin(origins = {"http://localhost:5173", "http://192.168.1.132:8081", "http://10.0.2.2:8081"})
 @RestController
 @RequestMapping("/api/users")
 public class UserController {
@@ -67,14 +77,19 @@ public class UserController {
      * Actualizar un usuario existente.
      */
     @PutMapping("/{id}")
-    public ResponseEntity<?> updateUser(@PathVariable Integer id, @Valid @RequestBody User userDetails) {
-        try {
-            User updatedUser = userService.updateUser(userDetails, id);
-            return ResponseEntity.ok(updatedUser);
-        } catch (RuntimeException e) {
-            return ResponseEntity.status(404).body(e.getMessage());
-        }
-    }
+    public ResponseEntity<?> updateUser(@PathVariable Integer id, @Valid @RequestBody User updatedUser) {
+		try {
+			Optional<User> existingUser = userService.getUserById(id);
+			if (existingUser.isEmpty()) {
+				return new ResponseEntity<>("Usuario no encontrado", HttpStatus.NOT_FOUND);
+			}
+			updatedUser.setId(id);
+			User savedUser = userService.updateUser(id, updatedUser);
+			return new ResponseEntity<>(new UserDTO(savedUser), HttpStatus.OK);
+		} catch (RuntimeException e) {
+			return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+		}
+	}
 
     /**
      * Eliminar un usuario por ID.

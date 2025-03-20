@@ -6,14 +6,12 @@ import com.eventbride.advertisement.Advertisement;
 import com.eventbride.comment.Comment;
 import com.eventbride.model.BaseEntity;
 import com.eventbride.owner.Owner;
-import com.eventbride.student.Student;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.Column;
 import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
@@ -78,22 +76,16 @@ public class Accommodation extends BaseEntity {
     private Boolean isEasyParking;
 
     @JsonIgnore
-    @OneToOne(cascade = CascadeType.MERGE, optional = false)
+    @OneToOne(cascade = CascadeType.MERGE, optional = false, orphanRemoval = true)
     private Advertisement advertisement;    
 
     @JsonIgnore
     @ManyToOne
-    @JoinColumn(name = "owner_id", referencedColumnName = "id", nullable = false)
+    @JoinColumn(name = "owner_id", referencedColumnName = "user_id", nullable = false)
     private Owner owner;
 
     @JsonIgnore
     @OneToMany(mappedBy = "accommodation", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<Comment> comments;
-
-    @JsonIgnore
-    @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.EAGER)
-    @JoinColumn(name = "accommodation_id")
-    private List<Student> studentsInAccommodation;
-
 
 }

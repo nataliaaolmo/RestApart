@@ -29,6 +29,6 @@ public class AdvertisementService {
 
     @Transactional
     public Advertisement save(Advertisement advertisement) {
-        return advertisementRepository.save(advertisement); // 🔥 Usa directamente el repositorio
+        return advertisementRepository.save(advertisement); 
     }
 }

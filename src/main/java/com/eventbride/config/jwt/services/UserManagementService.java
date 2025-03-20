@@ -14,8 +14,9 @@ import com.eventbride.config.jwt.JWTUtils;
 import com.eventbride.dto.ReqRes;
 import com.eventbride.dto.UserDTO;
 import com.eventbride.owner.Owner;
-import com.eventbride.model.Person;
+import com.eventbride.owner.OwnerRepository;
 import com.eventbride.student.Student;
+import com.eventbride.student.StudentRepository;
 import com.eventbride.user.User;
 import com.eventbride.user.UserRepository;
 
@@ -36,6 +37,12 @@ public class UserManagementService {
     @Autowired
     private PasswordEncoder passwordEncoder;
 
+    @Autowired
+    private StudentRepository studentRepository;
+
+    @Autowired
+    private OwnerRepository ownerRepository;
+
     public ReqRes register(ReqRes registrationRequest) {
         ReqRes resp = new ReqRes();
         try {
@@ -43,44 +50,36 @@ public class UserManagementService {
             user.setUsername(registrationRequest.getUsername());
             user.setPassword(passwordEncoder.encode(registrationRequest.getPassword()));
             user.setRole(registrationRequest.getRole());
-    
-            Person person;
-            if ("OWNER".equalsIgnoreCase(registrationRequest.getRole())) {
-                Owner owner = new Owner();
-                owner.setFirstName(registrationRequest.getFirstName());
-                owner.setLastName(registrationRequest.getLastName());
-                owner.setEmail(registrationRequest.getEmail());
-                owner.setTelephone(registrationRequest.getTelephone());
-                owner.setDateOfBirth(registrationRequest.getDateOfBirth());
-                owner.setGender(registrationRequest.getGender());
-                owner.setDescription(registrationRequest.getDescription());
-                owner.setPhoto(registrationRequest.getProfilePicture());
-                owner.setIsVerified(false);
-                owner.setExperienceYears(registrationRequest.getExperienceYears());
-                person = owner;
-            } else if ("STUDENT".equalsIgnoreCase(registrationRequest.getRole())) {
-                Student student = new Student();
-                student.setFirstName(registrationRequest.getFirstName());
-                student.setLastName(registrationRequest.getLastName());
-                student.setEmail(registrationRequest.getEmail());
-                student.setTelephone(registrationRequest.getTelephone());
-                student.setDateOfBirth(registrationRequest.getDateOfBirth());
-                student.setGender(registrationRequest.getGender());
-                student.setDescription(registrationRequest.getDescription());
-                student.setPhoto(registrationRequest.getProfilePicture());
-                student.setIsVerified(false);
-                student.setAcademicCareer(registrationRequest.getAcademicCareer());
-                student.setHobbies(registrationRequest.getHobbies());
-                student.setIsSmoker(registrationRequest.getIsSmoker());
-                person = student;
-            } else {
-                throw new IllegalArgumentException("Rol inválido");
-            }
-
-            user.setPerson(person);
-            person.setUser(user);
+            
+            user.setFirstName(registrationRequest.getFirstName());
+            user.setLastName(registrationRequest.getLastName());
+            user.setEmail(registrationRequest.getEmail());
+            user.setTelephone(registrationRequest.getTelephone());
+            user.setDateOfBirth(registrationRequest.getDateOfBirth());
+            user.setGender(registrationRequest.getGender());
+            user.setDescription(registrationRequest.getDescription());
+            user.setPhoto(registrationRequest.getProfilePicture());
+            user.setIsVerified(false);
     
             user = userRepo.save(user);
+    
+            if ("OWNER".equalsIgnoreCase(registrationRequest.getRole())) {
+                Owner owner = new Owner();
+                owner.setUser(user);
+                owner.setExperienceYears(registrationRequest.getExperienceYears());
+                owner = ownerRepository.save(owner);
+                user.setOwner(owner);
+            }
+    
+            else if ("STUDENT".equalsIgnoreCase(registrationRequest.getRole())) {
+                Student student = new Student();
+                student.setUser(user);
+                student.setIsSmoker(registrationRequest.getIsSmoker());
+                student.setAcademicCareer(registrationRequest.getAcademicCareer());
+                student.setHobbies(registrationRequest.getHobbies());
+                student = studentRepository.save(student);
+                user.setStudent(student);
+            }
     
             resp.setUser(new UserDTO(user));
             resp.setMessage("Usuario registrado exitosamente");
@@ -98,6 +97,8 @@ public class UserManagementService {
         }
         return resp;
     }
+    
+    
     
     public ReqRes getMyInfo(String username) {
         ReqRes reqRes = new ReqRes();

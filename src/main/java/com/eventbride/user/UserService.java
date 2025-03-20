@@ -1,12 +1,9 @@
 package com.eventbride.user;
 
-import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import jakarta.validation.Valid;
 
 import java.util.List;
 import java.util.Optional;
@@ -59,14 +56,28 @@ public class UserService {
 		return userRepository.findById(id).orElseThrow(() -> new RuntimeException("User not found"));
 	}
 
-	@Transactional
-	public User updateUser(@Valid User user, Integer idToUpdate) {
-		User toUpdate = findUser(idToUpdate);
-		BeanUtils.copyProperties(user, toUpdate, "id");
-		userRepository.save(toUpdate);
+    @Transactional
+    public User updateUser(Integer id, User userDetails) {
+        User user = userRepository.findById(id)
+            .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
-		return toUpdate;
-	}
+        user.setUsername(userDetails.getUsername());
+        user.setUsername(userDetails.getUsername());
+        user.setPassword(userDetails.getPassword());
+        //user.setEmail(userDetails.getEmail());
+        //user.setFirstName(userDetails.getFirstName());
+        //user.setLastName(userDetails.getLastName());
+        //user.setTelephone(userDetails.getTelephone());
+        user.setRole(userDetails.getRole());
+
+        if(user.getRole()=="OWNER"){
+
+        }else{
+
+        }
+
+        return userRepository.save(user);
+    }
     
 
     @Transactional

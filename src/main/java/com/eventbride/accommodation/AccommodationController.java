@@ -1,15 +1,21 @@
 package com.eventbride.accommodation;
 
 import java.time.LocalDate;
+import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import org.springframework.web.bind.annotation.CrossOrigin;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -30,7 +36,7 @@ import com.eventbride.owner.OwnerRepository;
 
 import jakarta.validation.Valid;
 
-@CrossOrigin(origins = "http://localhost:5173")
+@CrossOrigin(origins = {"http://localhost:5173", "http://192.168.1.132:8081", "http://10.0.2.2:8081"})
 @RestController
 @RequestMapping("/api/accommodations")
 public class AccommodationController {
@@ -73,7 +79,7 @@ public class AccommodationController {
                 .orElseThrow(() -> new RuntimeException("Estudiante no encontrado"));
     
         List<Accommodation> accommodationsByAffinity = accommodationService.findAccommodationsByAffinity(
-                currentStudent.getId(), matchCareer, matchSmoking, matchHobbies);
+                currentStudent.getId(), matchCareer, matchSmoking, matchHobbies, startDate, endDate);
 
         List<Accommodation> filteredAccommodations = accommodationService.getFilteredAccommodations(
                 maxPrice, startDate, endDate, students, latitude, longitude, radius);
@@ -110,26 +116,41 @@ public class AccommodationController {
         
         return new ResponseEntity<>(savedAccommodation, HttpStatus.CREATED);
     }
+
+	@PutMapping("/{id}")
+    @ResponseStatus(HttpStatus.CREATED)
+    public ResponseEntity<?> update(@PathVariable Integer id, @Valid @RequestBody Accommodation updatedAccommodation) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+		Collection<? extends GrantedAuthority> authorities = auth.getAuthorities();
+		List<String> roles = authorities.stream().map(GrantedAuthority::getAuthority).collect(Collectors.toList());
     
-    @PutMapping("{id}")
-    @ResponseStatus(HttpStatus.OK)
-    public ResponseEntity<Accommodation> associateStudentToAccommodation(@PathVariable Integer id, @RequestBody @Valid Student student) {
-        Accommodation accommodation = accommodationService.findById(id)
-            .orElseThrow(() -> new RuntimeException("Alojamiento no encontrado"));
-    
-        // Buscar el estudiante desde la BD para evitar problemas de transacciones
-        Student existingStudent = studentRepository.findById(student.getId())
-            .orElseThrow(() -> new RuntimeException("Estudiante no encontrado"));
-    
-        List<Student> studentsInAccommodation = accommodation.getStudentsInAccommodation();
-        studentsInAccommodation.add(existingStudent); // Usar el estudiante de la BD
-    
-        accommodation.setStudentsInAccommodation(studentsInAccommodation);
-    
-        Accommodation savedAccommodation = accommodationService.save(accommodation);
-        
-        return new ResponseEntity<>(savedAccommodation, HttpStatus.OK);
+            if (roles.contains("OWNER")) {
+                try {
+                    Optional<Accommodation> existingAccommodationOptional = accommodationService.findById(id);
+                    if (existingAccommodationOptional.isEmpty()) {
+                        return new ResponseEntity<>("Apartamento no encontrado", HttpStatus.NOT_FOUND);
+                    }
+                    updatedAccommodation.setId(id);
+                    Accommodation savedAccommodation = accommodationService.update(id, updatedAccommodation);
+                    return new ResponseEntity<>(savedAccommodation, HttpStatus.OK);
+                } catch (RuntimeException e) {
+                    return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+                }
+            }
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
     }
-    
+
+	@DeleteMapping("/{id}")
+	public ResponseEntity<?> delete(@PathVariable Integer id) {
+		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+		Collection<? extends GrantedAuthority> authorities = auth.getAuthorities();
+		List<String> roles = authorities.stream().map(GrantedAuthority::getAuthority).collect(Collectors.toList());
+		if (roles.contains("OWNER")) {
+			accommodationService.delete(id);
+			return new ResponseEntity<>("Borrado correctamente", HttpStatus.OK);
+		}
+		return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+	}
+
     
 }

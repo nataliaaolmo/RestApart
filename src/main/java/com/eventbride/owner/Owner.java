@@ -4,22 +4,28 @@ import java.util.List;
 
 import com.eventbride.accommodation.Accommodation;
 import com.eventbride.model.Person;
+import com.eventbride.user.User;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
-@Getter
-@Setter
 @Entity
 @Table(name = "owners")
-public class Owner extends Person {
+@Getter
+@Setter
+public class Owner {
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Integer id;
+
+    @OneToOne
+    @JoinColumn(name = "user_id", referencedColumnName = "id", unique = true, nullable = false)
+    private User user;
 
     @Column(name = "experience_years", nullable = false)
     private Integer experienceYears;
-
-    @JsonIgnore
-    @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Accommodation> accommodations;
 }
+

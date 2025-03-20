@@ -32,36 +32,30 @@ public class UserDTO {
     private String academicCareer; 
     private String hobbies;
 
-public UserDTO(User user) {
-    this.id = user.getId();
-    this.lastName = user.getLastName();
-    this.firstName = user.getFirstName();
-    this.username = user.getUsername();
-    this.email = user.getEmail();
-    this.telephone = user.getTelephone();
-    this.profilePicture = user.getPhoto();
-    this.role = user.getRole();
-    this.dateOfBirth = user.getDateOfBirth();
-    this.gender = user.getGender();
-    this.description = user.getDescription();
-    this.password= user.getPassword();
-
-    // Verifica el tipo de person antes de acceder a sus métodos específicos
-    if ("OWNER".equals(user.getRole()) && user.getPerson() instanceof Owner) {
-        this.experienceYears = ((Owner) user.getPerson()).getExperienceYears();
-    } else {
-        this.experienceYears = null;
+    public UserDTO(User user) {
+        this.id = user.getId();
+        this.lastName = user.getLastName();
+        this.firstName = user.getFirstName();
+        this.username = user.getUsername();
+        this.email = user.getEmail();
+        this.telephone = user.getTelephone();
+        this.profilePicture = user.getPhoto();
+        this.role = user.getRole();
+        this.dateOfBirth = user.getDateOfBirth();
+        this.gender = user.getGender();
+        this.description = user.getDescription();
+        this.password = user.getPassword();
+    
+        if (user.getOwner() != null) {
+            this.experienceYears = user.getOwner().getExperienceYears();
+        }
+    
+        if (user.getStudent() != null) {
+            this.isSmoker = user.getStudent().getIsSmoker();
+            this.academicCareer = user.getStudent().getAcademicCareer();
+            this.hobbies = user.getStudent().getHobbies();
+        }
     }
-
-    if ("STUDENT".equals(user.getRole()) && user.getPerson() instanceof Student) {
-        this.isSmoker = ((Student) user.getPerson()).getIsSmoker();
-        this.academicCareer = ((Student) user.getPerson()).getAcademicCareer();
-        this.hobbies = ((Student) user.getPerson()).getHobbies();
-    } else {
-        this.isSmoker = null;
-        this.academicCareer = null;
-        this.hobbies = null;
-    }
-}
+    
 
 }
