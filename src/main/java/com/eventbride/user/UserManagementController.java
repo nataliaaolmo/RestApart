@@ -15,7 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.eventbride.config.jwt.services.UserManagementService;
 import com.eventbride.dto.ReqRes;
 
-@CrossOrigin(origins = {"http://localhost:5173", "http://192.168.1.132:8081", "http://10.0.2.2:8081"})
+@CrossOrigin(origins = {"http://localhost:5173",  "http://192.168.1.132:8081", "http://10.0.2.2:8081", "http://localhost:8081", "http://localhost:19006"})
 @RestController
 @RequestMapping("/api/users")
 public class UserManagementController {

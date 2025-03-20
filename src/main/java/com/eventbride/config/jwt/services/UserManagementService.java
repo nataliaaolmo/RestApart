@@ -98,8 +98,6 @@ public class UserManagementService {
         return resp;
     }
     
-    
-    
     public ReqRes getMyInfo(String username) {
         ReqRes reqRes = new ReqRes();
         try {
