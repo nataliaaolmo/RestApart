@@ -17,9 +17,9 @@ import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
-import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -49,8 +49,8 @@ public class Accommodation extends BaseEntity {
     @Positive
     private Double pricePerMonth;
 
-    @Column(name = "description", nullable = false)
-    @NotBlank
+    @Column(name = "description", length = 255)
+    @Size(max = 255, message = "La descripción no puede tener más de 255 caracteres")
     private String description;
 
     @Column(name = "latitud", nullable = false, unique = true)
