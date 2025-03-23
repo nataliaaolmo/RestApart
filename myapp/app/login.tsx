@@ -22,22 +22,21 @@ export default function LoginScreen() {
     try {
       const response = await api.post("/users/auth/login", form);
       const token = response.data.token;
-      const userName = response.data.user?.firstName || form.username; // Intenta obtener el nombre, si no, usa el username
+      const userName = response.data.user?.firstName || form.username; 
+      const role = response.data.role; 
 
       if (!token) {
         throw new Error("No se recibió un token del backend");
       }
 
-      // Guardar el token en el almacenamiento local
       await AsyncStorage.setItem("jwt", token);
-      await AsyncStorage.setItem("userName", userName); // Guardar el nombre del usuario
+      await AsyncStorage.setItem("userName", userName); 
 
       Alert.alert("Inicio de sesión exitoso", `Bienvenido de nuevo, ${userName}!`);
 
-      // Redirigir a la pantalla de bienvenida con el nombre del usuario
       router.push({
         pathname: "/welcome-screen",
-        params: { name: userName }
+        params: { name: userName, role: role}
       });
 
     } catch (err) {
