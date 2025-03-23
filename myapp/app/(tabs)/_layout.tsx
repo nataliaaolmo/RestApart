@@ -27,17 +27,31 @@ export default function TabLayout() {
         }),
       }}>
       <Tabs.Screen
-        name="index"
+        name="welcome-screen"
         options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+          title: 'Buscar',
+          tabBarIcon: ({ color }) => <IconSymbol name="house.fill" color={color} size={26} />,
         }}
       />
       <Tabs.Screen
-        name="explore"
+        name="favorites"
         options={{
-          title: 'Explore',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="paperplane.fill" color={color} />,
+          title: 'Favoritos',
+          tabBarIcon: ({ color }) => <IconSymbol name="heart.fill" color={color} size={26} />,
+        }}
+      />
+      <Tabs.Screen
+        name="chat"
+        options={{
+          title: 'Chat',
+          tabBarIcon: ({ color }) => <IconSymbol name="bubble.left.and.bubble.right.fill" color={color} size={26} />,
+        }}
+      />
+      <Tabs.Screen
+        name="profile"
+        options={{
+          title: 'Perfil',
+          tabBarIcon: ({ color }) => <IconSymbol name="person.crop.circle" color={color} size={26} />,
         }}
       />
     </Tabs>

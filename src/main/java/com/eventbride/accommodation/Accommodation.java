@@ -75,7 +75,6 @@ public class Accommodation extends BaseEntity {
     @Column(name = "is_easy_parking", nullable = false)
     private Boolean isEasyParking;
 
-    @JsonIgnore
     @OneToOne(cascade = CascadeType.MERGE, optional = false, orphanRemoval = true)
     private Advertisement advertisement;    
 

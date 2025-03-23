@@ -35,7 +35,7 @@ export default function LoginScreen() {
       Alert.alert("Inicio de sesión exitoso", `Bienvenido de nuevo, ${userName}!`);
 
       router.push({
-        pathname: "/welcome-screen",
+        pathname: "/(tabs)/welcome-screen",
         params: { name: userName, role: role}
       });
 

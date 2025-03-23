@@ -76,7 +76,7 @@ export default function RegisterFormScreen() {
 
       Alert.alert('Registro exitoso', 'Usuario registrado correctamente');
       router.push({
-        pathname: '/welcome-screen',
+        pathname: '/(tabs)/welcome-screen',
         params: {
           name: form.firstName,
           role: role
