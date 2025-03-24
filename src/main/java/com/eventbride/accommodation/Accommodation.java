@@ -78,7 +78,6 @@ public class Accommodation extends BaseEntity {
     @OneToOne(cascade = CascadeType.MERGE, optional = false, orphanRemoval = true)
     private Advertisement advertisement;    
 
-    @JsonIgnore
     @ManyToOne
     @JoinColumn(name = "owner_id", referencedColumnName = "user_id", nullable = false)
     private Owner owner;

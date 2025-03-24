@@ -33,12 +33,41 @@ export default function WelcomeScreen() {
   const [latitude, setLatitude] = useState('');
   const [longitude, setLongitude] = useState('');
   const [radius, setRadius] = useState('5');
+  const [studentPhotos, setStudentPhotos] = useState<{ [key: number]: string[] }>({});
 
   useEffect(() => {
     if (role === 'STUDENT') {
       findAllAccommodations();
     }
   }, [role]);
+
+  // const fetchStudentsForAccommodation = async (accommodationId: number) => {
+  //   try {
+  //     const token = localStorage.getItem('jwt');
+  //     const response = await api.get(`/accommodations/${accommodationId}/students`, {
+  //       params: {
+  //         startDate: startDate || '2025-01-01',
+  //         endDate: endDate || '2025-12-31',
+  //       },
+  //       headers: {
+  //         Authorization: `Bearer ${token}`,
+  //       },
+  //     });
+  
+  //     const photoUrls = response.data.map((student: any) =>
+  //       `http://localhost:8080/resources/images/${student.photo}`
+  //     );
+      
+  
+  //     setStudentPhotos((prev) => ({
+  //       ...prev,
+  //       [accommodationId]: photoUrls,
+  //     }));
+  //   } catch (err) {
+  //     console.error('Error loading student photos:', err);
+  //   }
+  // };
+
 
   const findAllAccommodations = async () => {
     try {
@@ -47,7 +76,9 @@ export default function WelcomeScreen() {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (Array.isArray(response.data)) {
-        console.log(response.data)
+        // response.data.forEach((acc: any) => {
+        //   fetchStudentsForAccommodation(acc.id);
+        // });        
         setAccommodations(response.data);
       } else {
         setAccommodations([]);
@@ -81,6 +112,9 @@ export default function WelcomeScreen() {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (Array.isArray(response.data)) {
+        // response.data.forEach((acc: any) => {
+        //   fetchStudentsForAccommodation(acc.id);
+        // });        
         setAccommodations(response.data);
       } else {
         setAccommodations([]);
@@ -109,25 +143,53 @@ export default function WelcomeScreen() {
 
   const renderAccommodation = ({ item }: { item: any }) => {
     const images = accommodationImageMap[item.id] || [require('../../assets/images/default.jpg')];
-
+    const studentPhotosForAccommodation = studentPhotos[item.id] || [];
+  
     return (
-      <View style={styles.card}>
-        <FlatList
-          data={images}
-          horizontal
-          keyExtractor={(_, index) => index.toString()}
-          renderItem={({ item }) => (
-            <Image source={item} style={styles.cardImage} />
-          )}
-          showsHorizontalScrollIndicator={false}
-        />
-        <Text style={styles.cardTitle}>{item.advertisement?.title || 'Sin título'}</Text>
-        <Text style={styles.cardText}>🛏️ {item.beds ?? '4'} camas · 🛋️ {item.bedrooms ?? '2'} dormitorios</Text>
-        <Text style={styles.cardPrice}>💰 {item.pricePerMonth ?? 'No disponible'} €/mes</Text>
-      </View>
+      <TouchableOpacity
+        onPress={() =>
+          router.push({
+            pathname: '/accommodation-details',
+            params: {
+              id: item.id,
+              title: item.advertisement?.title || 'Sin título',
+              beds: item.beds,
+              bedrooms: item.rooms,
+              price: item.pricePerMonth,
+            },
+          })
+        }
+      >
+        <View style={styles.card}>
+          <FlatList
+            data={images}
+            horizontal
+            keyExtractor={(_, index) => index.toString()}
+            renderItem={({ item }) => (
+              <Image source={item} style={styles.cardImage} />
+            )}
+            showsHorizontalScrollIndicator={false}
+          />
+          <Text style={styles.cardTitle}>{item.advertisement?.title || 'Sin título'}</Text>
+          <Text style={styles.cardText}>🛏️ {item.beds ?? '4'} camas · 🛋️ {item.rooms ?? '2'} dormitorios</Text>
+          <Text style={styles.cardPrice}>💰 {item.pricePerMonth ?? 'No disponible'} €/mes</Text>
+  
+          {/* {studentPhotosForAccommodation.length > 0 && (
+            <View style={styles.photoCircleContainer}>
+              {studentPhotosForAccommodation.map((uri: string, index: number) => (
+                <Image
+                  key={index}
+                  source={{ uri }}
+                  style={styles.profilePhoto}
+                />
+              ))}
+            </View>
+          )} */}
+        </View>
+      </TouchableOpacity>
     );
   };
-
+  
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ alignItems: 'center' }}>
       <Text style={styles.welcomeText}>¡Bienvenido, {name}!</Text>
@@ -295,4 +357,14 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginTop: 5,
   },
+  photoCircleContainer: {
+    flexDirection: 'row',
+    marginTop: 10,
+  },
+  profilePhoto: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    marginRight: 5,
+  },  
 });

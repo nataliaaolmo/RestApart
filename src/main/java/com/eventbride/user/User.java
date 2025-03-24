@@ -3,6 +3,8 @@ package com.eventbride.user;
 import com.eventbride.owner.Owner;
 import com.eventbride.model.Person.Gender;
 import com.eventbride.student.Student;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
@@ -87,9 +89,11 @@ public class User implements UserDetails {
     @Column(name = "is_verified")
     private Boolean isVerified;
 
+    @JsonIgnore
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private Student student;
 
+    @JsonIgnore
     @OneToOne(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true)
     private Owner owner;
 

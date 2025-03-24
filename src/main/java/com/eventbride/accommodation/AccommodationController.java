@@ -27,10 +27,12 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.eventbride.student.Student;
+import com.eventbride.student.StudentProfileDTO;
 import com.eventbride.student.StudentRepository;
 import com.eventbride.user.User;
 import com.eventbride.advertisement.Advertisement;
 import com.eventbride.advertisement.AdvertisementService;
+import com.eventbride.booking.BookingService;
 import com.eventbride.owner.Owner;
 import com.eventbride.owner.OwnerRepository;
 
@@ -45,18 +47,44 @@ public class AccommodationController {
     private final StudentRepository studentRepository;
     private final OwnerRepository ownerRepository;
     private final AdvertisementService advertisementService;
+    private final BookingService bookingService;
 
     @Autowired
-    public AccommodationController(AccommodationService accommodationService, StudentRepository studentRepository, OwnerRepository ownerRepository, AdvertisementService advertisementService) {
+    public AccommodationController(AccommodationService accommodationService, StudentRepository studentRepository, OwnerRepository ownerRepository, AdvertisementService advertisementService, BookingService bookingService) {
         this.accommodationService = accommodationService;
         this.studentRepository=studentRepository;
         this.ownerRepository = ownerRepository;
         this.advertisementService = advertisementService;
+        this.bookingService=bookingService;
     }
 
     @GetMapping
     public List<Accommodation> findAllAccommodations() {
         return accommodationService.findAll();
+    }
+
+    @GetMapping("/{accommodationId}")
+    public Accommodation findAccommodationById(@PathVariable Integer accommodationId) {
+        return accommodationService.findById(accommodationId).get();
+    }
+
+    @GetMapping("/{accommodationId}/students")
+    public List<StudentProfileDTO> getStudentsForAccommodationInRange(
+        @PathVariable Integer accommodationId,
+        @RequestParam LocalDate startDate,
+        @RequestParam LocalDate endDate
+    ) {
+        Accommodation accommodation = accommodationService.findById(accommodationId)
+            .orElseThrow(() -> new RuntimeException("Alojamiento no encontrado"));
+        
+        List<Student> students = accommodationService.getStudentsInAccommodationForDateRange(accommodation, startDate, endDate);
+        
+        return students.stream()
+            .map(student -> new StudentProfileDTO(
+                student.getUser().getFirstName(),
+                student.getUser().getPhoto()
+            ))
+            .collect(Collectors.toList());
     }
 
     @GetMapping("/search")
@@ -91,6 +119,19 @@ public class AccommodationController {
         return filteredAccommodations.stream()
                     .filter(a -> affinityAccommodationIds.contains(a.getId()))
                     .collect(Collectors.toList());
+    }
+
+    @GetMapping("/{id}/check-availability")
+    public ResponseEntity<Boolean> checkAvailability(
+        @PathVariable Integer id,
+        @RequestParam LocalDate startDate,
+        @RequestParam LocalDate endDate
+    ) {
+        Accommodation acc = accommodationService.findById(id)
+            .orElseThrow(() -> new RuntimeException("Alojamiento no encontrado"));
+        long count = bookingService.countBookingsInRange(acc, startDate, endDate);
+        boolean available = acc.getStudents() > count;
+        return ResponseEntity.ok(available);
     }
 
     @PostMapping()
