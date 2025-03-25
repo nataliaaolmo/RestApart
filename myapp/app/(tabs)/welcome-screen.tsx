@@ -1,18 +1,7 @@
 import React, { useState, useEffect } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TextInput,
-  TouchableOpacity,
-  ScrollView,
-  Image,
-  Switch,
-  FlatList,
-} from 'react-native';
+import {View,Text,StyleSheet,TextInput,TouchableOpacity,ScrollView,Image,Switch,FlatList} from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import api from '../../app/api';
-import { accommodationImageMap } from '../../components/accommodationImages';
 
 export default function WelcomeScreen() {
   const { name, role } = useLocalSearchParams();
@@ -33,41 +22,12 @@ export default function WelcomeScreen() {
   const [latitude, setLatitude] = useState('');
   const [longitude, setLongitude] = useState('');
   const [radius, setRadius] = useState('5');
-  const [studentPhotos, setStudentPhotos] = useState<{ [key: number]: string[] }>({});
 
   useEffect(() => {
     if (role === 'STUDENT') {
       findAllAccommodations();
     }
   }, [role]);
-
-  // const fetchStudentsForAccommodation = async (accommodationId: number) => {
-  //   try {
-  //     const token = localStorage.getItem('jwt');
-  //     const response = await api.get(`/accommodations/${accommodationId}/students`, {
-  //       params: {
-  //         startDate: startDate || '2025-01-01',
-  //         endDate: endDate || '2025-12-31',
-  //       },
-  //       headers: {
-  //         Authorization: `Bearer ${token}`,
-  //       },
-  //     });
-  
-  //     const photoUrls = response.data.map((student: any) =>
-  //       `http://localhost:8080/resources/images/${student.photo}`
-  //     );
-      
-  
-  //     setStudentPhotos((prev) => ({
-  //       ...prev,
-  //       [accommodationId]: photoUrls,
-  //     }));
-  //   } catch (err) {
-  //     console.error('Error loading student photos:', err);
-  //   }
-  // };
-
 
   const findAllAccommodations = async () => {
     try {
@@ -76,9 +36,6 @@ export default function WelcomeScreen() {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (Array.isArray(response.data)) {
-        // response.data.forEach((acc: any) => {
-        //   fetchStudentsForAccommodation(acc.id);
-        // });        
         setAccommodations(response.data);
       } else {
         setAccommodations([]);
@@ -112,9 +69,6 @@ export default function WelcomeScreen() {
         headers: { Authorization: `Bearer ${token}` },
       });
       if (Array.isArray(response.data)) {
-        // response.data.forEach((acc: any) => {
-        //   fetchStudentsForAccommodation(acc.id);
-        // });        
         setAccommodations(response.data);
       } else {
         setAccommodations([]);
@@ -142,9 +96,10 @@ export default function WelcomeScreen() {
   };
 
   const renderAccommodation = ({ item }: { item: any }) => {
-    const images = accommodationImageMap[item.id] || [require('../../assets/images/default.jpg')];
-    const studentPhotosForAccommodation = studentPhotos[item.id] || [];
-  
+    const images = item.images?.length > 0
+    ? item.images
+    : ['default.jpg'];  
+
     return (
       <TouchableOpacity
         onPress={() =>
@@ -164,32 +119,23 @@ export default function WelcomeScreen() {
           <FlatList
             data={images}
             horizontal
-            keyExtractor={(_, index) => index.toString()}
+            keyExtractor={(img, index) => index.toString()}
             renderItem={({ item }) => (
-              <Image source={item} style={styles.cardImage} />
-            )}
+              <Image
+                source={{ uri: `http://localhost:8080/images/${item}` }}
+                style={styles.cardImage}
+              />
+            )}            
             showsHorizontalScrollIndicator={false}
           />
           <Text style={styles.cardTitle}>{item.advertisement?.title || 'Sin título'}</Text>
           <Text style={styles.cardText}>🛏️ {item.beds ?? '4'} camas · 🛋️ {item.rooms ?? '2'} dormitorios</Text>
           <Text style={styles.cardPrice}>💰 {item.pricePerMonth ?? 'No disponible'} €/mes</Text>
-  
-          {/* {studentPhotosForAccommodation.length > 0 && (
-            <View style={styles.photoCircleContainer}>
-              {studentPhotosForAccommodation.map((uri: string, index: number) => (
-                <Image
-                  key={index}
-                  source={{ uri }}
-                  style={styles.profilePhoto}
-                />
-              ))}
-            </View>
-          )} */}
         </View>
       </TouchableOpacity>
     );
   };
-  
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ alignItems: 'center' }}>
       <Text style={styles.welcomeText}>¡Bienvenido, {name}!</Text>
@@ -206,32 +152,32 @@ export default function WelcomeScreen() {
 
           {filtersVisible && (
             <View style={styles.searchBox}>
-            <Text style={styles.label}>Precio máximo (€)</Text>
-            <TextInput style={styles.input} keyboardType="numeric" value={maxPrice} onChangeText={setMaxPrice} />
+              <Text style={styles.label}>Precio máximo (€)</Text>
+              <TextInput style={styles.input} keyboardType="numeric" value={maxPrice} onChangeText={setMaxPrice} />
 
-            <Text style={styles.label}>Fecha de inicio</Text>
-            <TextInput style={styles.input} placeholder="YYYY-MM-DD" value={startDate} onChangeText={setStartDate} />
+              <Text style={styles.label}>Fecha de inicio</Text>
+              <TextInput style={styles.input} placeholder="YYYY-MM-DD" value={startDate} onChangeText={setStartDate} />
 
-            <Text style={styles.label}>Fecha de fin</Text>
-            <TextInput style={styles.input} placeholder="YYYY-MM-DD" value={endDate} onChangeText={setEndDate} />
+              <Text style={styles.label}>Fecha de fin</Text>
+              <TextInput style={styles.input} placeholder="YYYY-MM-DD" value={endDate} onChangeText={setEndDate} />
 
-            <Text style={styles.label}>Número de estudiantes</Text>
-            <TextInput style={styles.input} keyboardType="numeric" value={students} onChangeText={setStudents} />
+              <Text style={styles.label}>Número de estudiantes</Text>
+              <TextInput style={styles.input} keyboardType="numeric" value={students} onChangeText={setStudents} />
 
-            <View style={styles.switchRow}><Text style={styles.label}>Wifi</Text><Switch value={wifi} onValueChange={setWifi} /></View>
-            <View style={styles.switchRow}><Text style={styles.label}>Fácil aparcar</Text><Switch value={isEasyParking} onValueChange={setIsEasyParking} /></View>
-            <View style={styles.switchRow}><Text style={styles.label}>Afinidad carrera</Text><Switch value={academicCareerAffinity} onValueChange={setAcademicCareerAffinity} /></View>
-            <View style={styles.switchRow}><Text style={styles.label}>Afinidad aficiones</Text><Switch value={hobbiesAffinity} onValueChange={setHobbiesAffinity} /></View>
-            <View style={styles.switchRow}><Text style={styles.label}>Permite fumar</Text><Switch value={allowSmoking} onValueChange={setAllowSmoking} /></View>
+              <View style={styles.switchRow}><Text style={styles.label}>Wifi</Text><Switch value={wifi} onValueChange={setWifi} /></View>
+              <View style={styles.switchRow}><Text style={styles.label}>Fácil aparcar</Text><Switch value={isEasyParking} onValueChange={setIsEasyParking} /></View>
+              <View style={styles.switchRow}><Text style={styles.label}>Afinidad carrera</Text><Switch value={academicCareerAffinity} onValueChange={setAcademicCareerAffinity} /></View>
+              <View style={styles.switchRow}><Text style={styles.label}>Afinidad aficiones</Text><Switch value={hobbiesAffinity} onValueChange={setHobbiesAffinity} /></View>
+              <View style={styles.switchRow}><Text style={styles.label}>Permite fumar</Text><Switch value={allowSmoking} onValueChange={setAllowSmoking} /></View>
 
-            <Text style={styles.label}>Latitud</Text>
-            <TextInput style={styles.input} keyboardType="numeric" value={latitude} onChangeText={setLatitude} />
+              <Text style={styles.label}>Latitud</Text>
+              <TextInput style={styles.input} keyboardType="numeric" value={latitude} onChangeText={setLatitude} />
 
-            <Text style={styles.label}>Longitud</Text>
-            <TextInput style={styles.input} keyboardType="numeric" value={longitude} onChangeText={setLongitude} />
+              <Text style={styles.label}>Longitud</Text>
+              <TextInput style={styles.input} keyboardType="numeric" value={longitude} onChangeText={setLongitude} />
 
-            <Text style={styles.label}>Radio (km)</Text>
-            <TextInput style={styles.input} keyboardType="numeric" value={radius} onChangeText={setRadius} />
+              <Text style={styles.label}>Radio (km)</Text>
+              <TextInput style={styles.input} keyboardType="numeric" value={radius} onChangeText={setRadius} />
 
               <TouchableOpacity style={styles.button} onPress={applyFilters}>
                 <Text style={styles.buttonText}>Aplicar filtros</Text>
@@ -366,5 +312,5 @@ const styles = StyleSheet.create({
     height: 40,
     borderRadius: 20,
     marginRight: 5,
-  },  
+  },
 });

@@ -1,5 +1,6 @@
 package com.eventbride.accommodation;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import com.eventbride.advertisement.Advertisement;
@@ -9,9 +10,12 @@ import com.eventbride.owner.Owner;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import jakarta.persistence.CascadeType;
+import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Embedded;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
@@ -74,6 +78,11 @@ public class Accommodation extends BaseEntity {
 
     @Column(name = "is_easy_parking", nullable = false)
     private Boolean isEasyParking;
+
+    @ElementCollection(fetch = FetchType.EAGER)
+    @CollectionTable(name = "accommodation_images", joinColumns = @JoinColumn(name = "accommodation_id"))
+    @Column(name = "image_url")
+    private List<String> images = new ArrayList<>();
 
     @OneToOne(cascade = CascadeType.MERGE, optional = false, orphanRemoval = true)
     private Advertisement advertisement;    

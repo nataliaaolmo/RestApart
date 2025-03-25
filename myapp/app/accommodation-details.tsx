@@ -12,13 +12,13 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import api from '../app/api';
-import { accommodationImageMap } from '../components/accommodationImages';
 
 export default function AccommodationDetailsScreen() {
   const { id, title, beds, bedrooms, price } = useLocalSearchParams();
   const [owner, setOwner] = useState<any>(null);
   const [images, setImages] = useState<any[]>([]);
   const [description, setDescription] = useState('');
+  const [tenants, setTenants] = useState<any[]>([]);
   const router = useRouter();
 
   const stayRange = {
@@ -28,9 +28,7 @@ export default function AccommodationDetailsScreen() {
 
   useEffect(() => {
     findAccommodation();
-    const numericId = Number(id);
-    const loadedImages = accommodationImageMap[numericId] || [];
-    setImages(loadedImages);
+    loadTenants();
   }, []);
 
   const findAccommodation = async () => {
@@ -41,8 +39,22 @@ export default function AccommodationDetailsScreen() {
       });
       setOwner(response.data.owner);
       setDescription(response.data.description);
+      setImages(response.data.images?.map((name: string) => ({ uri: `http://localhost:8080/images/${name}` })) || []);
     } catch (error) {
       console.error('Error buscando alojamiento', error);
+    }
+  };
+
+  const loadTenants = async () => {
+    try {
+      const token = localStorage.getItem('jwt');
+      const response = await api.get(`/accommodations/${id}/students`, {
+        params: stayRange,
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setTenants(response.data);
+    } catch (err) {
+      console.error('Error cargando inquilinos', err);
     }
   };
 
@@ -79,13 +91,10 @@ export default function AccommodationDetailsScreen() {
           Authorization: `Bearer ${token}`,
         },
       });
-      console.log(response);
       const approvalUrl = response.data.approvalUrl;
       if (approvalUrl) {
-        console.log('URL recibida:', approvalUrl);
         Linking.openURL(approvalUrl);
       } else {
-        console.warn('No se recibió approvalUrl');
         Alert.alert('Error', 'No se pudo obtener el enlace de pago.');
       }
     } catch (error) {
@@ -111,7 +120,10 @@ export default function AccommodationDetailsScreen() {
 
         {owner && (
           <View style={styles.ownerSection}>
-            <Image source={require('../assets/images/alice.jpg')} style={styles.ownerImage} />
+            <Image
+              source={{ uri: `http://localhost:8080/images/${owner.profilePicture}` }}
+              style={styles.ownerImage}
+            />
             <View>
               <Text style={styles.ownerName}>Dueño: {owner.user.firstName} {owner.user.lastName}</Text>
               <Text style={styles.ownerExperience}>{owner.experienceYears} años de experiencia</Text>
@@ -121,9 +133,13 @@ export default function AccommodationDetailsScreen() {
 
         <Text style={styles.sectionTitle}>Inquilinos</Text>
         <View style={styles.tenantsRow}>
-          <Image source={require('../assets/images/grace.jpg')} style={styles.tenantPhoto} />
-          <Image source={require('../assets/images/irene.jpg')} style={styles.tenantPhoto} />
-          <Image source={require('../assets/images/charlie.jpg')} style={styles.tenantPhoto} />
+          {tenants.map((tenant, index) => (
+            <Image
+              key={index}
+              source={{ uri: `http://localhost:8080/images/${tenant.photo}` }}
+              style={styles.tenantPhoto}
+            />
+          ))}
         </View>
 
         <Text style={styles.description}>{description}</Text>
@@ -144,7 +160,7 @@ export default function AccommodationDetailsScreen() {
         <View style={styles.footer}>
           <Text style={styles.price}>{price}€/mes</Text>
           <View style={{ width: '60%' }}>
-          <Text onPress={initiatePaypalPayment} style={styles.payButton}>PAGAR CON PAYPAL</Text>
+            <Text onPress={initiatePaypalPayment} style={styles.payButton}>PAGAR CON PAYPAL</Text>
           </View>
         </View>
       </View>
@@ -163,7 +179,7 @@ const styles = StyleSheet.create({
   ownerName: { color: '#E0E1DD', fontWeight: 'bold' },
   ownerExperience: { color: '#AFC1D6' },
   sectionTitle: { color: '#E0E1DD', fontWeight: 'bold', marginTop: 20, marginBottom: 10 },
-  tenantsRow: { flexDirection: 'row' },
+  tenantsRow: { flexDirection: 'row', marginBottom: 10 },
   tenantPhoto: { width: 40, height: 40, borderRadius: 20, marginRight: 10 },
   description: { color: '#E0E1DD', marginTop: 10 },
   mapImage: { width: '100%', height: 150, borderRadius: 10 },
