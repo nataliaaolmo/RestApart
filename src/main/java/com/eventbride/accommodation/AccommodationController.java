@@ -87,6 +87,13 @@ public class AccommodationController {
             .collect(Collectors.toList());
     }
 
+    @GetMapping("/owner-accomodations")
+    public List<Accommodation> getAccommodationsByOwner(@AuthenticationPrincipal User currentUser) {
+        Owner currentOwner = ownerRepository.findByUserUsername(currentUser.getUsername())
+        .orElseThrow(() -> new RuntimeException("Propietario no encontrado"));
+        return accommodationService.getAccommodationsByOwner(currentOwner.getId());
+    }
+
     @GetMapping("/search")
     public List<Accommodation> findFilteredAccommodations(
             @AuthenticationPrincipal User currentUser,

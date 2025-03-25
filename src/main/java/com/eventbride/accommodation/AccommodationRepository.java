@@ -43,11 +43,15 @@ public interface AccommodationRepository extends CrudRepository<Accommodation, I
     );
 
     @Query("SELECT DISTINCT b.student FROM Booking b WHERE b.accommodation.id = :accommodationId " +
-        "AND b.stayRange.startDate < :endDate " + // La reserva debe comenzar antes de que termine la búsqueda
-        "AND b.stayRange.endDate > :startDate")   // La reserva debe terminar después de que empiece la búsqueda
+        "AND b.stayRange.startDate < :endDate " + 
+        "AND b.stayRange.endDate > :startDate") 
     List<Student> findStudentsInAccommodationForDateRange(@Param("accommodationId") Integer accommodationId,
                                                         @Param("startDate") LocalDate startDate,
                                                         @Param("endDate") LocalDate endDate);
+
+    @Query("SELECT a FROM Accommodation a WHERE a.owner.user.id = :id")
+    List<Accommodation> getAccommodationsByOwner(@Param("id") Integer id);
+                                                        
 
     
 }

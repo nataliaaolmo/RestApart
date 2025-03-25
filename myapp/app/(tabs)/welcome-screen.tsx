@@ -4,12 +4,31 @@ import { useRouter, useLocalSearchParams } from 'expo-router';
 import api from '../../app/api';
 
 export default function WelcomeScreen() {
-  const { name, role } = useLocalSearchParams();
   const router = useRouter();
 
   const [accommodations, setAccommodations] = useState<any[]>([]);
   const [filtersVisible, setFiltersVisible] = useState(false);
+  const [accommodationsByOwner, setAccommodationsByOwner] = useState<any[]>([]);
+  interface UserData {
+    id: number;
+    role: string;
+    firstName: string;
+    lastName: string;
+    username: string;
+    profilePicture: string;
+    gender: string;
+    dateOfBirth: string;
+    description: string;
+    email: string;
+    telephone: string;
+    isSmoker: boolean;
+    academicCareer: string;
+    hobbies: string;
+    experienceYears?: number;
+    password?: string;
+  }
 
+  const [userData, setUserData] = useState<UserData | null>(null);
   const [maxPrice, setMaxPrice] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -22,10 +41,29 @@ export default function WelcomeScreen() {
   const [latitude, setLatitude] = useState('');
   const [longitude, setLongitude] = useState('');
   const [radius, setRadius] = useState('5');
+  const [role, setRole] = useState('');
+  const [name, setName] = useState('');
+
+  const fetchProfile = async () => {
+    try {
+      const token = localStorage.getItem('jwt');
+      const response = await api.get('/users/auth/current-user', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setUserData(response.data.user);
+      setRole(response.data.user.role);
+      setName(response.data.user.username);
+    } catch (error) {
+      console.error('Error al obtener el perfil:', error);
+    }
+  };
 
   useEffect(() => {
+    fetchProfile();
     if (role === 'STUDENT') {
       findAllAccommodations();
+    } else if (role === 'OWNER') {
+      findAccommodationsByOwner();
     }
   }, [role]);
 
@@ -43,6 +81,19 @@ export default function WelcomeScreen() {
     } catch (error) {
       console.error('Error fetching data:', error);
       setAccommodations([]);
+    }
+  };
+
+  const findAccommodationsByOwner = async () => {
+    try {
+      const token = localStorage.getItem('jwt');
+      const response = await api.get('/accommodations/owner-accomodations', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setAccommodationsByOwner(Array.isArray(response.data) ? response.data : []);
+    } catch (error) {
+      console.error('Error fetching owner accommodations:', error);
+      setAccommodationsByOwner([]);
     }
   };
 
@@ -136,6 +187,10 @@ export default function WelcomeScreen() {
     );
   };
 
+  const handleCreateAccommodation = () => {
+    router.push('../create-accommodation'); 
+  };
+
   return (
     <ScrollView style={styles.container} contentContainerStyle={{ alignItems: 'center' }}>
       <Text style={styles.welcomeText}>¡Bienvenido, {name}!</Text>
@@ -192,6 +247,22 @@ export default function WelcomeScreen() {
             renderItem={renderAccommodation}
             ListEmptyComponent={<Text style={{ color: 'white', marginTop: 20 }}>No hay alojamientos disponibles.</Text>}
           />
+        </>
+      )}
+
+      {role === 'OWNER' && (
+        <>
+          <Text style={styles.resultsTitle}>Mis alojamientos</Text>
+          <FlatList
+            data={accommodationsByOwner}
+            keyExtractor={(item) => item.id?.toString() || Math.random().toString()}
+            renderItem={renderAccommodation}
+            ListEmptyComponent={<Text style={{ color: 'white', marginTop: 20 }}>No tienes alojamientos publicados.</Text>}
+          />
+
+          <TouchableOpacity style={styles.button} onPress={handleCreateAccommodation}>
+            <Text style={styles.buttonText}>Crear nuevo anuncio</Text>
+          </TouchableOpacity>
         </>
       )}
     </ScrollView>

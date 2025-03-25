@@ -4,6 +4,7 @@ package com.eventbride.user;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.eventbride.dto.UserDTO;
@@ -11,8 +12,14 @@ import com.eventbride.dto.UserDTO;
 import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.validation.Valid;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,8 +51,6 @@ public class UserController {
         return ResponseEntity.ok(user);
     }
 
-
-
     @GetMapping("/username/{username}")
     public ResponseEntity<?> getUserByUsername(@PathVariable String username) {
         Optional<User> user = Optional.ofNullable(userService.getUserByUsername(username)
@@ -53,9 +58,6 @@ public class UserController {
         return ResponseEntity.ok(user);
     }
 
-    /**
-     * Registrar un nuevo usuario.
-     */
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@Valid @RequestBody User user) {
         logger.info("Intentando registrar usuario: {}", user.getUsername());
@@ -68,9 +70,19 @@ public class UserController {
         }
     }
 
-    /**
-     * Actualizar un usuario existente.
-     */
+    @PostMapping("/upload-photo")
+    public ResponseEntity<String> uploadPhoto(@RequestParam("file") MultipartFile file) {
+        try {
+            String filename = UUID.randomUUID() + "_" + file.getOriginalFilename();
+            Path filepath = Paths.get("src/main/resources/static/images", filename);
+            Files.copy(file.getInputStream(), filepath, StandardCopyOption.REPLACE_EXISTING);
+            return ResponseEntity.ok(filename); 
+        } catch (IOException e) {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error subiendo la foto");
+        }
+    }
+    
+
     @PutMapping("/{id}")
     public ResponseEntity<?> updateUser(@PathVariable Integer id, @Valid @RequestBody User updatedUser) {
 		try {
@@ -86,9 +98,6 @@ public class UserController {
 		}
 	}
 
-    /**
-     * Eliminar un usuario por ID.
-     */
     @DeleteMapping("/{id}")
     public ResponseEntity<?> deleteUser(@PathVariable Integer id) {
         try {

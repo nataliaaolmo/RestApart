@@ -62,18 +62,22 @@ public class UserService {
             .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
         user.setUsername(userDetails.getUsername());
-        user.setUsername(userDetails.getUsername());
         user.setPassword(userDetails.getPassword());
-        //user.setEmail(userDetails.getEmail());
-        //user.setFirstName(userDetails.getFirstName());
-        //user.setLastName(userDetails.getLastName());
-        //user.setTelephone(userDetails.getTelephone());
-        user.setRole(userDetails.getRole());
+        user.setEmail(userDetails.getEmail());
+        user.setFirstName(userDetails.getFirstName());
+        user.setLastName(userDetails.getLastName());
+        user.setTelephone(userDetails.getTelephone());
+        user.setDateOfBirth(userDetails.getDateOfBirth());
+        user.setGender(userDetails.getGender());
+        user.setDescription(userDetails.getDescription());
+        user.setPhoto(userDetails.getPhoto());
 
         if(user.getRole()=="OWNER"){
-
+            user.getOwner().setExperienceYears(user.getOwner().getExperienceYears());
         }else{
-
+            user.getStudent().setAcademicCareer(user.getStudent().getAcademicCareer());
+            user.getStudent().setHobbies(user.getStudent().getHobbies());
+            user.getStudent().setIsSmoker(user.getStudent().getIsSmoker());
         }
 
         return userRepository.save(user);

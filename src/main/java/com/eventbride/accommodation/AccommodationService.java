@@ -153,5 +153,10 @@ public class AccommodationService {
             return score;
         }
     }
+
+    @Transactional
+    public List<Accommodation> getAccommodationsByOwner(Integer id) {
+        return accommodationRepository.getAccommodationsByOwner(id);
+    }
     
 }

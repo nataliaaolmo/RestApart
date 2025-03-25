@@ -36,6 +36,8 @@ export default function RootLayout() {
         <Stack.Screen name="+not-found" />
         <Stack.Screen name="+welcome-screen" />
         <Stack.Screen name="+login" />
+        <Stack.Screen name="+accommodation-details" />
+        <Stack.Screen name="+create-accommodation" />
       </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>
