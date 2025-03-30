@@ -1,6 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import {View,Text,StyleSheet,TextInput,TouchableOpacity,ScrollView,Image,Switch,FlatList} from 'react-native';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  ScrollView,
+  Image,
+  Switch,
+  FlatList,
+} from 'react-native';
+import { useRouter } from 'expo-router';
 import api from '../../app/api';
 
 export default function WelcomeScreen() {
@@ -9,26 +19,7 @@ export default function WelcomeScreen() {
   const [accommodations, setAccommodations] = useState<any[]>([]);
   const [filtersVisible, setFiltersVisible] = useState(false);
   const [accommodationsByOwner, setAccommodationsByOwner] = useState<any[]>([]);
-  interface UserData {
-    id: number;
-    role: string;
-    firstName: string;
-    lastName: string;
-    username: string;
-    profilePicture: string;
-    gender: string;
-    dateOfBirth: string;
-    description: string;
-    email: string;
-    telephone: string;
-    isSmoker: boolean;
-    academicCareer: string;
-    hobbies: string;
-    experienceYears?: number;
-    password?: string;
-  }
-
-  const [userData, setUserData] = useState<UserData | null>(null);
+  const [userData, setUserData] = useState<any>(null);
   const [maxPrice, setMaxPrice] = useState('');
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
@@ -44,6 +35,18 @@ export default function WelcomeScreen() {
   const [role, setRole] = useState('');
   const [name, setName] = useState('');
 
+  useEffect(() => {
+    fetchProfile();
+  }, []);
+
+  useEffect(() => {
+    if (role === 'STUDENT') {
+      findAllAccommodations();
+    } else if (role === 'OWNER') {
+      findAccommodationsByOwner();
+    }
+  }, [role]);
+
   const fetchProfile = async () => {
     try {
       const token = localStorage.getItem('jwt');
@@ -58,29 +61,15 @@ export default function WelcomeScreen() {
     }
   };
 
-  useEffect(() => {
-    fetchProfile();
-    if (role === 'STUDENT') {
-      findAllAccommodations();
-    } else if (role === 'OWNER') {
-      findAccommodationsByOwner();
-    }
-  }, [role]);
-
   const findAllAccommodations = async () => {
     try {
       const token = localStorage.getItem('jwt');
       const response = await api.get('/accommodations', {
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (Array.isArray(response.data)) {
-        setAccommodations(response.data);
-      } else {
-        setAccommodations([]);
-      }
+      setAccommodations(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error('Error fetching data:', error);
-      setAccommodations([]);
     }
   };
 
@@ -93,40 +82,6 @@ export default function WelcomeScreen() {
       setAccommodationsByOwner(Array.isArray(response.data) ? response.data : []);
     } catch (error) {
       console.error('Error fetching owner accommodations:', error);
-      setAccommodationsByOwner([]);
-    }
-  };
-
-  const getFilteredAccommodations = async () => {
-    try {
-      const token = localStorage.getItem('jwt');
-      const params: any = {
-        maxPrice: maxPrice || -1,
-        startDate: startDate || '',
-        endDate: endDate || '',
-        students: students || -1,
-        wifi: wifi || false,
-        isEasyParking: isEasyParking || false,
-        matchCareer: academicCareerAffinity || false,
-        matchHobbies: hobbiesAffinity || false,
-        matchSmoking: allowSmoking || false,
-        latitude: latitude || '',
-        longitude: longitude || '',
-        radius: radius || -1,
-      };
-
-      const response = await api.get('/accommodations/search', {
-        params,
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (Array.isArray(response.data)) {
-        setAccommodations(response.data);
-      } else {
-        setAccommodations([]);
-      }
-    } catch (error) {
-      console.error('Error fetching data:', error);
-      setAccommodations([]);
     }
   };
 
@@ -135,22 +90,41 @@ export default function WelcomeScreen() {
     setFiltersVisible(false);
   };
 
-  const toggleFilters = () => {
-    setFiltersVisible(!filtersVisible);
+  const getFilteredAccommodations = async () => {
+    try {
+      const token = localStorage.getItem('jwt');
+      const params: any = {
+        maxPrice: maxPrice || -1,
+        startDate,
+        endDate,
+        students: students || -1,
+        wifi,
+        isEasyParking,
+        matchCareer: academicCareerAffinity,
+        matchHobbies: hobbiesAffinity,
+        matchSmoking: allowSmoking,
+        latitude,
+        longitude,
+        radius: radius || -1,
+      };
+
+      const response = await api.get('/accommodations/search', {
+        params,
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setAccommodations(Array.isArray(response.data) ? response.data : []);
+    } catch (error) {
+      console.error('Error filtrando alojamientos:', error);
+    }
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('jwt');
-    localStorage.removeItem('user');
-    localStorage.removeItem('userName');
+    localStorage.clear();
     router.replace('/');
   };
 
   const renderAccommodation = ({ item }: { item: any }) => {
-    const images = item.images?.length > 0
-    ? item.images
-    : ['default.jpg'];  
-
+    const images = item.images?.length > 0 ? item.images : ['default.jpg'];
     return (
       <TouchableOpacity
         onPress={() =>
@@ -172,40 +146,40 @@ export default function WelcomeScreen() {
             horizontal
             keyExtractor={(img, index) => index.toString()}
             renderItem={({ item }) => (
-              <Image
-                source={{ uri: `http://localhost:8080/images/${item}` }}
-                style={styles.cardImage}
-              />
-            )}            
+              <Image source={{ uri: `http://localhost:8080/images/${item}` }} style={styles.cardImage} />
+            )}
             showsHorizontalScrollIndicator={false}
           />
-          <Text style={styles.cardTitle}>{item.advertisement?.title || 'Sin título'}</Text>
-          <Text style={styles.cardText}>🛏️ {item.beds ?? '4'} camas · 🛋️ {item.rooms ?? '2'} dormitorios</Text>
-          <Text style={styles.cardPrice}>💰 {item.pricePerMonth ?? 'No disponible'} €/mes</Text>
+          <View style={{ marginTop: 10 }}>
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+              <Text style={styles.cardTitle}>{item.advertisement?.title || 'Sin título'}</Text>
+              {item.isNew && <Text style={styles.newBadge}>NUEVO</Text>}
+            </View>
+            <Text style={styles.cardText}>🛏️ {item.beds ?? '4'} camas · 🛋️ {item.rooms ?? '2'} dorms</Text>
+            <Text style={styles.cardPrice}>💰 {item.pricePerMonth} €/mes</Text>
+            <Text style={styles.ratingText}>⭐ {item.rating ?? '4.5'} / 5</Text>
+          </View>
         </View>
       </TouchableOpacity>
     );
   };
 
-  const handleCreateAccommodation = () => {
-    router.push('../create-accommodation'); 
-  };
-
   return (
-    <ScrollView style={styles.container} contentContainerStyle={{ alignItems: 'center' }}>
-      <Text style={styles.welcomeText}>¡Bienvenido, {name}!</Text>
+    <View style={{ flex: 1, backgroundColor: '#0D1B2A' }}>
+      <View style={styles.header}>
+        <Text style={styles.headerText}>¡Bienvenido, {name}!</Text>
+        <TouchableOpacity onPress={handleLogout}>
+          <Text style={styles.logoutText}>Cerrar sesión</Text>
+        </TouchableOpacity>
+      </View>
 
-      <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-        <Text style={styles.logoutText}>Cerrar sesión</Text>
-      </TouchableOpacity>
-
-      {role === 'STUDENT' && (
-        <>
-          <TouchableOpacity style={styles.toggleButton} onPress={toggleFilters}>
-            <Text style={styles.toggleText}>{filtersVisible ? 'Ocultar filtros' : 'Mostrar filtros'}</Text>
-          </TouchableOpacity>
-
-          {filtersVisible && (
+      <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingBottom: 20 }}>
+        {role === 'STUDENT' && (
+          <>
+            <TouchableOpacity style={styles.toggleButton} onPress={() => setFiltersVisible(!filtersVisible)}>
+              <Text style={styles.toggleText}>{filtersVisible ? 'Ocultar filtros' : 'Mostrar filtros'}</Text>
+            </TouchableOpacity>
+            {filtersVisible && (
             <View style={styles.searchBox}>
               <Text style={styles.label}>Precio máximo (€)</Text>
               <TextInput style={styles.input} keyboardType="numeric" value={maxPrice} onChangeText={setMaxPrice} />
@@ -239,104 +213,87 @@ export default function WelcomeScreen() {
               </TouchableOpacity>
             </View>
           )}
+            <Text style={styles.resultsTitle}>Apartamentos disponibles</Text>
+            <FlatList
+              data={accommodations}
+              keyExtractor={(item) => item.id?.toString()}
+              renderItem={renderAccommodation}
+              ListEmptyComponent={<Text style={{ color: '#ccc' }}>No hay alojamientos disponibles.</Text>}
+            />
+          </>
+        )}
 
-          <Text style={styles.resultsTitle}>Apartamentos disponibles</Text>
-          <FlatList
-            data={accommodations}
-            keyExtractor={(item) => item.id?.toString() || Math.random().toString()}
-            renderItem={renderAccommodation}
-            ListEmptyComponent={<Text style={{ color: 'white', marginTop: 20 }}>No hay alojamientos disponibles.</Text>}
-          />
-        </>
-      )}
-
-      {role === 'OWNER' && (
-        <>
-          <Text style={styles.resultsTitle}>Mis alojamientos</Text>
-          <FlatList
-            data={accommodationsByOwner}
-            keyExtractor={(item) => item.id?.toString() || Math.random().toString()}
-            renderItem={renderAccommodation}
-            ListEmptyComponent={<Text style={{ color: 'white', marginTop: 20 }}>No tienes alojamientos publicados.</Text>}
-          />
-
-          <TouchableOpacity style={styles.button} onPress={handleCreateAccommodation}>
-            <Text style={styles.buttonText}>Crear nuevo anuncio</Text>
-          </TouchableOpacity>
-        </>
-      )}
-    </ScrollView>
+        {role === 'OWNER' && (
+          <>
+            <Text style={styles.resultsTitle}>Mis alojamientos</Text>
+            <FlatList
+              data={accommodationsByOwner}
+              keyExtractor={(item) => item.id?.toString()}
+              renderItem={renderAccommodation}
+              ListEmptyComponent={<Text style={{ color: '#ccc' }}>No tienes alojamientos publicados.</Text>}
+            />
+            <TouchableOpacity style={styles.button} onPress={() => router.push('../create-accommodation')}>
+              <Text style={styles.buttonText}>Crear nuevo anuncio</Text>
+            </TouchableOpacity>
+          </>
+        )}
+      </ScrollView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: '#0D1B2A',
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#102437',
+    paddingVertical: 15,
     paddingHorizontal: 20,
+    borderBottomWidth: 1,
+    borderColor: '#1B263B',
+  },
+  searchBox: {
+    backgroundColor: '#1B263B',
+    padding: 15,
+    borderRadius: 10,
+    marginVertical: 10,
+  },
+  label: {
+    color: '#E0E1DD',
+    fontSize: 16,
+    marginVertical: 5,
+  },
+  switchRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginVertical: 5,
   },
   input: {
     backgroundColor: '#E0E1DD',
     color: '#0D1B2A',
     padding: 10,
     borderRadius: 8,
-    marginBottom: 10,
+    marginVertical: 5,
   },
-  switchRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 10,
-  },
-  label: {
-    color: '#E0E1DD',
-    fontSize: 16,
-    marginBottom: 8,
-  },
-  welcomeText: {
-    fontSize: 22,
+  headerText: {
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#E0E1DD',
-    marginVertical: 20,
-    textAlign: 'center',
-  },
-  logoutButton: {
-    backgroundColor: '#415A77',
-    padding: 10,
-    borderRadius: 8,
-    marginBottom: 15,
   },
   logoutText: {
-    color: '#E0E1DD',
-    textAlign: 'center',
+    color: '#AFC1D6',
     fontWeight: 'bold',
   },
   toggleButton: {
     backgroundColor: '#1B263B',
     padding: 10,
     borderRadius: 8,
-    marginBottom: 15,
+    marginVertical: 10,
   },
   toggleText: {
     color: '#E0E1DD',
-    textAlign: 'center',
-  },
-  searchBox: {
-    width: '100%',
-    backgroundColor: '#1B263B',
-    borderRadius: 12,
-    padding: 20,
-    marginBottom: 20,
-  },
-  button: {
-    backgroundColor: '#E0E1DD',
-    padding: 15,
-    borderRadius: 10,
-    marginTop: 10,
-  },
-  buttonText: {
-    color: '#0D1B2A',
-    fontWeight: 'bold',
     textAlign: 'center',
   },
   resultsTitle: {
@@ -363,7 +320,6 @@ const styles = StyleSheet.create({
     color: '#E0E1DD',
     fontSize: 18,
     fontWeight: 'bold',
-    marginTop: 10,
   },
   cardText: {
     color: '#E0E1DD',
@@ -374,14 +330,29 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginTop: 5,
   },
-  photoCircleContainer: {
-    flexDirection: 'row',
+  newBadge: {
+    backgroundColor: '#FF6B6B',
+    color: 'white',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  ratingText: {
+    color: '#FFD700',
+    marginTop: 4,
+    fontSize: 14,
+  },
+  button: {
+    backgroundColor: '#E0E1DD',
+    padding: 15,
+    borderRadius: 10,
     marginTop: 10,
   },
-  profilePhoto: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginRight: 5,
+  buttonText: {
+    color: '#0D1B2A',
+    fontWeight: 'bold',
+    textAlign: 'center',
   },
 });
