@@ -38,6 +38,7 @@ export default function RootLayout() {
         <Stack.Screen name="+login" />
         <Stack.Screen name="+accommodation-details" />
         <Stack.Screen name="+create-accommodation" />
+        <Stack.Screen name="+private-chat" />
       </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>

@@ -33,20 +33,28 @@ public class SecurityConfig {
         http
             .csrf(csrf -> csrf.disable()).cors(Customizer.withDefaults()) // Desactiva CSRF para facilitar pruebas
             .authorizeHttpRequests(auth -> auth
-                .requestMatchers("/api/auth/**", "/api/users/auth/register","/api/users/auth/login", "/api/accommodations/**", "/api/users/auth/current-user", "/images/**").permitAll() 
+                .requestMatchers(
+                    "/api/auth/**",
+                    "/api/users/auth/register",
+                    "/api/users/auth/login",
+                    "/api/users/auth/current-user",
+                    "/api/accommodations/**",
+                    "/api/services/**",
+                    "/images/**",
+                    "/ws/**",
+                    "/ws/info/**"
+                ).permitAll()
                 .anyRequest().authenticated()
             )
-            .sessionManagement(manager->manager.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authenticationProvider(authenticationProvider()).addFilterBefore(
-                jwtAuthFilter, UsernamePasswordAuthenticationFilter.class)
-            /* .formLogin(login -> login.disable()) // Desactiva el formulario de login por defecto
-            .httpBasic(httpBasic -> httpBasic.disable())*/; // Desactiva la autenticación HTTP básica
+            .sessionManagement(manager -> manager.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+            .authenticationProvider(authenticationProvider())
+            .addFilterBefore(jwtAuthFilter, UsernamePasswordAuthenticationFilter.class);
         
         return http.build();
     }
 
     @Bean
-    public AuthenticationProvider authenticationProvider(){
+    public AuthenticationProvider authenticationProvider() {
         DaoAuthenticationProvider daoAuthenticationProvider = new DaoAuthenticationProvider();
         daoAuthenticationProvider.setUserDetailsService(userDetailsSer);
         daoAuthenticationProvider.setPasswordEncoder(passwordEncoder());
@@ -54,12 +62,12 @@ public class SecurityConfig {
     }
 
     @Bean
-    public PasswordEncoder passwordEncoder(){
+    public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception{
+    public AuthenticationManager authenticationManager(AuthenticationConfiguration authenticationConfiguration) throws Exception {
         return authenticationConfiguration.getAuthenticationManager();
     }
 }

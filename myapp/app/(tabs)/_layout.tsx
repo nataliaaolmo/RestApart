@@ -1,6 +1,7 @@
 import { Tabs } from 'expo-router';
 import React from 'react';
 import { Platform } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 import { HapticTab } from '@/components/HapticTab';
 import { IconSymbol } from '@/components/ui/IconSymbol';
@@ -41,7 +42,7 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="chat"
+        name="inbox"
         options={{
           title: 'Chat',
           tabBarIcon: ({ color }) => <IconSymbol name="bubble.left.and.bubble.right.fill" color={color} size={26} />,

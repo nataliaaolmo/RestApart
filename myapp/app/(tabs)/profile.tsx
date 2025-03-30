@@ -2,6 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Image, ScrollView, TextInput, TouchableOpacity, Alert } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import api from '../../app/api';
+import { RouteProp, useRoute, useNavigation } from '@react-navigation/native';
+import { router } from 'expo-router';
+import { useLayoutEffect } from 'react';
+
 
 export default function ProfileScreen() {
   interface UserData {
@@ -25,22 +29,42 @@ export default function ProfileScreen() {
 
   const [userData, setUserData] = useState<UserData | null>(null);
   const [editing, setEditing] = useState(false);
+  type ProfileRouteProp = RouteProp<{ Profile: { id: string } }, 'Profile'>;
+  const route = useRoute<ProfileRouteProp>();
+  const { id } = route.params || {};
+  const userId = id ? parseInt(id, 10) : undefined;
+  const navigation = useNavigation();
 
   const fetchProfile = async () => {
     try {
       const token = localStorage.getItem('jwt');
-      const response = await api.get('/users/auth/current-user', {
+      const url = userId
+        ? `/users/${userId}`
+        : '/users/auth/current-user';
+  
+      const response = await api.get(url, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setUserData(response.data.user);
+  
+      const user = userId ? response.data : response.data.user;
+      setUserData(user);
     } catch (error) {
       console.error('Error al obtener el perfil:', error);
     }
-  };
+  };  
 
   useEffect(() => {
     fetchProfile();
   }, []);
+
+  useLayoutEffect(() => {
+    if (userData) {
+      const fullName = `${userData.firstName} ${userData.lastName}`;
+      const screenTitle = userId ? `Perfil de ${fullName}` : 'Tu perfil';
+      navigation.setOptions({ title: screenTitle });
+    }
+  }, [userData]);
+  
 
   const handleImagePick = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
@@ -131,6 +155,7 @@ export default function ProfileScreen() {
 
   const isStudent = userData.role === 'STUDENT';
   const fullName = `${userData.firstName} ${userData.lastName}`;
+  const screenTitle = userId ? `Perfil de ${fullName}` : 'Tu perfil';
 
   return (
     <ScrollView style={styles.container}>
@@ -140,8 +165,9 @@ export default function ProfileScreen() {
           style={styles.profileImage}
         />
       </TouchableOpacity>
+      <Text style={styles.screenTitle}>{screenTitle}</Text>
 
-      {editing ? (
+      {editing && !userId ?  (
         <>
           <TextInput style={styles.input} value={userData.firstName} onChangeText={(text) => setUserData(prev => prev ? { ...prev, firstName: text } : null)} placeholder="Nombre" />
           <TextInput style={styles.input} value={userData.lastName} onChangeText={(text) => setUserData(prev => prev ? { ...prev, lastName: text } : null)} placeholder="Apellido" />
@@ -162,13 +188,25 @@ export default function ProfileScreen() {
             <TextInput style={styles.input} value={userData.experienceYears?.toString()} onChangeText={(text) => setUserData(prev => prev ? { ...prev, experienceYears: parseInt(text) } : null)} placeholder="Años de experiencia" />
           )}
 
-          <TouchableOpacity style={styles.saveButton} onPress={saveChanges}>
-            <Text style={styles.saveButtonText}>Guardar cambios</Text>
-          </TouchableOpacity>
+          {!userId && (
+            <TouchableOpacity style={styles.saveButton} onPress={() => setEditing(true)}>
+              <Text style={styles.saveButtonText}>Editar perfil</Text>
+            </TouchableOpacity>
+          )}
+
         </>
       ) : (
         <>
           <Text style={styles.name}>{fullName} - <Text style={styles.username}>@{userData.username}</Text></Text>
+          {userId && (
+          <TouchableOpacity
+            style={[styles.saveButton, { backgroundColor: '#AFC1D6', marginTop: 10 }]}
+            onPress={() => router.push({ pathname: '/private-chat', params: { id: userData?.id } })}
+          >
+            <Text style={[styles.saveButtonText, { color: '#0D1B2A' }]}>Enviar mensaje</Text>
+          </TouchableOpacity>
+        )}
+
           {isStudent ? (
             <>
               <Text style={styles.detail}>{userData.gender === 'WOMAN' ? 'Mujer' : 'Hombre'} - {new Date().getFullYear() - new Date(userData.dateOfBirth).getFullYear()} años</Text>
@@ -196,9 +234,17 @@ export default function ProfileScreen() {
             <>
               <Text style={styles.detail}>{userData.experienceYears} años de experiencia</Text>
               <Text style={styles.rating}>4,3 ⭐</Text>
-              <View style={styles.buttonBox}>
-                <Text style={styles.messageButton}>Enviar mensaje</Text>
-              </View>
+              {userId && (
+                <View style={styles.buttonBox}>
+                  <Text
+                    style={styles.messageButton}
+                    onPress={() => router.push({ pathname: '/private-chat', params: { id: userData?.id } })}
+                  >
+                    Enviar mensaje
+                  </Text>
+                </View>
+              )}
+
               <View style={styles.commentBox}>
                 <Text style={styles.commentRating}>4⭐</Text>
                 <Text style={styles.commentText}>Hugo siempre te ayuda cuando tienes problemas pero a veces tarda en responder</Text>
@@ -220,6 +266,13 @@ const styles = StyleSheet.create({
   profileImage: { width: '100%', height: 250, borderRadius: 10, marginBottom: 20 },
   name: { color: '#E0E1DD', fontSize: 18, fontWeight: 'bold' },
   username: { color: '#AFC1D6' },
+  screenTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#E0E1DD',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
   detail: { color: '#AFC1D6', marginVertical: 5 },
   description: { color: '#E0E1DD', marginTop: 10, marginBottom: 20, fontWeight: 'bold', textAlign: 'center' },
   contactBox: { marginTop: 20 },

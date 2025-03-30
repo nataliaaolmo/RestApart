@@ -9,6 +9,8 @@ import {
   FlatList,
   Alert,
   Linking,
+  TouchableOpacity,
+  Modal,
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import api from '../app/api';
@@ -20,6 +22,9 @@ export default function AccommodationDetailsScreen() {
   const [description, setDescription] = useState('');
   const [tenants, setTenants] = useState<any[]>([]);
   const router = useRouter();
+  const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
+  const [modalVisible, setModalVisible] = useState(false);
+  
 
   const stayRange = {
     startDate: '2025-04-01',
@@ -103,27 +108,32 @@ export default function AccommodationDetailsScreen() {
     }
   };
 
+  const handleUserPress = (userId: number) => {
+    setSelectedUserId(userId);
+    setModalVisible(true);
+  };
+
   const renderImage = ({ item }: { item: any }) => <Image source={item} style={styles.carouselImage} />;
 
   return (
-    <ScrollView style={styles.container}>
+    <><ScrollView style={styles.container}>
       <FlatList
         data={images}
         horizontal
         renderItem={renderImage}
         keyExtractor={(_, index) => index.toString()}
-        showsHorizontalScrollIndicator={false}
-      />
+        showsHorizontalScrollIndicator={false} />
       <View style={styles.content}>
         <Text style={styles.title}>{title}</Text>
         <Text style={styles.subTitle}>{beds} camas - {bedrooms} dormitorios - 2 baños</Text>
 
         {owner && (
           <View style={styles.ownerSection}>
-            <Image
-              source={{ uri: `http://localhost:8080/images/${owner.profilePicture}` }}
-              style={styles.ownerImage}
-            />
+            <TouchableOpacity onPress={() => handleUserPress(owner.user.id)}>
+              <Image
+                source={{ uri: `http://localhost:8080/images/${owner.profilePicture}` }}
+                style={styles.ownerImage} />
+            </TouchableOpacity>
             <View>
               <Text style={styles.ownerName}>Dueño: {owner.user.firstName} {owner.user.lastName}</Text>
               <Text style={styles.ownerExperience}>{owner.experienceYears} años de experiencia</Text>
@@ -134,13 +144,14 @@ export default function AccommodationDetailsScreen() {
         <Text style={styles.sectionTitle}>Inquilinos</Text>
         <View style={styles.tenantsRow}>
           {tenants.map((tenant, index) => (
-            <Image
-              key={index}
-              source={{ uri: `http://localhost:8080/images/${tenant.photo}` }}
-              style={styles.tenantPhoto}
-            />
+            <TouchableOpacity key={index} onPress={() => handleUserPress(tenant.id)}>
+              <Image
+                source={{ uri: `http://localhost:8080/images/${tenant.photo}` }}
+                style={styles.tenantPhoto} />
+            </TouchableOpacity>
           ))}
         </View>
+
 
         <Text style={styles.description}>{description}</Text>
 
@@ -165,6 +176,44 @@ export default function AccommodationDetailsScreen() {
         </View>
       </View>
     </ScrollView>
+    <Modal
+      visible={modalVisible}
+      transparent
+      animationType="fade"
+      onRequestClose={() => setModalVisible(false)}
+    >
+        <View style={styles.modalBackground}>
+          <View style={styles.modalBox}>
+            <Text style={styles.modalTitle}>¿Qué deseas hacer?</Text>
+            <TouchableOpacity
+              style={styles.modalButton}
+              onPress={() => {
+                setModalVisible(false);
+                if (selectedUserId !== null) {
+                  router.push({ pathname: '/(tabs)/profile', params: { id: selectedUserId } });
+                } else {
+                  Alert.alert('Error', 'Usuario no válido.');
+                }
+              } }
+            >
+              <Text style={styles.modalButtonText}>Ver perfil</Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={styles.modalButton}
+              onPress={() => {
+                setModalVisible(false);
+                router.push({ pathname: '/private-chat', params: { id: selectedUserId } });
+              } }
+            >
+              <Text style={styles.modalButtonText}>Chatear</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => setModalVisible(false)}>
+              <Text style={styles.modalCancel}>Cancelar</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal></>
+
   );
 }
 
@@ -188,4 +237,40 @@ const styles = StyleSheet.create({
   footer: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginTop: 20 },
   price: { backgroundColor: '#fff', padding: 10, borderRadius: 10 },
   payButton: { backgroundColor: '#ffc439', padding: 12, borderRadius: 8, textAlign: 'center', color: '#000', fontWeight: 'bold' },
+  modalBackground: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalBox: {
+    backgroundColor: '#fff',
+    padding: 20,
+    borderRadius: 10,
+    width: '80%',
+  },
+  modalTitle: {
+    fontWeight: 'bold',
+    fontSize: 18,
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+  modalButton: {
+    backgroundColor: '#0D1B2A',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 10,
+  },
+  modalButtonText: {
+    color: '#E0E1DD',
+    textAlign: 'center',
+    fontWeight: 'bold',
+  },
+  modalCancel: {
+    color: '#AFC1D6',
+    textAlign: 'center',
+    marginTop: 10,
+  },
+  
 });
+
