@@ -83,7 +83,6 @@ public class User implements UserDetails {
     private String description;
 
     @Column(name = "photo")
-    @URL(message = "La foto debe ser una URL válida")
     private String photo;
 
     @Column(name = "is_verified")

@@ -25,6 +25,7 @@ export default function ProfileScreen() {
     hobbies: string;
     experienceYears?: number;
     password?: string;
+    isVerified?: boolean;
   }
 
   const [userData, setUserData] = useState<UserData | null>(null);
@@ -67,52 +68,78 @@ export default function ProfileScreen() {
   
 
   const handleImagePick = async () => {
+    if (!editing) return;
+  
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
-      aspect: [1, 1],
       quality: 1,
+      base64: false,
     });
-
-    if (!result.canceled && userData) {
+  
+    console.log('ImagePicker result:', result);
+  
+    if (!result.canceled && result.assets.length > 0) {
       const imageAsset = result.assets[0];
-      const localUri = imageAsset.uri;
-      const filename = localUri.split('/').pop();
-      const match = /\.(\w+)$/.exec(filename || '');
-      const type = match ? `image/${match[1]}` : `image`;
-
+  
       const formData = new FormData();
-      formData.append('file', {
-        uri: localUri,
-        name: filename,
-        type,
-      } as any);
-
+  
+      if (imageAsset.file) {
+        console.log('Using imageAsset.file directly');
+        formData.append('file', imageAsset.file);
+      } else {
+        const localUri = imageAsset.uri;
+        const filename = localUri.split('/').pop();
+        const match = /\.(\w+)$/.exec(filename || '');
+        const type = match ? `image/${match[1]}` : `image`;
+  
+        console.log('Using imageAsset.uri:', localUri);
+  
+        formData.append('file', {
+          uri: localUri,
+          name: filename,
+          type,
+        } as any);
+      }
+  
       try {
         const token = localStorage.getItem('jwt');
-        const uploadRes = await fetch('http://localhost:8080/api/users/upload-photo', {
+  
+        const uploadResponse = await fetch('http://localhost:8080/api/users/upload-photo', {
           method: 'POST',
-          headers: { Authorization: `Bearer ${token}` },
-          body: formData as any,
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            // ⚠️ No pongas Content-Type
+          },
+          body: formData,
         });
-        const newPhotoFilename = await uploadRes.json();
-        setUserData(prev => prev ? { ...prev, profilePicture: newPhotoFilename } : null);
-        Alert.alert('Foto actualizada correctamente');
-      } catch (error) {
-        Alert.alert('Error al subir la imagen');
+  
+        if (!uploadResponse.ok) {
+          const errorText = await uploadResponse.text();
+          console.error('Error al subir foto de perfil:', errorText);
+          Alert.alert('Error', 'No se pudo subir la foto de perfil');
+          return;
+        }
+  
+        const filename = await uploadResponse.text();
+        setUserData(prev => prev ? { ...prev, profilePicture: filename } : null);
+        Alert.alert('Foto de perfil actualizada');
+  
+      } catch (err) {
+        console.error('Excepción al subir foto:', err);
+        Alert.alert('Error', 'No se pudo subir la foto');
       }
     }
-  };
+  };  
 
   const saveChanges = async () => {
     if (!userData) return;
     try {
       const token = localStorage.getItem('jwt');
-
+  
       const updatedUser = {
-        id: userData.id,
         username: userData.username,
-        password: userData.password || '',
+        password: userData.password || 'Temp1234*',
         email: userData.email,
         firstName: userData.firstName,
         lastName: userData.lastName,
@@ -120,27 +147,21 @@ export default function ProfileScreen() {
         dateOfBirth: userData.dateOfBirth,
         gender: userData.gender,
         description: userData.description,
-        photo: userData.profilePicture,
+        profilePicture: userData.profilePicture, 
         role: userData.role,
-        ...(userData.role === 'OWNER'
-          ? {
-              owner: {
-                experienceYears: userData.experienceYears,
-              },
-            }
-          : {
-              student: {
-                academicCareer: userData.academicCareer,
-                hobbies: userData.hobbies,
-                isSmoker: userData.isSmoker,
-              },
-            }),
+        isVerified: userData.isVerified,
+  
+        // Propiedades específicas del rol
+        experienceYears: userData.role === 'OWNER' ? userData.experienceYears : null,
+        academicCareer: userData.role === 'STUDENT' ? userData.academicCareer : null,
+        hobbies: userData.role === 'STUDENT' ? userData.hobbies : null,
+        isSmoker: userData.role === 'STUDENT' ? userData.isSmoker : null,
       };
-
+      console.log('Updated user data:', updatedUser);
       const res = await api.put(`/users/${userData.id}`, updatedUser, {
         headers: { Authorization: `Bearer ${token}` },
       });
-
+  
       setUserData(res.data);
       setEditing(false);
       fetchProfile();
@@ -149,7 +170,8 @@ export default function ProfileScreen() {
       console.error('Error actualizando perfil:', error);
       Alert.alert('Error al actualizar perfil');
     }
-  };
+  };  
+
 
   if (!userData) return <Text style={styles.loadingText}>Cargando perfil...</Text>;
 
@@ -159,7 +181,7 @@ export default function ProfileScreen() {
 
   return (
     <ScrollView style={styles.container}>
-      <TouchableOpacity onPress={handleImagePick}>
+      <TouchableOpacity disabled={!editing} onPress={handleImagePick}>
         <Image
           source={{ uri: `http://localhost:8080/images/${userData.profilePicture}` }}
           style={styles.profileImage}
@@ -189,9 +211,9 @@ export default function ProfileScreen() {
           )}
 
           {!userId && (
-            <TouchableOpacity style={styles.saveButton} onPress={() => setEditing(true)}>
-              <Text style={styles.saveButtonText}>Editar perfil</Text>
-            </TouchableOpacity>
+            <TouchableOpacity style={styles.saveButton} onPress={saveChanges}>
+              <Text style={styles.saveButtonText}>Guardar cambios</Text>
+           </TouchableOpacity>
           )}
 
         </>

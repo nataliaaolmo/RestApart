@@ -13,5 +13,5 @@
     "**/*.tsx",
     ".expo/types/**/*.ts",
     "expo-env.d.ts"
-, "components/PaypalCheckoutButton.js"  ]
+, "components/PaypalCheckoutButton.js", "app/accommodation-details.tsx", "app/create-accommodation.jsx"  ]
 }

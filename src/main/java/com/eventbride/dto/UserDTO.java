@@ -29,6 +29,7 @@ public class UserDTO {
     private Boolean isSmoker;
     private String academicCareer; 
     private String hobbies;
+    private Boolean isVerified;
 
     public UserDTO(User user) {
         this.id = user.getId();
@@ -43,6 +44,7 @@ public class UserDTO {
         this.gender = user.getGender();
         this.description = user.getDescription();
         this.password = user.getPassword();
+        this.isVerified = user.getIsVerified();
     
         if (user.getOwner() != null) {
             this.experienceYears = user.getOwner().getExperienceYears();
@@ -54,6 +56,8 @@ public class UserDTO {
             this.hobbies = user.getStudent().getHobbies();
         }
     }
-    
 
+    public UserDTO() {
+    }
+    
 }

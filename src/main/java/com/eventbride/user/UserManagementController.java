@@ -47,7 +47,7 @@ public class UserManagementController {
             return ResponseEntity.status(401).body(new ReqRes(401, "No autenticado"));
         }
     
-        String username = authentication.getName(); // Obtiene el username del usuario autenticado
+        String username = authentication.getName(); 
     
         ReqRes response = userManagementService.getMyInfo(username);
         return ResponseEntity.status(response.getStatusCode()).body(response);

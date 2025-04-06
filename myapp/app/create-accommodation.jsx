@@ -1,9 +1,8 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, ScrollView, Switch, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
-import api from '../app/api';
 import * as ImagePicker from 'expo-image-picker';
-import * as FileSystem from 'expo-file-system';
+import api from './api';
 
 export default function CreateAccommodation() {
   const router = useRouter();
@@ -21,36 +20,61 @@ export default function CreateAccommodation() {
   const [students, setStudents] = useState('');
   const [wifi, setWifi] = useState(false);
   const [isEasyParking, setIsEasyParking] = useState(false);
-  const [selectedImage, setSelectedImage] = useState(null);
-  
+  const [selectedImages, setSelectedImages] = useState([]);
+
+  const pickImage = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsMultipleSelection: true,
+      quality: 1,
+      base64: false,
+    });
+
+    if (!result.canceled && result.assets.length > 0) {
+      setSelectedImages(prev => [...prev, ...result.assets]);
+    }
+  };
+
   const handleSubmit = async () => {
-    const token = localStorage.getItem('jwt');
-  
-    if (!selectedImage) {
+    if (selectedImages.length === 0) {
       Alert.alert('Error', 'Debes seleccionar al menos una imagen del alojamiento.');
       return;
     }
-  
-    const formData = new FormData();
-    formData.append('file', {
-      uri: selectedImage.uri,
-      name: 'accommodation.jpg',
-      type: 'image/jpeg',
-    });
-  
+
+    const token = localStorage.getItem('jwt');
+    if (!token) {
+      Alert.alert("Error", "No se encontró el token. ¿Estás logueado?");
+      return;
+    }
+
     try {
+      const formData = new FormData();
+
+      selectedImages.forEach((image, index) => {
+        const file = image.file ?? new File([image], image.fileName || `image-${index}.jpg`, {
+          type: image.mimeType || 'image/jpeg',
+        });
+
+        formData.append('files', file);
+      });
+
       const uploadResponse = await fetch('http://localhost:8080/api/images/upload', {
         method: 'POST',
         headers: {
           'Authorization': `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data',
         },
         body: formData,
       });
-  
-      const imageUrl = await uploadResponse.text(); 
-      console.log('URL de la imagen subida:', imageUrl);
-  
+
+      if (!uploadResponse.ok) {
+        const errorText = await uploadResponse.text();
+        console.error("Error al subir imágenes:", errorText);
+        Alert.alert("Error", "No se pudieron subir las imágenes.");
+        return;
+      }
+
+      const imageUrls = await uploadResponse.json(); 
+
       const accommodationData = {
         rooms: parseInt(rooms),
         beds: parseInt(beds),
@@ -66,42 +90,21 @@ export default function CreateAccommodation() {
         students: parseInt(students),
         wifi,
         isEasyParking,
-        images: [imageUrl], 
+        images: imageUrls,
       };
-  
+
       const response = await api.post(`/accommodations?title=${encodeURIComponent(title)}`, accommodationData, {
         headers: { Authorization: `Bearer ${token}` }
       });
-  
+
       Alert.alert('Éxito', 'Alojamiento creado correctamente');
-      router.replace('../(tabs)/welcome-screen'); 
-  
+      router.replace('../(tabs)/welcome-screen');
+
     } catch (error) {
       console.error('Error al crear alojamiento:', error);
       Alert.alert('Error', 'No se pudo crear el alojamiento');
     }
   };
-  
-
-  const pickImage = async () => {
-    const permissionResult = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (!permissionResult.granted) {
-      Alert.alert("Permiso requerido", "Se necesita permiso para acceder a tus imágenes");
-      return;
-    }
-  
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
-      allowsEditing: true,
-      aspect: [4, 3],
-      quality: 1,
-    });
-  
-    if (!result.canceled && result.assets.length > 0) {
-      setSelectedImage(result.assets[0]);
-    }
-  };
-  
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
@@ -155,11 +158,14 @@ export default function CreateAccommodation() {
       </TouchableOpacity>
 
       <TouchableOpacity style={styles.button} onPress={pickImage}>
-        <Text style={styles.buttonText}>Seleccionar imagen</Text>
+        <Text style={styles.buttonText}>Seleccionar imágenes</Text>
       </TouchableOpacity>
-        {selectedImage && (
-        <Text style={{ color: '#E0E1DD', marginTop: 10 }}>Imagen seleccionada: ✅</Text>
-        )}
+
+      {selectedImages.length > 0 && (
+        <Text style={{ color: '#E0E1DD', marginTop: 10 }}>
+          {selectedImages.length} imagen(es) seleccionada(s) ✅
+        </Text>
+      )}
     </ScrollView>
   );
 }

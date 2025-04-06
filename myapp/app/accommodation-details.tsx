@@ -5,7 +5,7 @@ import {
   Alert, Linking, TouchableOpacity, Modal, Dimensions
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import api from '../app/api';
+import api from './api';
 import { Ionicons } from '@expo/vector-icons';
 
 export default function AccommodationDetailsScreen() {

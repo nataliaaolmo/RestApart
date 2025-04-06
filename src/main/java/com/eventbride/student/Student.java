@@ -19,13 +19,16 @@ public class Student {
     @JoinColumn(name = "user_id", referencedColumnName = "id", unique = true, nullable = false)
     private User user;
 
-    @Column(name = "is_smoker", nullable = false)
+    @Column(name = "is_smoker", nullable = true)
     private Boolean isSmoker;
 
-    @Column(name = "academic_career", nullable = false)
+    @Column(name = "academic_career", nullable = true)
     private String academicCareer;
 
-    @Column(name = "hobbies", nullable = false)
+    @Column(name = "hobbies", nullable = true)
     private String hobbies;
+
+    public Student() {}
+
 }
 

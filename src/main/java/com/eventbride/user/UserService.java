@@ -5,6 +5,10 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import com.eventbride.dto.UserDTO;
+import com.eventbride.owner.Owner;
+import com.eventbride.student.Student;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -18,7 +22,7 @@ public class UserService {
 
     @Transactional
     public List<User> getAllUsers() {
-        return userRepository.findAll();
+        return (List<User>) userRepository.findAll();
     }
 
     @Transactional
@@ -57,7 +61,7 @@ public class UserService {
 	}
 
     @Transactional
-    public User updateUser(Integer id, User userDetails) {
+    public User updateUser(Integer id, UserDTO userDetails) {
         User user = userRepository.findById(id)
             .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
 
@@ -70,15 +74,34 @@ public class UserService {
         user.setDateOfBirth(userDetails.getDateOfBirth());
         user.setGender(userDetails.getGender());
         user.setDescription(userDetails.getDescription());
-        user.setPhoto(userDetails.getPhoto());
+        user.setPhoto(userDetails.getProfilePicture());
 
-        if(user.getRole()=="OWNER"){
-            user.getOwner().setExperienceYears(user.getOwner().getExperienceYears());
-        }else{
-            user.getStudent().setAcademicCareer(user.getStudent().getAcademicCareer());
-            user.getStudent().setHobbies(user.getStudent().getHobbies());
-            user.getStudent().setIsSmoker(user.getStudent().getIsSmoker());
-        }
+        if ("OWNER".equals(user.getRole())) {
+            if (user.getStudent() != null) {
+                user.setStudent(null);
+            }
+            if (user.getOwner() == null) {
+                Owner owner = new Owner();
+                owner.setUser(user);
+                user.setOwner(owner);
+            }
+            if (userDetails.getExperienceYears() != null) {
+                user.getOwner().setExperienceYears(userDetails.getExperienceYears());
+            }
+        
+        } else if ("STUDENT".equals(user.getRole())) {
+            if (user.getOwner() != null) {
+                user.setOwner(null);
+            }
+            if (user.getStudent() == null) {
+                Student student = new Student();
+                student.setUser(user);
+                user.setStudent(student);
+            }
+            user.getStudent().setAcademicCareer(userDetails.getAcademicCareer());
+            user.getStudent().setHobbies(userDetails.getHobbies());
+            user.getStudent().setIsSmoker(userDetails.getIsSmoker());
+        }        
 
         return userRepository.save(user);
     }

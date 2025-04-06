@@ -3,6 +3,8 @@ package com.eventbride.user;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
@@ -33,6 +35,9 @@ public class UserController {
 
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private UserRepository userRepository;
 
 
     @GetMapping
@@ -70,21 +75,51 @@ public class UserController {
         }
     }
 
-    @PostMapping("/upload-photo")
-    public ResponseEntity<String> uploadPhoto(@RequestParam("file") MultipartFile file) {
-        try {
-            String filename = UUID.randomUUID() + "_" + file.getOriginalFilename();
-            Path filepath = Paths.get("src/main/resources/static/images", filename);
-            Files.copy(file.getInputStream(), filepath, StandardCopyOption.REPLACE_EXISTING);
-            return ResponseEntity.ok(filename); 
-        } catch (IOException e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error subiendo la foto");
-        }
-    }
+@PostMapping("/upload-photo")
+public ResponseEntity<String> uploadProfilePhoto(
+        @RequestParam("file") MultipartFile file,
+        @AuthenticationPrincipal UserDetails userDetails) {
     
+    if (file.isEmpty()) {
+        return ResponseEntity.badRequest().body("Archivo vacío");
+    }
+
+    try {
+        // 1. Buscar el usuario por username
+        String username = userDetails.getUsername();
+        Optional<User> optionalUser = userRepository.findByUsername(username);
+        if (optionalUser.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Usuario no encontrado");
+        }
+
+        User user = optionalUser.get();
+
+        // 2. Eliminar la foto anterior (si no es la default)
+        String oldFilename = user.getPhoto(); // o getProfilePicture(), depende de tu modelo
+        if (oldFilename != null && !oldFilename.equals("default.png")) {
+            Path oldFilePath = Paths.get("src/main/resources/static/images", oldFilename);
+            Files.deleteIfExists(oldFilePath);
+        }
+
+        // 3. Guardar nueva imagen
+        String newFilename = UUID.randomUUID() + "_" + file.getOriginalFilename();
+        Path newFilePath = Paths.get("src/main/resources/static/images", newFilename);
+        Files.copy(file.getInputStream(), newFilePath, StandardCopyOption.REPLACE_EXISTING);
+
+        // 4. Actualizar la foto del usuario
+        user.setPhoto(newFilename); // o setProfilePicture()
+        userRepository.save(user);
+
+        return ResponseEntity.ok(newFilename);
+
+    } catch (IOException e) {
+        e.printStackTrace();
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error subiendo la foto");
+    }
+}
 
     @PutMapping("/{id}")
-    public ResponseEntity<?> updateUser(@PathVariable Integer id, @Valid @RequestBody User updatedUser) {
+    public ResponseEntity<?> updateUser(@PathVariable Integer id, @Valid @RequestBody UserDTO updatedUser) {
 		try {
 			Optional<User> existingUser = userService.getUserById(id);
 			if (existingUser.isEmpty()) {
@@ -94,6 +129,7 @@ public class UserController {
 			User savedUser = userService.updateUser(id, updatedUser);
 			return new ResponseEntity<>(new UserDTO(savedUser), HttpStatus.OK);
 		} catch (RuntimeException e) {
+            e.printStackTrace();
 			return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
 		}
 	}

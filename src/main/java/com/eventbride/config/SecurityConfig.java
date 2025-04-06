@@ -38,8 +38,10 @@ public class SecurityConfig {
                     "/api/users/auth/register",
                     "/api/users/auth/login",
                     "/api/users/auth/current-user",
+                    "/api/users/upload-photo",
                     "/api/accommodations/**",
                     "/api/services/**",
+                    "/api/images/**",
                     "/images/**",
                     "/ws/**",
                     "/ws/info/**"
