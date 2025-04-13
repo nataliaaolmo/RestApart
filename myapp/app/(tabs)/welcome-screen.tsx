@@ -1,3 +1,4 @@
+// IMPORTS IGUALES
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -34,6 +35,8 @@ export default function WelcomeScreen() {
   const [radius, setRadius] = useState('5');
   const [role, setRole] = useState('');
   const [name, setName] = useState('');
+  const [zoneQuery, setZoneQuery] = useState('');
+  const [locationMode, setLocationMode] = useState<'zone' | null>(null);
 
   useEffect(() => {
     fetchProfile();
@@ -46,6 +49,13 @@ export default function WelcomeScreen() {
       findAccommodationsByOwner();
     }
   }, [role]);
+
+  useEffect(() => {
+    if (locationMode === 'zone') {
+      setLatitude('');
+      setLongitude('');
+    }
+  }, [locationMode]);
 
   const fetchProfile = async () => {
     try {
@@ -118,6 +128,25 @@ export default function WelcomeScreen() {
     }
   };
 
+  const searchByZone = async () => {
+    try {
+      const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(zoneQuery)}`);
+      const data = await response.json();
+
+      if (data.length > 0) {
+        const { lat, lon } = data[0];
+        setLatitude(lat.toString());
+        setLongitude(lon.toString());
+        applyFilters();
+      } else {
+        alert('Zona no encontrada');
+      }
+    } catch (error) {
+      console.error('Error buscando zona:', error);
+      alert('Error buscando la zona');
+    }
+  };
+
   const handleLogout = () => {
     localStorage.clear();
     router.replace('/');
@@ -136,6 +165,8 @@ export default function WelcomeScreen() {
               beds: item.beds,
               bedrooms: item.rooms,
               price: item.pricePerMonth,
+              latitude: item.latitude,
+              longitude: item.longitude,
             },
           })
         }
@@ -179,40 +210,56 @@ export default function WelcomeScreen() {
             <TouchableOpacity style={styles.toggleButton} onPress={() => setFiltersVisible(!filtersVisible)}>
               <Text style={styles.toggleText}>{filtersVisible ? 'Ocultar filtros' : 'Mostrar filtros'}</Text>
             </TouchableOpacity>
+
             {filtersVisible && (
-            <View style={styles.searchBox}>
-              <Text style={styles.label}>Precio máximo (€)</Text>
-              <TextInput style={styles.input} keyboardType="numeric" value={maxPrice} onChangeText={setMaxPrice} />
+              <View style={styles.searchBox}>
+                <Text style={styles.label}>Precio máximo (€)</Text>
+                <TextInput style={styles.input} keyboardType="numeric" value={maxPrice} onChangeText={setMaxPrice} />
 
-              <Text style={styles.label}>Fecha de inicio</Text>
-              <TextInput style={styles.input} placeholder="YYYY-MM-DD" value={startDate} onChangeText={setStartDate} />
+                <Text style={styles.label}>Fechas de estancia</Text>
+                <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
+                  <TextInput
+                    style={[styles.input, { flex: 1, marginRight: 5 }]}
+                    placeholder="Inicio (YYYY-MM-DD)"
+                    value={startDate}
+                    onChangeText={setStartDate}
+                  />
+                  <TextInput
+                    style={[styles.input, { flex: 1, marginLeft: 5 }]}
+                    placeholder="Fin (YYYY-MM-DD)"
+                    value={endDate}
+                    onChangeText={setEndDate}
+                  />
+                </View>
 
-              <Text style={styles.label}>Fecha de fin</Text>
-              <TextInput style={styles.input} placeholder="YYYY-MM-DD" value={endDate} onChangeText={setEndDate} />
+                <Text style={styles.label}>Buscar por zona</Text>
+                <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+                  <TextInput
+                    style={[styles.input, { flex: 1, marginRight: 10 }]}
+                    placeholder="Ej: Reina Mercedes, Sevilla"
+                    value={zoneQuery}
+                    onChangeText={setZoneQuery}
+                  />
+                  <TouchableOpacity onPress={searchByZone} style={{ backgroundColor: '#E0E1DD', padding: 10, borderRadius: 8 }}>
+                    <Text style={{ color: '#0D1B2A', fontWeight: 'bold' }}>Buscar</Text>
+                  </TouchableOpacity>
+                </View>
 
-              <Text style={styles.label}>Número de estudiantes</Text>
-              <TextInput style={styles.input} keyboardType="numeric" value={students} onChangeText={setStudents} />
+                <Text style={styles.label}>Número de estudiantes</Text>
+                <TextInput style={styles.input} keyboardType="numeric" value={students} onChangeText={setStudents} />
 
-              <View style={styles.switchRow}><Text style={styles.label}>Wifi</Text><Switch value={wifi} onValueChange={setWifi} /></View>
-              <View style={styles.switchRow}><Text style={styles.label}>Fácil aparcar</Text><Switch value={isEasyParking} onValueChange={setIsEasyParking} /></View>
-              <View style={styles.switchRow}><Text style={styles.label}>Afinidad carrera</Text><Switch value={academicCareerAffinity} onValueChange={setAcademicCareerAffinity} /></View>
-              <View style={styles.switchRow}><Text style={styles.label}>Afinidad aficiones</Text><Switch value={hobbiesAffinity} onValueChange={setHobbiesAffinity} /></View>
-              <View style={styles.switchRow}><Text style={styles.label}>Permite fumar</Text><Switch value={allowSmoking} onValueChange={setAllowSmoking} /></View>
+                <View style={styles.switchRow}><Text style={styles.label}>Wifi</Text><Switch value={wifi} onValueChange={setWifi} /></View>
+                <View style={styles.switchRow}><Text style={styles.label}>Fácil aparcar</Text><Switch value={isEasyParking} onValueChange={setIsEasyParking} /></View>
+                <View style={styles.switchRow}><Text style={styles.label}>Afinidad carrera</Text><Switch value={academicCareerAffinity} onValueChange={setAcademicCareerAffinity} /></View>
+                <View style={styles.switchRow}><Text style={styles.label}>Afinidad aficiones</Text><Switch value={hobbiesAffinity} onValueChange={setHobbiesAffinity} /></View>
+                <View style={styles.switchRow}><Text style={styles.label}>Permite fumar</Text><Switch value={allowSmoking} onValueChange={setAllowSmoking} /></View>
 
-              <Text style={styles.label}>Latitud</Text>
-              <TextInput style={styles.input} keyboardType="numeric" value={latitude} onChangeText={setLatitude} />
+                <TouchableOpacity style={styles.button} onPress={applyFilters}>
+                  <Text style={styles.buttonText}>Aplicar filtros</Text>
+                </TouchableOpacity>
+              </View>
+            )}
 
-              <Text style={styles.label}>Longitud</Text>
-              <TextInput style={styles.input} keyboardType="numeric" value={longitude} onChangeText={setLongitude} />
-
-              <Text style={styles.label}>Radio (km)</Text>
-              <TextInput style={styles.input} keyboardType="numeric" value={radius} onChangeText={setRadius} />
-
-              <TouchableOpacity style={styles.button} onPress={applyFilters}>
-                <Text style={styles.buttonText}>Aplicar filtros</Text>
-              </TouchableOpacity>
-            </View>
-          )}
             <Text style={styles.resultsTitle}>Apartamentos disponibles</Text>
             <FlatList
               data={accommodations}
@@ -248,34 +295,10 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     backgroundColor: '#102437',
-    paddingVertical: 15,
+    paddingVertical: 18,
     paddingHorizontal: 20,
     borderBottomWidth: 1,
     borderColor: '#1B263B',
-  },
-  searchBox: {
-    backgroundColor: '#1B263B',
-    padding: 15,
-    borderRadius: 10,
-    marginVertical: 10,
-  },
-  label: {
-    color: '#E0E1DD',
-    fontSize: 16,
-    marginVertical: 5,
-  },
-  switchRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginVertical: 5,
-  },
-  input: {
-    backgroundColor: '#E0E1DD',
-    color: '#0D1B2A',
-    padding: 10,
-    borderRadius: 8,
-    marginVertical: 5,
   },
   headerText: {
     fontSize: 20,
@@ -285,57 +308,98 @@ const styles = StyleSheet.create({
   logoutText: {
     color: '#AFC1D6',
     fontWeight: 'bold',
+    fontSize: 14,
   },
   toggleButton: {
     backgroundColor: '#1B263B',
-    padding: 10,
-    borderRadius: 8,
-    marginVertical: 10,
+    padding: 12,
+    borderRadius: 10,
+    marginVertical: 15,
   },
   toggleText: {
     color: '#E0E1DD',
     textAlign: 'center',
+    fontSize: 16,
+  },
+  searchBox: {
+    backgroundColor: '#1B263B',
+    padding: 15,
+    borderRadius: 15,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOpacity: 0.15,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  label: {
+    color: '#E0E1DD',
+    fontSize: 15,
+    fontWeight: '500',
+    marginTop: 10,
+  },
+  input: {
+    backgroundColor: '#E0E1DD',
+    color: '#0D1B2A',
+    paddingVertical: 10,
+    paddingHorizontal: 12,
+    borderRadius: 8,
+    marginTop: 5,
+    fontSize: 15,
+  },
+  switchRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: 10,
   },
   resultsTitle: {
-    fontSize: 20,
+    fontSize: 22,
     fontWeight: 'bold',
     color: '#E0E1DD',
-    marginVertical: 10,
+    marginBottom: 15,
     textAlign: 'center',
   },
   card: {
     backgroundColor: '#1B263B',
-    borderRadius: 10,
+    borderRadius: 15,
     padding: 15,
     marginBottom: 20,
-    width: '100%',
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 6,
+    elevation: 2,
   },
   cardImage: {
     width: 300,
     height: 180,
-    borderRadius: 10,
+    borderRadius: 12,
     marginRight: 10,
   },
   cardTitle: {
     color: '#E0E1DD',
     fontSize: 18,
     fontWeight: 'bold',
+    flexShrink: 1,
   },
   cardText: {
-    color: '#E0E1DD',
+    color: '#AFC1D6',
     marginTop: 5,
+    fontSize: 14,
   },
   cardPrice: {
     color: '#E0E1DD',
     fontWeight: 'bold',
-    marginTop: 5,
+    marginTop: 6,
+    fontSize: 16,
   },
   newBadge: {
     backgroundColor: '#FF6B6B',
     color: 'white',
     paddingHorizontal: 8,
-    paddingVertical: 2,
-    borderRadius: 6,
+    paddingVertical: 3,
+    borderRadius: 8,
     fontSize: 12,
     fontWeight: 'bold',
   },
@@ -346,13 +410,15 @@ const styles = StyleSheet.create({
   },
   button: {
     backgroundColor: '#E0E1DD',
-    padding: 15,
+    paddingVertical: 12,
+    paddingHorizontal: 15,
     borderRadius: 10,
-    marginTop: 10,
+    marginTop: 20,
   },
   buttonText: {
     color: '#0D1B2A',
     fontWeight: 'bold',
     textAlign: 'center',
+    fontSize: 16,
   },
 });
