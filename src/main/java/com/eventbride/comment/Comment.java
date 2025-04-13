@@ -25,10 +25,9 @@ import lombok.Setter;
 @Table(name = "comments")
 public class Comment extends BaseEntity {
 
-    @Column(name = "comment_date", nullable = false)
-    @NotNull
+    @Column(name = "comment_date")
 	@DateTimeFormat(pattern = "yyyy/MM/dd")
-    private LocalDate CommentDate;
+    private LocalDate commentDate;
 
     @Column(name = "text", nullable = false)
     @NotBlank 

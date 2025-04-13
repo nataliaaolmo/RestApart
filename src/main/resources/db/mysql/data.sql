@@ -92,16 +92,16 @@ INSERT INTO bookings (user_id, booking_date, price, accommodation_id, start_date
 (9, '2025-06-03', 1200.0, 5, '2025-08-01', '2025-10-28');
 
 INSERT IGNORE INTO comments (id, comment_date, text, rating, accommodation_id, author_id, student_id) VALUES
-(1, '2024-07-14', 'No me gustó la experiencia, esperaba más.', 5, NULL, 1, 9),
-(2, '2024-08-22', 'Muy cómodo y bien ubicado.', 2, NULL, 7, 9),
-(3, '2024-10-05', 'El proceso de reserva fue fácil y rápido.', 4, NULL, 8, 9),
+(1, '2024-07-14', 'No me gustó la experiencia, esperaba más.', 5, 1, NULL, 9),
+(2, '2024-08-22', 'Muy cómodo y bien ubicado.', 2, 1, NULL, 9),
+(3, '2024-10-05', 'El proceso de reserva con ella fue fácil y rápido.', 4, NULL, 8, 9),
 (4, '2024-09-11', 'Excelente servicio y atención.', 1, NULL, 4, 8),
-(5, '2025-01-21', 'El dueño fue muy amable y servicial.', 3, 8, NULL, 8),
+(5, '2025-01-21', 'El dueño fue muy amable y servicial.', 3, NULL, 3, 8),
 (6, '2025-02-10', 'Muy cómodo y bien ubicado.', 1, 1, NULL, 7),
 (7, '2025-02-07', 'Gran experiencia, volvería a reservar aquí.', 2, 3, NULL, 7),
-(8, '2024-08-28', 'El proceso de reserva fue fácil y rápido.', 3, 10, NULL, 3),
-(9, '2024-09-26', 'El WiFi era lento en algunas áreas.', 2, NULL, 7, 9),
-(10, '2025-01-18', 'El WiFi era lento en algunas áreas.', 1, NULL, 9, 5);
+(8, '2024-08-28', 'Muy buena gente', 5, NULL, 5, 3),
+(9, '2024-09-26', 'El WiFi era lento en algunas áreas.', 2, 6, NULL, 9),
+(10, '2025-01-18', 'El WiFi era lento en algunas áreas.', 1, 6, NULL, 5);
 
 INSERT INTO messages (message_date, text, sender_id, receiver_id) VALUES
 ('2025-03-01', 'Hola, ¿te interesa compartir alojamiento?', 1, 3),

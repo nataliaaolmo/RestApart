@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Image, ScrollView, TextInput, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, StyleSheet, Image, ScrollView, TextInput, TouchableOpacity, Alert, Modal } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import api from '../../app/api';
 import { RouteProp, useRoute, useNavigation } from '@react-navigation/native';
@@ -35,6 +35,10 @@ export default function ProfileScreen() {
   const { id } = route.params || {};
   const userId = id ? parseInt(id, 10) : undefined;
   const navigation = useNavigation();
+  const [comments, setComments] = useState<{ text: string; rating: number; commentDate?: string; student?: { user?: { profilePicture?: string; firstName?: string; lastName?: string } } }[]>([]);
+  const [text, setText] = useState('');
+  const [rating, setRating] = useState(0);
+  const [commentModalVisible, setCommentModalVisible] = useState(false);
 
   const fetchProfile = async () => {
     try {
@@ -56,6 +60,7 @@ export default function ProfileScreen() {
 
   useEffect(() => {
     fetchProfile();
+    findComments();
   }, []);
 
   useLayoutEffect(() => {
@@ -65,6 +70,43 @@ export default function ProfileScreen() {
       navigation.setOptions({ title: screenTitle });
     }
   }, [userData]);
+
+    const findComments = async () => {
+      try { 
+        const token = localStorage.getItem('jwt');
+        const response = await api.get(`/comments/users/${userId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        setComments(response.data);
+      }
+      catch (error) { 
+        console.error('Error buscando comentarios', error);
+      }
+    };  
+  
+    const makeComment = async () => {
+      try {
+        const token = localStorage.getItem('jwt');
+        const formData = new FormData();
+  
+        const commentData = {
+          text: text,
+          rating: rating,
+        };
+  
+        const response = await api.post(`/comments/users/${userId}`, commentData, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setComments([...comments, response.data]);
+        setCommentModalVisible(false);
+        setText('');
+        setRating(0);
+  
+      } catch (error) {
+        console.error('Error al crear alojamiento:', error);
+        Alert.alert('Error', 'No se pudo crear el alojamiento');
+      }
+    }; 
   
 
   const handleImagePick = async () => {
@@ -109,7 +151,6 @@ export default function ProfileScreen() {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
-            // ⚠️ No pongas Content-Type
           },
           body: formData,
         });
@@ -256,30 +297,101 @@ export default function ProfileScreen() {
             <>
               <Text style={styles.detail}>{userData.experienceYears} años de experiencia</Text>
               <Text style={styles.rating}>4,3 ⭐</Text>
-              {userId && (
-                <View style={styles.buttonBox}>
-                  <Text
-                    style={styles.messageButton}
-                    onPress={() => router.push({ pathname: '/private-chat', params: { id: userData?.id } })}
-                  >
-                    Enviar mensaje
-                  </Text>
-                </View>
-              )}
-
-              <View style={styles.commentBox}>
-                <Text style={styles.commentRating}>4⭐</Text>
-                <Text style={styles.commentText}>Hugo siempre te ayuda cuando tienes problemas pero a veces tarda en responder</Text>
-              </View>
-            </>
+              </>
           )}
-
-          <TouchableOpacity style={styles.saveButton} onPress={() => setEditing(true)}>
-            <Text style={styles.saveButtonText}>Editar perfil</Text>
-          </TouchableOpacity>
         </>
       )}
+<View style={{ marginTop: 30 }}>
+  <Text style={styles.sectionTitle}>Comentarios</Text>
+  {comments.length > 0 ? (
+    comments.map((comment, index) => (
+      <View key={index} style={styles.commentBox}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 5 }}>
+          {comment.student?.user?.profilePicture && (
+            <Image
+              source={{ uri: `http://localhost:8080/images/${comment.student.user.profilePicture}` }}
+              style={{ width: 30, height: 30, borderRadius: 15, marginRight: 8 }}
+            />
+          )}
+          <View>
+            <Text style={styles.commentAuthor}>
+              {comment.student?.user?.firstName} {comment.student?.user?.lastName}
+            </Text>
+            <Text style={styles.commentDate}>
+              {comment.commentDate ? new Date(comment.commentDate).toLocaleDateString() : 'Fecha no disponible'}
+            </Text>
+          </View>
+        </View>
+        <Text style={styles.commentText}>{comment.text}</Text>
+        <Text style={styles.commentRating}>⭐ {comment.rating}</Text>
+      </View>
+    ))
+  ) : (
+    <Text style={styles.noComments}>Todavía no hay valoraciones</Text>
+  )}
+</View>
+
+      {userId && (
+        <TouchableOpacity
+        style={styles.addCommentButton}
+        onPress={() => setCommentModalVisible(true)}
+      >
+        <Text style={styles.addCommentButtonText}>Añadir Comentario</Text>
+      </TouchableOpacity>
+    )}
+
+    <TouchableOpacity style={styles.saveButton} onPress={() => setEditing(true)}>
+      <Text style={styles.saveButtonText}>Editar perfil</Text>
+    </TouchableOpacity>
+
+            <Modal
+              visible={commentModalVisible}
+              transparent
+              animationType="slide"
+              onRequestClose={() => setCommentModalVisible(false)}
+            >
+              <View style={styles.modalBackground2}>
+                <View style={styles.modalBox2}>
+                  <Text style={styles.modalTitle2}>Añadir Comentario</Text>
+      
+                  <TextInput
+                    style={styles.input}
+                    placeholder="Escribe tu comentario"
+                    placeholderTextColor="#AFC1D6"
+                    value={text}
+                    onChangeText={setText}
+                  />
+      
+                  <TextInput
+                    style={styles.input2}
+                    placeholder="Calificación (1-5)"
+                    placeholderTextColor="#AFC1D6"
+                    keyboardType="numeric"
+                    value={rating.toString()}
+                    onChangeText={(value) => setRating(Number(value))}
+                  />
+      
+                  <View style={styles.modalButtons}>
+                    <TouchableOpacity
+                      style={styles.modalButton2}
+                      onPress={makeComment}
+                    >
+                      <Text style={styles.modalButtonText2}>Aceptar</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity
+                      style={styles.modalButtonCancel}
+                      onPress={() => setCommentModalVisible(false)}
+                    >
+                      <Text style={styles.modalButtonText2}>Cancelar</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              </View>
+            </Modal>
+      
     </ScrollView>
+
+    
   );
 }
 
@@ -312,4 +424,80 @@ const styles = StyleSheet.create({
   input: { backgroundColor: '#E0E1DD', color: '#000', marginBottom: 10, padding: 10, borderRadius: 10 },
   saveButton: { backgroundColor: '#E0E1DD', padding: 15, borderRadius: 10, marginTop: 20 },
   saveButtonText: { color: '#0D1B2A', fontWeight: 'bold', textAlign: 'center' },
+  addCommentButton: {
+    backgroundColor: '#A8DADC',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 20,
+    alignSelf: 'center',
+  },
+  addCommentButtonText: {
+    color: '#0D1B2A',
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  modalBackground2: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalBox2: {
+    backgroundColor: '#fff',
+    padding: 20,
+    borderRadius: 10,
+    width: '80%',
+  },
+  modalTitle2: {
+    fontWeight: 'bold',
+    fontSize: 18,
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+  input2: {
+    borderWidth: 1,
+    borderColor: '#AFC1D6',
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 15,
+    color: '#0D1B2A',
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  modalButton2: {
+    backgroundColor: '#A8DADC',
+    padding: 12,
+    borderRadius: 8,
+    flex: 1,
+    marginRight: 5,
+  },
+  modalButtonCancel: {
+    backgroundColor: '#E63946',
+    padding: 12,
+    borderRadius: 8,
+    flex: 1,
+    marginLeft: 5,
+  },
+  modalButtonText2: {
+    color: '#fff',
+    textAlign: 'center',
+    fontWeight: 'bold',
+  },
+  commentAuthor: {
+    fontWeight: 'bold',
+    fontSize: 15,
+    color: '#0D1B2A',
+  },
+  commentDate: {
+    color: '#4A4A4A',
+    fontSize: 12,
+  },
+  noComments: {
+    color: '#AFC1D6',
+    fontStyle: 'italic',
+    marginTop: 10,
+  },
+  
 });

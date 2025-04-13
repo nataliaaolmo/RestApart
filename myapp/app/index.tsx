@@ -1,23 +1,111 @@
-import { View, Text, Image, StyleSheet, TouchableOpacity } from 'react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { View, Text, Image, StyleSheet, TouchableOpacity, Animated, Pressable } from 'react-native';
 import { useRouter } from 'expo-router';
-import { ThemedView } from '@/components/ThemedView';
+import * as Localization from 'expo-localization';
+import { I18n } from 'i18n-js';
+
+const i18n = new I18n({
+  en: {
+    welcome: 'Welcome to Rentapart',
+    start: 'START',
+    continueAs: (name: string) => `Continue as ${name}`,
+    slogans: [
+      'Find your perfect place',
+      'Your next shared home is waiting',
+      'Affordable rooms for students',
+    ],
+  },
+  es: {
+    welcome: 'Bienvenido a Rentapart',
+    start: 'EMPEZAR',
+    continueAs: (name: string) => `Continuar como ${name}`,
+    slogans: [
+      'Encuentra tu piso ideal',
+      'Tu próximo hogar compartido te espera',
+      'Habitaciones asequibles para estudiantes',
+    ],
+  },
+});
+
+i18n.locale = Localization.locale;
+i18n.enableFallback = true;
 
 export default function HomeScreen() {
   const router = useRouter();
+  const [sloganIndex, setSloganIndex] = useState(0);
+  const [fadeAnim] = useState(new Animated.Value(0));
+  const [buttonScale] = useState(new Animated.Value(1));
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const [userName, setUserName] = useState('');
+
+  useEffect(() => {
+    const token = localStorage.getItem('jwt');
+    const name = localStorage.getItem('name');
+    if (token && name) {
+      setIsLoggedIn(true);
+      setUserName(name);
+    }
+  }, []);
+
+  useEffect(() => {
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 1000,
+      useNativeDriver: true,
+    }).start();
+
+    const interval = setInterval(() => {
+      setSloganIndex(prev => (prev + 1) % i18n.t('slogans').length);
+    }, 3000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  const handleStart = () => {
+    if (isLoggedIn) {
+      router.push('/welcome-screen');
+    } else {
+      router.push('/role-selection');
+    }
+  };
+
+  const handlePressIn = () => {
+    Animated.spring(buttonScale, {
+      toValue: 1.1,
+      useNativeDriver: true,
+    }).start();
+  };
+
+  const handlePressOut = () => {
+    Animated.spring(buttonScale, {
+      toValue: 1,
+      useNativeDriver: true,
+    }).start();
+  };
 
   return (
-    <ThemedView style={styles.container}>
-      {/* Logo */}
-      <Image source={require('@/assets/images/logo-restapart.png')} style={styles.logo} />
+    <View style={styles.container}>
+      <Animated.Image
+        source={require('@/assets/images/logo-restapart.png')}
+        style={[styles.logo, { opacity: fadeAnim }]}
+      />
 
-      {/* Texto de bienvenida */}
-      <Text style={styles.welcomeText}>Bienvenido a Rentapart</Text>
+      <Animated.Text style={[styles.welcomeText, { opacity: fadeAnim }]}>
+        {i18n.t('welcome')}
+      </Animated.Text>
 
-      {/* Botón para comenzar */}
-      <TouchableOpacity style={styles.button} onPress={() => router.push('/role-selection')}>
-        <Text style={styles.buttonText}>EMPEZAR</Text>
-      </TouchableOpacity>
-    </ThemedView>
+      <Animated.Text style={[styles.slogan, { opacity: fadeAnim }]}>
+        {i18n.t('slogans')[sloganIndex]}
+      </Animated.Text>
+
+      <Pressable onPressIn={handlePressIn} onPressOut={handlePressOut} onPress={handleStart}>
+        <Animated.View style={[styles.button, { transform: [{ scale: buttonScale }] }]}>
+          <Text style={styles.buttonText}>
+            {isLoggedIn ? i18n.t('continueAs', { name: userName }) : i18n.t('start')}
+          </Text>
+        </Animated.View>
+      </Pressable>
+    </View>
   );
 }
 
@@ -51,5 +139,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 'bold',
     color: '#E0E1DD',
+  },
+  slogan: {
+    fontSize: 16,
+    color: '#415A77',
+    marginBottom: 30,
+    fontStyle: 'italic',
+    textAlign: 'center',
+    paddingHorizontal: 30,
   },
 });

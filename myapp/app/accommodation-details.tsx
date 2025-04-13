@@ -2,7 +2,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, StyleSheet, Image, ScrollView, FlatList,
-  Alert, Linking, TouchableOpacity, Modal, Dimensions
+  Alert, Linking, TouchableOpacity, Modal, Dimensions,
+  TextInput
 } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import api from './api';
@@ -20,6 +21,10 @@ export default function AccommodationDetailsScreen() {
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
   const [selectedUserId, setSelectedUserId] = useState<number | null>(null);
   const flatListRef = useRef<FlatList<any>>(null);
+  const [comments, setComments] = useState<{ text: string; rating: number }[]>([]);
+  const [text, setText] = useState('');
+  const [rating, setRating] = useState(0);
+  const [commentModalVisible, setCommentModalVisible] = useState(false);
 
   const stayRange = {
     startDate: '2025-04-01',
@@ -29,7 +34,45 @@ export default function AccommodationDetailsScreen() {
   useEffect(() => {
     findAccommodation();
     loadTenants();
+    findComments();
   }, []);
+
+  const findComments = async () => {
+    try { 
+      const token = localStorage.getItem('jwt');
+      const response = await api.get(`/comments/accomodations/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setComments(response.data);
+    }
+    catch (error) { 
+      console.error('Error buscando comentarios', error);
+    }
+  };  
+
+  const makeComment = async () => {
+    try {
+      const token = localStorage.getItem('jwt');
+      const formData = new FormData();
+
+      const commentData = {
+        text: text,
+        rating: rating,
+      };
+
+      const response = await api.post(`/comments/accomodations/${id}`, commentData, {
+        headers: { Authorization: `Bearer ${token}` }
+      });
+      setComments([...comments, response.data]);
+      setCommentModalVisible(false);
+      setText('');
+      setRating(0);
+
+    } catch (error) {
+      console.error('Error al crear alojamiento:', error);
+      Alert.alert('Error', 'No se pudo crear el alojamiento');
+    }
+  }; 
 
   const findAccommodation = async () => {
     try {
@@ -157,9 +200,19 @@ export default function AccommodationDetailsScreen() {
           <Image source={require('../assets/images/map.jpg')} style={styles.mapImage} />
 
           <Text style={styles.sectionTitle}>Comentarios</Text>
-          <View style={styles.commentBox}><Text>⭐ 3,5 - Apartamento pequeño pero bien ubicado.</Text></View>
-          <View style={styles.commentBox}><Text>⭐ 5 - Todo perfecto, repetiría sin duda.</Text></View>
+          {comments.map((comment, index) => (
+            <View key={index} style={styles.commentBox}>
+              <Text>{comment.text}</Text>
+              <Text>⭐ {comment.rating}</Text>              
+            </View>
+          ))}
 
+          <TouchableOpacity
+            style={styles.addCommentButton}
+            onPress={() => setCommentModalVisible(true)}
+          >
+            <Text style={styles.addCommentButtonText}>Añadir Comentario</Text>
+          </TouchableOpacity>
           <View style={styles.footer}>
             <Text style={styles.price}>{price}€/mes</Text>
             <TouchableOpacity onPress={initiatePaypalPayment}>
@@ -169,7 +222,51 @@ export default function AccommodationDetailsScreen() {
         </View>
       </ScrollView>
 
-      {/* MODAL de FOTOS */}
+      <Modal
+        visible={commentModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setCommentModalVisible(false)}
+      >
+        <View style={styles.modalBackground2}>
+          <View style={styles.modalBox2}>
+            <Text style={styles.modalTitle2}>Añadir Comentario</Text>
+
+            <TextInput
+              style={styles.input}
+              placeholder="Escribe tu comentario"
+              placeholderTextColor="#AFC1D6"
+              value={text}
+              onChangeText={setText}
+            />
+
+            <TextInput
+              style={styles.input}
+              placeholder="Calificación (1-5)"
+              placeholderTextColor="#AFC1D6"
+              keyboardType="numeric"
+              value={rating.toString()}
+              onChangeText={(value) => setRating(Number(value))}
+            />
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={styles.modalButton2}
+                onPress={makeComment}
+              >
+                <Text style={styles.modalButtonText2}>Aceptar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.modalButtonCancel}
+                onPress={() => setCommentModalVisible(false)}
+              >
+                <Text style={styles.modalButtonText2}>Cancelar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
       <Modal visible={photosModalVisible} transparent animationType="slide">
         <View style={styles.modalContainer}>
           <FlatList
@@ -230,7 +327,6 @@ export default function AccommodationDetailsScreen() {
         </View>
       </Modal>
 
-      {/* MODAL de acciones (ver perfil / chatear) */}
       <Modal
         visible={actionModalVisible}
         transparent
@@ -423,5 +519,66 @@ const styles = StyleSheet.create({
     color: '#AFC1D6',
     textAlign: 'center',
     marginTop: 10,
+  },
+  addCommentButton: {
+    backgroundColor: '#A8DADC',
+    padding: 12,
+    borderRadius: 8,
+    marginTop: 20,
+    alignSelf: 'center',
+  },
+  addCommentButtonText: {
+    color: '#0D1B2A',
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+  modalBackground2: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalBox2: {
+    backgroundColor: '#fff',
+    padding: 20,
+    borderRadius: 10,
+    width: '80%',
+  },
+  modalTitle2: {
+    fontWeight: 'bold',
+    fontSize: 18,
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+  input: {
+    borderWidth: 1,
+    borderColor: '#AFC1D6',
+    borderRadius: 8,
+    padding: 10,
+    marginBottom: 15,
+    color: '#0D1B2A',
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  modalButton2: {
+    backgroundColor: '#A8DADC',
+    padding: 12,
+    borderRadius: 8,
+    flex: 1,
+    marginRight: 5,
+  },
+  modalButtonCancel: {
+    backgroundColor: '#E63946',
+    padding: 12,
+    borderRadius: 8,
+    flex: 1,
+    marginLeft: 5,
+  },
+  modalButtonText2: {
+    color: '#fff',
+    textAlign: 'center',
+    fontWeight: 'bold',
   },
 });
