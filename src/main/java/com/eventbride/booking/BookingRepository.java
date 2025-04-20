@@ -14,7 +14,7 @@ public interface BookingRepository extends CrudRepository<Booking, Integer>{
 
     List<Booking> findAll();
 
-    @Query("SELECT b FROM Booking b WHERE b.student.id =: studentId")
+    @Query("SELECT b FROM Booking b WHERE b.student.id = :studentId")
     List<Booking> findBookingsByStudent(Integer studentId);
 
     @Query("SELECT COUNT(b) FROM Booking b WHERE b.accommodation.id = :accommodationId " +

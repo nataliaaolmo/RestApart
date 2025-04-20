@@ -179,13 +179,6 @@ public class UserServiceTest {
     }
 
     @Test
-    void testDeleteUser_shouldCallRepositoryDelete() {
-        userService.deleteUser(123);
-
-        verify(userRepository).deleteById(123);
-    }
-
-    @Test
     void testRegister_validStudent_shouldReturnSuccessResponse() {
         ReqRes req = new ReqRes();
         req.setUsername("marta");

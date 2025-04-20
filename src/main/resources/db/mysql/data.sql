@@ -85,12 +85,12 @@ INSERT INTO students (user_id, is_smoker, academic_career, hobbies) VALUES
 (8, true, 'Medicine', 'Cooking, Traveling'),
 (9, false, 'Architecture', 'Photography, Traveling');
 
-INSERT INTO bookings (user_id, booking_date, price, accommodation_id, start_date, end_date) VALUES
-(3, '2025-01-03', 400.0, 1, '2025-04-01', '2025-06-20'),
-(5, '2025-02-08', 450.0, 2, '2025-05-01', '2025-07-01'),
-(7, '2025-04-08', 850.0, 3, '2025-06-15', '2025-10-15'),
-(8, '2025-05-03', 475.0, 4, '2025-04-01', '2025-05-01'),
-(9, '2025-06-03', 1200.0, 5, '2025-08-01', '2025-10-28');
+INSERT INTO bookings (student_id, booking_date, price, accommodation_id, start_date, end_date) VALUES
+(1, '2025-01-03', 400.0, 1, '2025-04-01', '2025-06-20'),
+(2, '2025-02-08', 450.0, 2, '2025-05-01', '2025-07-01'),
+(3, '2025-04-08', 850.0, 3, '2025-06-15', '2025-10-15'),
+(4, '2025-05-03', 475.0, 4, '2025-04-01', '2025-05-01'),
+(5, '2025-06-03', 1200.0, 5, '2025-08-01', '2025-10-28');
 
 INSERT IGNORE INTO comments (id, comment_date, text, rating, accommodation_id, author_id, student_id) VALUES
 (1, '2024-07-14', 'No me gustó la experiencia, esperaba más.', 5, 1, NULL, 9),

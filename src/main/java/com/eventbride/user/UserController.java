@@ -86,7 +86,6 @@ public class UserController {
         }
 
         try {
-            // 1. Buscar el usuario por username
             String username = userDetails.getUsername();
             Optional<User> optionalUser = userRepository.findByUsername(username);
             if (optionalUser.isEmpty()) {
@@ -95,20 +94,17 @@ public class UserController {
 
             User user = optionalUser.get();
 
-            // 2. Eliminar la foto anterior (si no es la default)
-            String oldFilename = user.getPhoto(); // o getProfilePicture(), depende de tu modelo
+            String oldFilename = user.getPhoto(); 
             if (oldFilename != null && !oldFilename.equals("default.png")) {
                 Path oldFilePath = Paths.get("src/main/resources/static/images", oldFilename);
                 Files.deleteIfExists(oldFilePath);
             }
 
-            // 3. Guardar nueva imagen
             String newFilename = UUID.randomUUID() + "_" + file.getOriginalFilename();
             Path newFilePath = Paths.get("src/main/resources/static/images", newFilename);
             Files.copy(file.getInputStream(), newFilePath, StandardCopyOption.REPLACE_EXISTING);
 
-            // 4. Actualizar la foto del usuario
-            user.setPhoto(newFilename); // o setProfilePicture()
+            user.setPhoto(newFilename); 
             userRepository.save(user);
 
             return ResponseEntity.ok(newFilename);
@@ -134,14 +130,4 @@ public class UserController {
 			return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
 		}
 	}
-
-    @DeleteMapping("/{id}")
-    public ResponseEntity<?> deleteUser(@PathVariable Integer id) {
-        try {
-            userService.deleteUser(id);
-            return ResponseEntity.ok("Usuario eliminado correctamente");
-        } catch (Exception e) {
-            return ResponseEntity.status(404).body("Usuario no encontrado");
-        }
-    }
 }

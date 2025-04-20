@@ -41,7 +41,7 @@ public class Booking extends BaseEntity {
     private DateRange stayRange;
 
     @ManyToOne(optional = false)
-    @JoinColumn(name = "user_id", referencedColumnName = "user_id")
+    @JoinColumn(name = "student_id")
 	@OnDelete(action = OnDeleteAction.CASCADE)
 	private Student student;
 

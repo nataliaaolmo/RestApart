@@ -23,7 +23,7 @@ import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
 import org.springframework.dao.DataIntegrityViolationException;
 
-public class AccommodationServiceTest {
+public class AccommodationUnitaryTest {
 
     @Mock
     private AccommodationRepository accommodationRepository;
