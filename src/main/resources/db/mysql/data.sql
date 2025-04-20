@@ -104,10 +104,5 @@ INSERT IGNORE INTO comments (id, comment_date, text, rating, accommodation_id, a
 (9, '2024-09-26', 'El WiFi era lento en algunas áreas.', 2, 6, NULL, 9),
 (10, '2025-01-18', 'El WiFi era lento en algunas áreas.', 1, 6, NULL, 5);
 
-INSERT INTO messages (message_date, text, sender_id, receiver_id) VALUES
-('2025-03-01', 'Hola, ¿te interesa compartir alojamiento?', 1, 3),
-('2025-03-02', 'Sí, ¿cuándo podríamos hablar?', 3, 1),
-('2025-03-03', 'Hola, soy el propietario, ¿tienes dudas sobre el apartamento?', 2, 5);
-
 
 
