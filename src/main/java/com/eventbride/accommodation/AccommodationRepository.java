@@ -25,22 +25,14 @@ public interface AccommodationRepository extends CrudRepository<Accommodation, I
     "    (SELECT COUNT(b) FROM Booking b WHERE b.accommodation = a " +
     "    AND b.stayRange.startDate < :endDate " +
     "    AND b.stayRange.endDate > :startDate)) >= :students) " +
-    "AND a.advertisement.isVisible = true " +
-    "AND (6371 * acos(" +
-    "       cos(radians(:latitude)) * cos(radians(a.latitud)) * " +
-    "       cos(radians(a.longitud) - radians(:longitude)) + " +
-    "       sin(radians(:latitude)) * sin(radians(a.latitud))" +
-    "   ) <= :radius)"
-    )
-    List<Accommodation> findFilteredAccommodations(
-        @Param("maxPrice") Double maxPrice, 
+    "AND a.advertisement.isVisible = true")
+    List<Accommodation> findFilteredAccommodationsBase(
+        @Param("maxPrice") Double maxPrice,
         @Param("startDate") LocalDate startDate,
-        @Param("endDate") LocalDate endDate, 
-        @Param("students") Integer students,
-        @Param("latitude") Double latitude, 
-        @Param("longitude") Double longitude,
-        @Param("radius") Double radius
-    );
+        @Param("endDate") LocalDate endDate,
+        @Param("students") Integer students
+
+    );    
 
     @Query("SELECT DISTINCT b.student FROM Booking b WHERE b.accommodation.id = :accommodationId " +
         "AND b.stayRange.startDate < :endDate " + 

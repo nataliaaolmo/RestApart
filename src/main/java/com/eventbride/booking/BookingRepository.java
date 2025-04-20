@@ -8,7 +8,7 @@ import org.springframework.data.repository.CrudRepository;
 import org.springframework.data.repository.query.Param;
 
 import com.eventbride.accommodation.Accommodation;
-
+import com.eventbride.student.Student;
 
 public interface BookingRepository extends CrudRepository<Booking, Integer>{
 
@@ -25,5 +25,8 @@ public interface BookingRepository extends CrudRepository<Booking, Integer>{
                             @Param("endDate") LocalDate endDate);
 
     void deleteByAccommodation(Accommodation accommodation);
+
+    @Query("SELECT b FROM Booking b WHERE b.student = :student")
+    List<Booking> findAllByUser(Student student);
 
 }

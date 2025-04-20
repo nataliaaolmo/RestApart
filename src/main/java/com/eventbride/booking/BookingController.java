@@ -20,6 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
 import com.eventbride.student.Student;
 import com.eventbride.student.StudentRepository;
 import com.eventbride.user.User;
+import com.eventbride.user.UserRepository;
 import com.eventbride.accommodation.Accommodation;
 import com.eventbride.accommodation.AccommodationRepository;
 
@@ -33,17 +34,26 @@ public class BookingController {
     private final BookingService bookingService;
     private final StudentRepository studentRepository;
     private final AccommodationRepository accommodationRepository;
+    private final UserRepository userRepository;
 
     @Autowired
-    public BookingController(BookingService bookingService, StudentRepository studentRepository, AccommodationRepository accommodationRepository) {
+    public BookingController(BookingService bookingService, StudentRepository studentRepository, AccommodationRepository accommodationRepository, UserRepository userRepository) {
         this.bookingService = bookingService;
         this.studentRepository=studentRepository;
         this.accommodationRepository = accommodationRepository;
+        this.userRepository = userRepository;
     }
 
     @GetMapping
     public List<Booking> findAllBookings() {
         return bookingService.findAll();
+    }
+
+    @GetMapping("/{userId}")
+    public List<Booking> findAllBookingsByUser(@PathVariable Integer userId) {
+        User user = userRepository.findById(userId)
+            .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
+        return bookingService.findAllByUser(user);
     }
 
     @PostMapping("/{accommodationId}")

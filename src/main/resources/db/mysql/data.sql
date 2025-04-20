@@ -1,3 +1,4 @@
+-- encoding: UTF-8
 INSERT INTO users (id, username, password, role, first_name, last_name, email, telephone, date_of_birth, gender, description, photo, is_verified) VALUES
 (1, 'alice123', '$2a$10$gyqEuh5bpJVhwuN44YwkjeaR6/1u2KqFTGhjYxWtH27Dmka569AmK', 'OWNER', 'Alice', 'Johnson', 'alice@example.com', '123456789', '1992-03-11', 'WOMAN', 'Descripción Alice', 'alice.jpg', true),
 (2, 'bob456', '$2a$10$gyqEuh5bpJVhwuN44YwkjeaR6/1u2KqFTGhjYxWtH27Dmka569AmK', 'OWNER', 'Bob', 'Smith', 'bob@example.com', '987654321', '1999-12-07', 'MAN', 'Descripción Bob', 'bob.jpg', false),
@@ -18,29 +19,29 @@ INSERT INTO owners (user_id, experience_years) VALUES
 (10, 3);
 
 INSERT IGNORE INTO advertisements (id, is_visible, title) VALUES
-(1, true, 'Oferta Especial en Madrid'),
-(2, false, 'Apartamento en Barcelona'),
-(3, true, 'Alquiler en Valencia'),
-(4, true, 'Casa en Sevilla'),
-(5, false, 'Estudio en Bilbao'),
-(6, true, 'Habitación en Granada'),
-(7, true, 'Piso en Málaga'),
-(8, false, 'Chalet en Zaragoza'),
-(9, true, 'Dúplex en Alicante'),
-(10, true, 'Loft en Salamanca');
+(1, true, 'Piso cerca de Reina Mercedes'),
+(2, false, 'Habitación junto a ETSII'),
+(3, true, 'Apartamento en Viapol'),
+(4, true, 'Estudio junto a Ramón y Cajal'),
+(5, false, 'Piso compartido en Los Bermejales'),
+(6, true, 'Dúplex moderno en El Porvenir'),
+(7, true, 'Habitación individual en Reina Mercedes'),
+(8, false, 'Apartamento tranquilo en Heliópolis'),
+(9, true, 'Ático con vistas cerca del Rectorado'),
+(10, true, 'Chalet para estudiantes en Felipe II');
 
 INSERT IGNORE INTO accommodations (id, rooms, beds, price_per_day, price_per_month, description, latitud, longitud, start_date, end_date, students, wifi, is_easy_parking, advertisement_id, owner_id) 
 VALUES 
-(1, 3, 4, 50.00, 1200.00, 'Apartamento en el centro de Sevilla', 37.3886, -5.9823, '2025-03-01', '2025-12-31', 2, true, false, 1, 1),
-(2, 2, 3, 35.00, 900.00, 'Piso acogedor cerca de la Giralda', 37.3879, -5.9933, '2025-04-01', '2025-11-30', 1, true, true, 2, 2),
-(3, 4, 6, 70.00, 2000.00, 'Casa espaciosa en Triana', 37.3826, -6.0004, '2025-05-15', '2025-10-15', 3, true, false, 3, 4),
-(4, 1, 1, 25.00, 600.00, 'Estudio en la Macarena', 37.4085, -5.9822, '2025-02-01', '2025-08-31', 1, false, true, 4, 4),
-(5, 2, 3, 40.00, 1000.00, 'Apartamento en la Alameda', 37.4044, -5.9869, '2025-06-01', '2025-12-15', 2, true, false, 5, 1),
-(6, 3, 4, 55.00, 1400.00, 'Piso moderno en Los Remedios', 37.3721, -5.9902, '2025-07-10', '2025-10-30', 2, true, true, 6, 6),
-(7, 5, 8, 80.00, 2500.00, 'Chalet con jardín en Nervión', 37.3828, -5.9704, '2025-03-01', '2025-11-01', 4, true, true, 7, 2),
-(8, 1, 2, 30.00, 750.00, 'Habitación en piso compartido en San Bernardo', 37.3771, -5.9873, '2025-01-15', '2025-09-30', 1, true, false, 8, 6),
-(9, 2, 2, 45.00, 1100.00, 'Ático con terraza en Sevilla Este', 37.3952, -5.9426, '2025-05-01', '2025-10-01', 2, true, true, 9, 2),
-(10, 4, 5, 65.00, 1800.00, 'Dúplex lujoso en el Arenal', 37.3863, -5.9982, '2025-06-15', '2025-12-31', 3, true, false, 10, 10);
+(1, 3, 4, 50.00, 1200.00, 'Piso amplio ideal para estudiantes a 5 minutos de Reina Mercedes', 37.3577, -5.9869, '2025-03-01', '2025-12-31', 2, true, false, 1, 1),
+(2, 2, 3, 35.00, 900.00, 'Habitación en piso compartido justo al lado de la ETSII', 37.3586, -5.9850, '2025-04-01', '2025-11-30', 1, true, true, 2, 2),
+(3, 4, 6, 70.00, 2000.00, 'Apartamento con buenas conexiones cerca de Viapol', 37.3760, -5.9768, '2025-05-15', '2025-10-15', 3, true, false, 3, 4),
+(4, 1, 1, 25.00, 600.00, 'Estudio acogedor a un paso del campus Ramón y Cajal', 37.3791, -5.9776, '2025-02-01', '2025-08-31', 1, false, true, 4, 4),
+(5, 2, 3, 40.00, 1000.00, 'Piso grande con terraza en Los Bermejales, ideal para compartir', 37.3479, -5.9901, '2025-06-01', '2025-12-15', 2, true, false, 5, 1),
+(6, 3, 4, 55.00, 1400.00, 'Dúplex moderno en zona El Porvenir, cerca de varias facultades', 37.3748, -5.9784, '2025-07-10', '2025-10-30', 2, true, true, 6, 6),
+(7, 5, 8, 80.00, 2500.00, 'Habitación individual en piso de estudiantes por Reina Mercedes', 37.3579, -5.9857, '2025-03-01', '2025-11-01', 4, true, true, 7, 2),
+(8, 1, 2, 30.00, 750.00, 'Apartamento tranquilo en Heliópolis con buen ambiente', 37.3513, -5.9871, '2025-01-15', '2025-09-30', 1, true, false, 8, 6),
+(9, 2, 2, 45.00, 1100.00, 'Ático con terraza y vistas, junto al Rectorado', 37.3845, -5.9879, '2025-05-01', '2025-10-01', 2, true, true, 9, 2),
+(10, 4, 5, 65.00, 1800.00, 'Chalet grande en zona Felipe II, ideal para grupos de estudio', 37.3711, -5.9735, '2025-06-15', '2025-12-31', 3, true, false, 10, 10);
 
 INSERT INTO accommodation_images (accommodation_id, image_url) VALUES 
 (1, 'piso1_1.jpg'),
@@ -99,7 +100,7 @@ INSERT IGNORE INTO comments (id, comment_date, text, rating, accommodation_id, a
 (5, '2025-01-21', 'El dueño fue muy amable y servicial.', 3, NULL, 3, 8),
 (6, '2025-02-10', 'Muy cómodo y bien ubicado.', 1, 1, NULL, 7),
 (7, '2025-02-07', 'Gran experiencia, volvería a reservar aquí.', 2, 3, NULL, 7),
-(8, '2024-08-28', 'Muy buena gente', 5, NULL, 5, 3),
+(8, '2024-08-28', 'Muy buena gente', 5 , NULL, 5, 3),
 (9, '2024-09-26', 'El WiFi era lento en algunas áreas.', 2, 6, NULL, 9),
 (10, '2025-01-18', 'El WiFi era lento en algunas áreas.', 1, 6, NULL, 5);
 

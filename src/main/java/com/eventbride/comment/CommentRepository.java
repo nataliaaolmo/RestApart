@@ -18,4 +18,10 @@ public interface CommentRepository extends CrudRepository<Comment, Integer>{
 
     @Query("SELECT c FROM Comment c WHERE c.user = :user")
     List<Comment> findAllByUser(User user); 
+
+    @Query("SELECT AVG(c.rating) FROM Comment c WHERE c.accommodation = :accommodation")
+    Double averageRatingPerAccommodation(Accommodation accommodation);
+
+    @Query("SELECT AVG(c.rating) FROM Comment c WHERE c.user = :user")
+    Double averageRatingPerUser(User user);
 }

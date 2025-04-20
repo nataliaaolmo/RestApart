@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, Image } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, Image, Platform, Switch } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import api from '../app/api';
 import axios from 'axios';
 import Icon from 'react-native-vector-icons/FontAwesome';
+import { Picker } from '@react-native-picker/picker';
 
 export default function RegisterFormScreen() {
   const { role } = useLocalSearchParams();
@@ -25,18 +26,97 @@ export default function RegisterFormScreen() {
     experienceYears: '',
   });
 
-  const handleChange = (name: string, value: string) => {
+  const [errorMessage, setErrorMessage] = useState('');
+
+  const showError = (msg: string) => {
+    if (Platform.OS === 'web') {
+      setErrorMessage(msg);
+    } else {
+      Alert.alert('Error', msg);
+    }
+  };
+
+  const handleChange = (name: string, value: string | boolean) => {
     setForm({ ...form, [name]: value });
   };
 
   const handleSubmit = async () => {
-    if (!form.username || !form.password || !form.firstName || !form.lastName || !form.email || !form.telephone || !form.gender || !form.dateOfBirth) {
-      Alert.alert('Error', 'Todos los campos obligatorios deben estar completos.');
+    setErrorMessage(''); 
+    if (!form.username || !form.password || !form.firstName || !form.lastName || !form.email || !form.telephone || !form.dateOfBirth || !form.experienceYears) {
+      showError('Todos los campos obligatorios deben estar completos.');
       return;
     }
 
-    const formattedGender = form.gender.toUpperCase() === 'MAN' ? 'MAN' : 'WOMAN';
+    if (form.username.length > 20) {
+      showError(`El nombre de usuario no puede superar los 50 caracteres`)
+      return
+    }
 
+    if (form.firstName.length > 50) {
+      showError(`El primer nombre no puede tener más de 50 caracteres`)
+      return
+    }
+
+    if (form.password.length < 8) {
+      showError(`La contraseña debe tener al menos 8 caracteres`)
+      return
+    }
+
+    if (form.lastName.length > 50) {
+      showError(`El apellido no puede tener más de 50 caracteres`)
+      return
+    }
+  
+    const isOnlyLetters = (value: string) => {
+      return /^[A-Za-zÁÉÍÓÚáéíóúñÑ\s]+$/.test(value);
+    };  
+
+    if (!isOnlyLetters(form.firstName)) {
+      showError('El nombre solo debe contener letras');
+      return;
+    }
+    
+    if (!isOnlyLetters(form.lastName)) {
+      showError('El apellido solo debe contener letras');
+      return;
+    }
+    
+    if (!/^[A-Za-z0-9_]+$/.test(form.username)) {
+      showError('El nombre de usuario solo puede contener letras, números y guiones bajos');
+      return;
+    }  
+    
+    const isValidDate = (dateString: string): boolean => {
+      const regex = /^\d{4}-\d{2}-\d{2}$/;
+      if (!regex.test(dateString)) return false;
+    
+      const date = new Date(dateString);
+      const today = new Date();
+      const age = today.getFullYear() - date.getFullYear();
+      const m = today.getMonth() - date.getMonth();
+    
+      const isOver18 =
+        age > 18 || (age === 18 && m >= 0 && today.getDate() >= date.getDate());
+    
+      return !isNaN(date.getTime()) && isOver18;
+    };
+    
+    if (!isValidDate(form.dateOfBirth)) {
+      showError('La fecha debe tener formato YYYY-MM-DD y ser mayor de 18 años');
+      return;
+    }     
+
+    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailPattern.test(form.email)) {
+      showError("El correo electrónico no es válido")
+      return
+    }
+
+    const telephonePattern = /^[0-9]{9}$/
+    if (!telephonePattern.test(form.telephone)) {
+      showError("El teléfono debe tener 9 numeros.")
+      return
+    }
     const requestData: any = {
       username: form.username,
       password: form.password,
@@ -45,7 +125,7 @@ export default function RegisterFormScreen() {
       lastName: form.lastName,
       email: form.email,
       telephone: form.telephone,
-      gender: formattedGender,
+      gender: form.gender,
       dateOfBirth: form.dateOfBirth,
       description: form.description,
       profilePicture: form.profilePicture,
@@ -61,13 +141,18 @@ export default function RegisterFormScreen() {
 
     try {
       const response = await api.post('/users/auth/register', requestData);
-
-      if (response.data.error) {
-        Alert.alert('Error', response.data.error);
+      console.log('Response:', response.data);
+      if (response.data.error && response.data.error !== '') {
+        showError(response.data.error);
         return;
       }
 
-      Alert.alert('Registro exitoso', 'Usuario registrado correctamente');
+      if (Platform.OS === 'web') {
+        setErrorMessage('');
+      } else {
+        Alert.alert('Registro exitoso', 'Usuario registrado correctamente');
+      }
+
       router.push({
         pathname: '/(tabs)/welcome-screen',
         params: {
@@ -75,27 +160,42 @@ export default function RegisterFormScreen() {
           role: role,
         },
       });
+
     } catch (error: any) {
       if (axios.isAxiosError(error)) {
-        Alert.alert('Error', error.response?.data?.error || 'No se pudo completar el registro.');
-      } else {
-        Alert.alert('Error', 'Error desconocido.');
+        const errorData = error.response?.data;
+    
+        if (typeof errorData === 'string') {
+          if (errorData.includes('username')) {
+            setErrorMessage('El nombre de usuario ya está en uso.');
+          } else if (errorData.includes('correo') || errorData.includes('email')) {
+            setErrorMessage('El correo electrónico ya está registrado.');
+          } else if (errorData.includes('teléfono')) {
+            setErrorMessage('El teléfono ya está en uso.');
+          } else {
+            setErrorMessage(errorData); 
+          }
+    
+        } else if (Array.isArray(errorData.errors)) {
+          const formattedErrors = errorData.errors.map((err: any) => `• ${err}`).join('\n');
+          setErrorMessage(formattedErrors);
+        } else if (typeof errorData.error === 'string') {
+          setErrorMessage(errorData.error);
+        } else {
+          setErrorMessage('Error desconocido del servidor.');
+        }
       }
     }
+    
   };
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.title}>Registro - {role === 'STUDENT' ? 'Estudiante' : 'Propietario'}</Text>
 
-      <TouchableOpacity style={styles.avatarContainer}>
-        <Image
-          source={{ uri: form.profilePicture || 'https://cdn-icons-png.flaticon.com/512/149/149071.png' }}
-          style={styles.avatar}
-        />
-        <Text style={styles.avatarText}>Foto de perfil</Text>
-      </TouchableOpacity>
-
+      {Platform.OS === 'web' && errorMessage !== '' && (
+        <Text style={styles.errorText}>{errorMessage}</Text>
+      )}
       <Text style={styles.section}>Datos personales</Text>
       <CustomInput
         icon="user"
@@ -107,14 +207,45 @@ export default function RegisterFormScreen() {
         placeholder="Apellido *"
         onChangeText={(v: string) => handleChange('lastName', v)}
       />
-      <CustomInput
-        icon="transgender"
-        placeholder="Género (MAN/WOMAN) *"
-        onChangeText={(v: string) => handleChange('gender', v)}
-      />
+      <View style={styles.inputWrapper}>
+        <Icon name="transgender" size={20} color="#E0E1DD" style={styles.inputIcon} />
+        {Platform.OS === 'web' ? (
+          <select
+            value={form.gender}
+            onChange={(e) => handleChange('gender', e.target.value)}
+            style={{
+              flex: 1,
+              backgroundColor: '#162A40',
+              color: '#E0E1DD',
+              borderWidth: 0,
+              fontSize: 16,
+              padding: 12,
+              borderRadius: 5,
+            }}
+          >
+            <option value="">Selecciona tu género</option>
+            <option value="MAN">Hombre</option>
+            <option value="WOMAN">Mujer</option>
+            <option value="OTHER">Otro</option>
+          </select> 
+        ) : (
+          <Picker
+            selectedValue={form.gender}
+            onValueChange={(value) => handleChange('gender', value)}
+            style={styles.picker}
+            dropdownIconColor="#E0E1DD"
+          >
+            <Picker.Item label="Selecciona tu género" value="" />
+            <Picker.Item label="Hombre" value="MAN" />
+            <Picker.Item label="Mujer" value="WOMAN" />
+            <Picker.Item label="Otro" value="OTHER" />
+          </Picker>
+        )}
+      </View>
+
       <CustomInput
         icon="calendar"
-        placeholder="Fecha de nacimiento (YYYY-MM-DD) *"
+        placeholder="Fecha de nacimiento (YYYY-MM-DD)"
         onChangeText={(v: string) => handleChange('dateOfBirth', v)}
       />
 
@@ -149,11 +280,6 @@ export default function RegisterFormScreen() {
         placeholder="Descripción"
         onChangeText={(v: string) => handleChange('description', v)}
       />
-      <CustomInput
-        icon="image"
-        placeholder="URL de foto de perfil"
-        onChangeText={(v: string) => handleChange('profilePicture', v)}
-      />
 
       {role === 'STUDENT' && (
         <>
@@ -168,18 +294,23 @@ export default function RegisterFormScreen() {
             placeholder="Aficiones"
             onChangeText={(v: string) => handleChange('hobbies', v)}
           />
-          <CustomInput
-            icon="fire"
-            placeholder="¿Es fumador? (true/false)"
-            onChangeText={(v: string) => handleChange('isSmoker', v === 'true' ? 'true' : 'false')}
-          />
+          <View style={styles.switchWrapper}>
+            <Icon name="fire" size={20} color="#E0E1DD" style={{ marginRight: 10 }} />
+            <Text style={styles.switchLabel}>¿Eres fumador?</Text>
+            <Switch
+              value={form.isSmoker}
+              onValueChange={(val) => handleChange('isSmoker', val)}
+              thumbColor={form.isSmoker ? '#E0E1DD' : '#ccc'}
+              trackColor={{ false: '#415A77', true: '#E0E1DD' }}
+            />
+          </View>
         </>
       )}
 
       {role === 'OWNER' && (
         <>
           <Text style={styles.section}>Detalles académicos / profesionales</Text>
-          <CustomInput icon="briefcase" placeholder="Años de experiencia" keyboardType="numeric" onChangeText={(v: string) => handleChange('experienceYears', v)} />
+          <CustomInput icon="briefcase" placeholder="Años de experiencia*" keyboardType="numeric" onChangeText={(v: string) => handleChange('experienceYears', v)} />
         </>
       )}
 
@@ -275,5 +406,59 @@ const styles = StyleSheet.create({
   avatarText: {
     color: '#E0E1DD',
     fontWeight: '600',
+  },
+  switchWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  switchLabel: {
+    flex: 1,
+    color: '#E0E1DD',
+    fontSize: 16,
+  },
+  dateInput: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#162A40',
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 15,
+    borderWidth: 1,
+    borderColor: '#415A77',
+  },
+  errorText: {
+    color: 'tomato',
+    backgroundColor: '#fff3f3',
+    padding: 10,
+    borderRadius: 10,
+    marginBottom: 15,
+    textAlign: 'center',
+    fontWeight: '600',
+  },
+  pickerWrapper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#162A40',
+    borderRadius: 10,
+    paddingHorizontal: 10,
+    marginBottom: 15,
+    borderWidth: 1,
+    borderColor: '#415A77',
+  },
+  picker: {
+    flex: 1,
+    color: '#E0E1DD',
+  },
+  selectWeb: {
+    flex: 1,
+    backgroundColor: '#162A40',
+    color: '#E0E1DD',
+    borderWidth: 0,
+    fontSize: 16,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    borderRadius: 5,
+    ...(Platform.OS === 'web' ? { appearance: 'none' } : {}),
   },
 });

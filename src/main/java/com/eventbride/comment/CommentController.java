@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.eventbride.student.Student;
 import com.eventbride.user.User;
@@ -57,6 +58,20 @@ public class CommentController {
     public List<Comment> findAllcommentsByUser(@PathVariable Integer userId) {
         User user = userService.getUserById(userId).get();
         return commentService.findAllByUser(user);
+    }
+
+    @GetMapping("/accomodations/{accommodationId}/average")
+    public Double averageRatingPerAccommodation(@PathVariable Integer accommodationId) {
+        Accommodation accommodation = accommodationService.findById(accommodationId)
+        .orElseThrow(() -> new RuntimeException("Alojamiento no encontrado"));
+        return commentService.averageRatingPerAccommodation(accommodation);
+    }
+
+    @GetMapping("/users/{userId}/average")
+    public Double averageRatingPerUser(@PathVariable Integer userId) {
+        User user = userService.getUserById(userId)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
+        return commentService.averageRatingPerUser(user);
     }
 
     @PostMapping("/accomodations/{accommodationId}")

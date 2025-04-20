@@ -42,4 +42,11 @@ public class CommentService {
         return commentRepository.findAllByUser(user);
     }
 
+    public Double averageRatingPerAccommodation(Accommodation accommodation) {
+        return commentRepository.averageRatingPerAccommodation(accommodation);
+    }
+    public Double averageRatingPerUser(User user) {
+        return commentRepository.averageRatingPerUser(user);
+    }
+
 }

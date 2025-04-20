@@ -21,7 +21,7 @@ export default function PrivateChat() {
 
   const [messages, setMessages] = useState<{ sender: { username: string }; content: string }[]>([]);
   const [input, setInput] = useState("");
-  const [otherUser, setOtherUser] = useState<{ username: string; photo: string } | null>(null);
+  const [otherUser, setOtherUser] = useState<{ username: string; profilePicture: string } | null>(null);
   const [connected, setConnected] = useState(false);
   const stompClient = useRef<Client | null>(null);
   const scrollViewRef = useRef<ScrollView>(null);
@@ -40,7 +40,7 @@ export default function PrivateChat() {
         stompClient.current.deactivate();
       }
     };
-  }, [messages]);
+  }, []);
 
   const loadMessages = async () => {
     try {
@@ -86,6 +86,7 @@ export default function PrivateChat() {
   };
 
   const sendMessage = () => {
+    if (!input.trim()) return;
     if (!connected || !stompClient.current?.connected || !otherUser) {
       console.error("STOMP client not ready or otherUser is null");
       return;
@@ -135,7 +136,7 @@ export default function PrivateChat() {
           <Ionicons name="arrow-back" size={24} color="#E0E1DD" />
         </TouchableOpacity>
         <Image
-          source={{ uri: `http://localhost:8080/images/${otherUser.photo}` }}
+          source={{ uri: `http://localhost:8080/images/${otherUser.profilePicture}` }}
           style={styles.avatar}
         />
         <Text style={styles.headerText}>{otherUser.username}</Text>

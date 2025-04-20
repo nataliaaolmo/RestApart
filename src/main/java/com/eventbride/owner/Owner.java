@@ -21,8 +21,11 @@ public class Owner {
     @JoinColumn(name = "user_id", referencedColumnName = "id", unique = true, nullable = false)
     private User user;
 
-    @Column(name = "experience_years", nullable =  true)
+    @Column(name = "experience_years")
     @Positive
     private Integer experienceYears;
+
+    public Owner() {
+    }
 }
 

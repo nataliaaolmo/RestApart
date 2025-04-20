@@ -6,28 +6,57 @@ import com.eventbride.model.Person.Gender;
 import com.eventbride.user.User;
 import com.fasterxml.jackson.annotation.JsonFormat;
 
+import jakarta.validation.constraints.Email;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Positive;
+import jakarta.validation.constraints.Size;
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
 public class UserDTO {
-    private Integer id;
+    Integer id;
+    @NotBlank(message = "El apellido es obligatorio")
     private String lastName;
+
+    @NotBlank(message = "El nombre es obligatorio")
     private String firstName;
+
+    @NotBlank(message = "El nombre de usuario es obligatorio")
+    @Size(max = 20, message = "El nombre de usuario no puede tener más de 20 caracteres")
     private String username;
+
+    @NotBlank(message = "La contraseña es obligatoria")
+    @Size(min = 8, message = "La contraseña debe tener al menos 8 caracteres")
     private String password;
+
+    @Email(message = "Debe proporcionar un correo electrónico válido")
+    @NotBlank(message = "El correo electrónico es obligatorio")
     private String email;
+
+    @NotBlank(message = "El teléfono es obligatorio")
     private String telephone;
+
     private String profilePicture;
+
+    @NotBlank(message = "El rol es obligatorio")
+    @Pattern(regexp = "OWNER|STUDENT", message = "El rol debe ser OWNER o STUDENT")
     private String role;
+
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")
     private LocalDate dateOfBirth;
+
     private Gender gender;
+
+    @Size(max = 255, message = "La descripción no puede tener más de 255 caracteres")
     private String description;
+
+    @Positive(message = "Los años de experiencia deben ser un número positivo")
     private Integer experienceYears;
     private Boolean isSmoker;
-    private String academicCareer; 
+    private String academicCareer;
     private String hobbies;
     private Boolean isVerified;
 

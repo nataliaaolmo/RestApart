@@ -21,6 +21,7 @@ import com.eventbride.user.User;
 import com.eventbride.user.UserRepository;
 
 import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Valid;
 
 @Service
 public class UserManagementService {
@@ -43,7 +44,7 @@ public class UserManagementService {
     @Autowired
     private OwnerRepository ownerRepository;
 
-    public ReqRes register(ReqRes registrationRequest) {
+    public ReqRes register(@Valid ReqRes registrationRequest) {
         ReqRes resp = new ReqRes();
         try {
             User user = new User();
@@ -66,7 +67,9 @@ public class UserManagementService {
             if ("OWNER".equalsIgnoreCase(registrationRequest.getRole())) {
                 Owner owner = new Owner();
                 owner.setUser(user);
-                owner.setExperienceYears(registrationRequest.getExperienceYears());
+                owner.setExperienceYears(
+                Optional.ofNullable(registrationRequest.getExperienceYears()).orElse(0)
+                );
                 owner = ownerRepository.save(owner);
                 user.setOwner(owner);
             }

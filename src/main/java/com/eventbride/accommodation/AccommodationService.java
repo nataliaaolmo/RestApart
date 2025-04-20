@@ -1,6 +1,7 @@
 package com.eventbride.accommodation;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -43,18 +44,52 @@ public class AccommodationService {
         return accommodationRepository.findById(id);
     }
 
-    @Transactional(readOnly = true)
-    List<Accommodation> getFilteredAccommodations(Double maxPrice, LocalDate startDate, LocalDate endDate,
-            Integer students, Double latitude, Double longitude, Double radius) {
-    
-        List<Accommodation> accommodations = accommodationRepository.findFilteredAccommodations(
-            maxPrice, startDate, endDate, students, latitude, longitude, radius);
-    
-        return accommodations.stream()
-            .filter(a -> a.getAdvertisement().getIsVisible()) 
+    public List<Accommodation> getFilteredAccommodations(
+        Double maxPrice, LocalDate startDate, LocalDate endDate,
+        Integer students, Double latitude, Double longitude, Double radius, Boolean wifi, Boolean parking) {
+
+    List<Accommodation> baseFiltered = accommodationRepository.findFilteredAccommodationsBase(
+        maxPrice, startDate, endDate, students
+    );
+
+    if(wifi != null && wifi) {
+        baseFiltered = baseFiltered.stream()
+            .filter(a -> a.getWifi() != null && a.getWifi())
             .collect(Collectors.toList());
     }
-    
+    if(parking != null && parking) {
+        baseFiltered = baseFiltered.stream()
+            .filter(a -> a.getIsEasyParking() != null && a.getIsEasyParking())
+            .collect(Collectors.toList());
+    }  
+
+    if (latitude == null || longitude == null || radius == null) {
+        return baseFiltered;
+    }
+
+    List<Accommodation> result = new ArrayList<Accommodation>();
+
+    for (Accommodation acc : baseFiltered) {
+        double distance = haversineDistance(latitude, longitude,
+                acc.getLatitud(), acc.getLongitud());
+        if (distance <= radius) {
+            result.add(acc);
+        }
+    }
+
+    return result;
+}
+
+    private double haversineDistance(double lat1, double lon1, double lat2, double lon2) {
+        final int R = 6371; // Radio de la Tierra en km
+        double dLat = Math.toRadians(lat2 - lat1);
+        double dLon = Math.toRadians(lon2 - lon1);
+        double a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+                Math.cos(Math.toRadians(lat1)) * Math.cos(Math.toRadians(lat2)) *
+                Math.sin(dLon / 2) * Math.sin(dLon / 2);
+        double c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+        return R * c;
+    }   
 
     @Transactional(readOnly = true)
     public List<Accommodation> findAccommodationsByAffinity(Integer currentStudentId, Boolean matchCareer, Boolean matchSmoking, Boolean matchHobbies, LocalDate startDate, LocalDate endDate) {

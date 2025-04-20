@@ -19,7 +19,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -50,10 +52,11 @@ public class UserController {
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<User> getUserById(@PathVariable Integer id) {
+    public ResponseEntity<UserDTO> getUserById(@PathVariable Integer id) {
         User user = userService.getUserById(id)
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
-        return ResponseEntity.ok(user);
+        UserDTO userDTO = new UserDTO(user);
+        return ResponseEntity.ok(userDTO);
     }
 
     @GetMapping("/username/{username}")
@@ -62,6 +65,22 @@ public class UserController {
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado")));
         return ResponseEntity.ok(user);
     }
+
+    @GetMapping("/check")
+    public ResponseEntity<Map<String, Boolean>> checkIfExists(
+        @RequestParam String field,
+        @RequestParam String value
+    ) {
+        boolean exists;
+        switch (field) {
+            case "username": exists = userRepository.existsByUsername(value); break;
+            case "email": exists = userRepository.existsByEmail(value); break;
+            case "telephone": exists = userRepository.existsByTelephone(value); break;
+            default: return ResponseEntity.badRequest().build();
+        }
+        return ResponseEntity.ok(Collections.singletonMap("exists", exists));
+    }
+
 
     @PostMapping("/register")
     public ResponseEntity<?> registerUser(@Valid @RequestBody User user) {

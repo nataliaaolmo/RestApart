@@ -15,6 +15,8 @@ import org.springframework.web.bind.annotation.RestController;
 import com.eventbride.config.jwt.services.UserManagementService;
 import com.eventbride.dto.ReqRes;
 
+import jakarta.validation.Valid;
+
 @CrossOrigin(origins = {"http://localhost:5173",  "http://192.168.1.132:8081", "http://10.0.2.2:8081", "http://localhost:8081", "http://localhost:19006"})
 @RestController
 @RequestMapping("/api/users")
@@ -25,7 +27,7 @@ public class UserManagementController {
     private UserManagementService userManagementService;
 
     @PostMapping("/auth/register")
-    public ResponseEntity<ReqRes> register(@RequestBody ReqRes reg){
+    public ResponseEntity<ReqRes> register(@Valid @RequestBody ReqRes reg){
         return ResponseEntity.ok(userManagementService.register(reg));
     }
 

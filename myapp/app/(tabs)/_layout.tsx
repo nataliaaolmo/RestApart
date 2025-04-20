@@ -42,7 +42,7 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
-        name="inbox"
+        name="inbox-screen"
         options={{
           title: 'Chat',
           tabBarIcon: ({ color }) => <IconSymbol name="bubble.left.and.bubble.right.fill" color={color} size={26} />,
@@ -55,6 +55,7 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <IconSymbol name="person.crop.circle" color={color} size={26} />,
         }}
       />
+
     </Tabs>
   );
 }

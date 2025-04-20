@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Image, ScrollView, TextInput, TouchableOpacity, Alert, Modal } from 'react-native';
+import { View, Text, StyleSheet, Image, ScrollView, TextInput, TouchableOpacity, Alert, Modal, Platform } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import api from '../../app/api';
 import { RouteProp, useRoute, useNavigation } from '@react-navigation/native';
 import { router } from 'expo-router';
 import { useLayoutEffect } from 'react';
-
+import Icon from 'react-native-vector-icons/Feather';
 
 export default function ProfileScreen() {
   interface UserData {
@@ -31,14 +31,24 @@ export default function ProfileScreen() {
   const [userData, setUserData] = useState<UserData | null>(null);
   const [editing, setEditing] = useState(false);
   type ProfileRouteProp = RouteProp<{ Profile: { id: string } }, 'Profile'>;
-  const route = useRoute<ProfileRouteProp>();
-  const { id } = route.params || {};
-  const userId = id ? parseInt(id, 10) : undefined;
+  const route = useRoute();
+  const isViewingOwnProfile = !route?.params || !('id' in route.params);
+  const userId = isViewingOwnProfile ? undefined : parseInt((route.params as any).id, 10);  
   const navigation = useNavigation();
   const [comments, setComments] = useState<{ text: string; rating: number; commentDate?: string; student?: { user?: { profilePicture?: string; firstName?: string; lastName?: string } } }[]>([]);
   const [text, setText] = useState('');
   const [rating, setRating] = useState(0);
   const [commentModalVisible, setCommentModalVisible] = useState(false);
+  const [currentUserId, setCurrentUserId] = useState<number | null>(null);
+  const [averageRating, setAverageRating] = useState<number | null>(null);
+  const sanitizeInput = (text: string) => text.replace(/<script.*?>.*?<\/script>/gi, '').trim();
+  const [saving, setSaving] = useState(false);
+  const [filterError, setFilterError] = useState('');
+  const [errorMessage, setErrorMessage] = useState('');
+  const [originalUsername, setOriginalUsername] = useState('');
+  const [originalEmail, setOriginalEmail] = useState('');
+  const [originalTelephone, setOriginalTelephone] = useState('');
+  const [bookings, setBookings] = useState<any[]>([]);
 
   const fetchProfile = async () => {
     try {
@@ -53,6 +63,10 @@ export default function ProfileScreen() {
   
       const user = userId ? response.data : response.data.user;
       setUserData(user);
+      setOriginalUsername(user.username);
+      setOriginalEmail(user.email);
+      setOriginalTelephone(user.telephone);
+
     } catch (error) {
       console.error('Error al obtener el perfil:', error);
     }
@@ -60,29 +74,95 @@ export default function ProfileScreen() {
 
   useEffect(() => {
     fetchProfile();
-    findComments();
   }, []);
+
+  useEffect(() => {
+    if (filterError !== '') {
+      const timer = setTimeout(() => setFilterError(''), 4000);
+      return () => clearTimeout(timer);
+    }
+  }, [filterError]);  
+
+  useEffect(() => {
+    const idToUse = userId ?? currentUserId;
+    if (idToUse) {
+      findComments(idToUse);
+    }
+    const fetchAverage = async (id: number) => {
+      try {
+        const token = localStorage.getItem('jwt');
+        const response = await api.get(`/comments/users/${id}/average`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        setAverageRating(response.data ?? null);
+      } catch (error) {
+        console.error('Error al obtener media de comentarios', error);
+      }
+    };
+  
+    if (idToUse) {
+      fetchAverage(idToUse);
+    }
+
+    if (userData?.role === 'STUDENT' && currentUserId === userData.id) {
+      fetchBookings(currentUserId);
+    }
+  }, [userId, currentUserId]);
+
+  useEffect(() => {
+    const fetchCurrentUserId = async () => {
+      const token = localStorage.getItem('jwt');
+      const response = await api.get('/users/auth/current-user', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setCurrentUserId(response.data.user.id);
+    };
+  
+    fetchCurrentUserId();
+  }, []);  
 
   useLayoutEffect(() => {
     if (userData) {
       const fullName = `${userData.firstName} ${userData.lastName}`;
-      const screenTitle = userId ? `Perfil de ${fullName}` : 'Tu perfil';
+      const screenTitle = isViewingOwnProfile ? 'Tu perfil' : `Perfil de ${fullName}`;
       navigation.setOptions({ title: screenTitle });
     }
   }, [userData]);
 
-    const findComments = async () => {
-      try { 
-        const token = localStorage.getItem('jwt');
-        const response = await api.get(`/comments/users/${userId}`, {
-          headers: { Authorization: `Bearer ${token}` },
-        });
-        setComments(response.data);
+  const findComments = async (id: number) => {
+    try { 
+      const token = localStorage.getItem('jwt');
+      const response = await api.get(`/comments/users/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setComments(response.data);
+    }
+    catch (error) { 
+      console.error('Error buscando comentarios', error);
+    }
+  };
+
+  const fetchBookings = async (id: number) => {
+    try {
+      const token = localStorage.getItem('jwt');
+      const res = await api.get(`/bookings/${id}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      console.log('Bookings:', res.data);
+      setBookings(res.data);
+    } catch (error) {
+      console.error('Error al obtener las reservas:', error);
+    }
+  };
+  
+
+    const showFilterError = (msg: string) => {
+      if (Platform.OS === 'web') {
+        setFilterError(msg);
+      } else {
+        Alert.alert('Error en los filtros', msg);
       }
-      catch (error) { 
-        console.error('Error buscando comentarios', error);
-      }
-    };  
+    };
   
     const makeComment = async () => {
       try {
@@ -171,34 +251,88 @@ export default function ProfileScreen() {
         Alert.alert('Error', 'No se pudo subir la foto');
       }
     }
-  };  
+  }; 
+  
+  const checkIfExists = async (field: 'username' | 'email' | 'telephone', value: string) => {
+    try {
+      const token = localStorage.getItem('jwt');
+      const response = await api.get(`/users/check?field=${field}&value=${value}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      return response.data.exists;
+    } catch (err) {
+      console.error(`Error verificando duplicado en ${field}:`, err);
+      return false;
+    }
+  };
+  
 
   const saveChanges = async () => {
     if (!userData) return;
+
+    if (saving) return;
+    setSaving(true);
+
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    const phoneRegex = /^[0-9]{7,15}$/;
+
+    if (!userData.firstName.trim() || !userData.lastName.trim() || !userData.username.trim()) {
+      showFilterError('Error. Nombre, apellido y usuario son obligatorios');
+      setSaving(false);
+      return;
+    }
+    if (!emailRegex.test(userData.email)) {
+      showFilterError('Error. Email no válido');
+      setSaving(false);
+      return;
+    }
+    if (!phoneRegex.test(userData.telephone)) {
+      showFilterError('Error. Teléfono no válido');
+      setSaving(false);
+      return;
+    }
+    const isUsernameTaken = await checkIfExists('username', userData.username);
+    if (isUsernameTaken && (userData.username !== originalUsername || userData.id !== currentUserId)) {
+      showFilterError('El nombre de usuario ya está en uso');
+      setSaving(false);
+      return;
+    }
+
+    const isEmailTaken = await checkIfExists('email', userData.email);
+    if (isEmailTaken && (userData.email !== originalEmail || userData.id !== currentUserId)) {
+      showFilterError('El email ya está en uso');
+      setSaving(false);
+      return;
+    }
+
+    const isPhoneTaken = await checkIfExists('telephone', userData.telephone);
+    if (isPhoneTaken && (userData.telephone !== originalTelephone || userData.id !== currentUserId)) {
+      showFilterError('El teléfono ya está en uso');
+      setSaving(false);
+      return;
+    }
+
     try {
       const token = localStorage.getItem('jwt');
   
       const updatedUser = {
-        username: userData.username,
+        username: sanitizeInput(userData.username),
         password: userData.password || 'Temp1234*',
-        email: userData.email,
-        firstName: userData.firstName,
-        lastName: userData.lastName,
-        telephone: userData.telephone,
+        email: sanitizeInput(userData.email),
+        firstName: sanitizeInput(userData.firstName),
+        lastName: sanitizeInput(userData.lastName),
+        telephone: sanitizeInput(userData.telephone),
         dateOfBirth: userData.dateOfBirth,
         gender: userData.gender,
-        description: userData.description,
-        profilePicture: userData.profilePicture, 
+        description: sanitizeInput(userData.description),
+        profilePicture: userData.profilePicture,
         role: userData.role,
         isVerified: userData.isVerified,
-  
-        // Propiedades específicas del rol
         experienceYears: userData.role === 'OWNER' ? userData.experienceYears : null,
-        academicCareer: userData.role === 'STUDENT' ? userData.academicCareer : null,
-        hobbies: userData.role === 'STUDENT' ? userData.hobbies : null,
+        academicCareer: userData.role === 'STUDENT' ? sanitizeInput(userData.academicCareer) : null,
+        hobbies: userData.role === 'STUDENT' ? sanitizeInput(userData.hobbies) : null,
         isSmoker: userData.role === 'STUDENT' ? userData.isSmoker : null,
       };
-      console.log('Updated user data:', updatedUser);
       const res = await api.put(`/users/${userData.id}`, updatedUser, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -223,12 +357,21 @@ export default function ProfileScreen() {
   return (
     <ScrollView style={styles.container}>
       <TouchableOpacity disabled={!editing} onPress={handleImagePick}>
-        <Image
-          source={{ uri: `http://localhost:8080/images/${userData.profilePicture}` }}
-          style={styles.profileImage}
-        />
+      <Image
+        source={{ uri: userData.profilePicture?.startsWith('http') 
+          ? userData.profilePicture 
+          : `http://localhost:8080/images/${userData.profilePicture || 'default.jpg'}` 
+        }}
+        style={styles.profileImage}
+      />
+
       </TouchableOpacity>
       <Text style={styles.screenTitle}>{screenTitle}</Text>
+      {Platform.OS === 'web' && filterError !== '' && (
+        <Text style={{ color: 'red', textAlign: 'center', marginBottom: 10 }}>
+          {filterError}
+        </Text>
+      )}
 
       {editing && !userId ?  (
         <>
@@ -261,6 +404,17 @@ export default function ProfileScreen() {
       ) : (
         <>
           <Text style={styles.name}>{fullName} - <Text style={styles.username}>@{userData.username}</Text></Text>
+          {typeof averageRating === 'number' ? (
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              {[1, 2, 3, 4, 5].map(i => (
+                <Text key={i} style={{ fontSize: 18, color: i <= Math.round(averageRating || 0) ? '#FFD700' : '#ccc' }}>★</Text>
+              ))}
+              <Text style={{ color: '#FFD700', marginLeft: 5 }}>{averageRating?.toFixed(1) ?? '0.0'}</Text>
+            </View>
+          ) : (
+            <Text style={styles.rating}>⭐ Sin valoraciones</Text>
+          )}
+
           {userId && (
           <TouchableOpacity
             style={[styles.saveButton, { backgroundColor: '#AFC1D6', marginTop: 10 }]}
@@ -274,29 +428,44 @@ export default function ProfileScreen() {
             <>
               <Text style={styles.detail}>{userData.gender === 'WOMAN' ? 'Mujer' : 'Hombre'} - {new Date().getFullYear() - new Date(userData.dateOfBirth).getFullYear()} años</Text>
               <Text style={styles.description}>{userData.description}</Text>
-              <View style={styles.contactBox}>
-                <Text style={styles.sectionTitle}>Datos de contacto</Text>
-                <Text style={styles.label}>Email</Text>
+              <View style={styles.card}>
+              <Text style={styles.sectionTitle}>Datos de contacto</Text>
+              <View style={styles.row}>
+                <Icon name="mail" size={18} color="#AFC1D6" style={styles.icon} />
                 <Text style={styles.text}>{userData.email}</Text>
-                <Text style={styles.label}>Teléfono</Text>
+              </View>
+              <View style={styles.row}>
+                <Icon name="phone" size={18} color="#AFC1D6" style={styles.icon} />
                 <Text style={styles.text}>{userData.telephone}</Text>
               </View>
-              <View style={styles.moreInfoBox}>
-                <Text style={styles.sectionTitle}>Más información</Text>
+              </View>
+              <View style={styles.card}>
+              <Text style={styles.sectionTitle}>Más información</Text>
+
+              <View style={styles.row}>
+                <Icon name={userData.isSmoker ? 'smile' : 'slash'} size={18} color="#AFC1D6" style={styles.icon} />
                 <Text style={styles.text}>{userData.isSmoker ? 'Fumador/a' : 'No fumador/a'}</Text>
-                <Text style={styles.label}>Qué estudio</Text>
+              </View>
+
+              <View style={styles.row}>
+                <Icon name="book-open" size={18} color="#AFC1D6" style={styles.icon} />
                 <Text style={styles.text}>{userData.academicCareer}</Text>
-                <Text style={styles.label}>Aficiones</Text>
-                {typeof userData.hobbies === 'string' &&
-                  userData.hobbies.split(',').map((hobby, index) => (
+              </View>
+
+              <View style={[styles.row, { alignItems: 'flex-start' }]}>
+                <Icon name="heart" size={18} color="#AFC1D6" style={styles.icon} />
+                <View style={{ flex: 1 }}>
+                  {userData.hobbies?.split(',').map((hobby, index) => (
                     <Text key={index} style={styles.text}>{hobby.trim()}</Text>
                   ))}
+                </View>
               </View>
+            </View>
+
             </>
           ) : (
             <>
               <Text style={styles.detail}>{userData.experienceYears} años de experiencia</Text>
-              <Text style={styles.rating}>4,3 ⭐</Text>
               </>
           )}
         </>
@@ -332,17 +501,49 @@ export default function ProfileScreen() {
 </View>
 
       {userId && (
-        <TouchableOpacity
-        style={styles.addCommentButton}
-        onPress={() => setCommentModalVisible(true)}
-      >
-        <Text style={styles.addCommentButtonText}>Añadir Comentario</Text>
-      </TouchableOpacity>
-    )}
+              <TouchableOpacity
+              style={styles.addCommentButton}
+              onPress={() => setCommentModalVisible(true)}
+            >
+              <Text style={styles.addCommentButtonText}>Añadir Comentario</Text>
+            </TouchableOpacity>
+          )}
 
-    <TouchableOpacity style={styles.saveButton} onPress={() => setEditing(true)}>
-      <Text style={styles.saveButtonText}>Editar perfil</Text>
-    </TouchableOpacity>
+       {currentUserId === userData.id && userData.role === 'STUDENT' && ( 
+        <View style={styles.card}>
+        <Text style={styles.sectionTitle}>Mis reservas</Text>
+        {bookings.length > 0 ? (
+          bookings.map((booking, index) => (
+            <View key={index} style={styles.bookingCard}>
+              <View style={styles.bookingItemRow}>
+                <Icon name="home" size={18} color="#AFC1D6" style={styles.bookingIcon} />
+                <Text style={styles.bookingText}>
+                  {booking.accommodation.advertisement.title || 'Alojamiento'}
+                </Text>
+              </View>
+              <View style={styles.bookingItemRow}>
+                <Icon name="calendar" size={18} color="#AFC1D6" style={styles.bookingIcon} />
+                <Text style={styles.bookingText}>
+                  {booking.stayRange.startDate} → {booking.stayRange.endDate}
+                </Text>
+              </View>
+              <View style={styles.bookingItemRow}>
+                <Icon name="dollar-sign" size={18} color="#AFC1D6" style={styles.bookingIcon} />
+                <Text style={styles.bookingText}>{booking.price} €</Text>
+              </View>
+            </View>
+          ))
+        ) : (
+          <Text style={styles.noComments}>No tienes reservas activas</Text>
+        )}
+      </View>
+       )}
+
+        {!userId && currentUserId === userData.id && (
+          <TouchableOpacity style={styles.saveButton} onPress={() => setEditing(true)}>
+            <Text style={styles.saveButtonText}>Editar perfil</Text>
+          </TouchableOpacity>
+        )}
 
             <Modal
               visible={commentModalVisible}
@@ -389,15 +590,12 @@ export default function ProfileScreen() {
               </View>
             </Modal>
       
-    </ScrollView>
-
-    
+    </ScrollView> 
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#0D1B2A', padding: 20 },
-  profileImage: { width: '100%', height: 250, borderRadius: 10, marginBottom: 20 },
   name: { color: '#E0E1DD', fontSize: 18, fontWeight: 'bold' },
   username: { color: '#AFC1D6' },
   screenTitle: {
@@ -499,5 +697,54 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     marginTop: 10,
   },
-  
+  profileImage: {
+    width: '100%',
+    height: 250,
+    borderRadius: 10,
+    marginBottom: 20,
+    borderWidth: 2,
+    borderColor: '#E0E1DD',
+  },
+  card: {
+    backgroundColor: '#1B263B',
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  icon: {
+    marginRight: 10,
+  }, 
+  bookingCard: {
+    backgroundColor: '#1B263B',
+    padding: 16,
+    borderRadius: 12,
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  bookingItemRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 6,
+  },
+  bookingIcon: {
+    marginRight: 10,
+  },
+  bookingText: {
+    color: '#E0E1DD',
+    fontSize: 14,
+  },      
 });

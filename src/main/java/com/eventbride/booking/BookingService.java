@@ -10,6 +10,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.eventbride.accommodation.Accommodation;
+import com.eventbride.student.Student;
+import com.eventbride.user.User;
 
 @Service
 public class BookingService {
@@ -43,6 +45,11 @@ public class BookingService {
     @Transactional(readOnly = true)
     public long countBookingsInRange(Accommodation accommodation, LocalDate startDate, LocalDate endDate) {
         return bookingRepository.countBookingsInRange(accommodation.getId(), startDate, endDate);
+    }
+
+    public List<Booking> findAllByUser(User user) {
+        Student student= user.getStudent();
+        return bookingRepository.findAllByUser(student);
     }
 
 

@@ -106,9 +106,9 @@ public class AccommodationController {
             @RequestParam(required = false) Boolean matchCareer,
             @RequestParam(required = false) Boolean matchHobbies,
             @RequestParam(required = false) Boolean matchSmoking,
-            @RequestParam Double latitude,
-            @RequestParam Double longitude,
-            @RequestParam Double radius) {
+            @RequestParam(required = false) Double latitude,
+            @RequestParam(required = false) Double longitude,
+            @RequestParam(required = false) Double radius) {
 
         Student currentStudent = studentRepository.findByUserUsername(currentUser.getUsername())
                 .orElseThrow(() -> new RuntimeException("Estudiante no encontrado"));
@@ -117,15 +117,14 @@ public class AccommodationController {
                 currentStudent.getId(), matchCareer, matchSmoking, matchHobbies, startDate, endDate);
 
         List<Accommodation> filteredAccommodations = accommodationService.getFilteredAccommodations(
-                maxPrice, startDate, endDate, students, latitude, longitude, radius);
-    
-        Set<Integer> affinityAccommodationIds = accommodationsByAffinity.stream()
-                .map(Accommodation::getId)
-                .collect(Collectors.toSet());
+                maxPrice, startDate, endDate, students, latitude, longitude, radius, wifi, isEasyParking);
+        Set<Integer> filteredIds = filteredAccommodations.stream()
+        .map(Accommodation::getId)
+        .collect(Collectors.toSet());
 
-        return filteredAccommodations.stream()
-                    .filter(a -> affinityAccommodationIds.contains(a.getId()))
-                    .collect(Collectors.toList());
+        return accommodationsByAffinity.stream()
+        .filter(a -> filteredIds.contains(a.getId()))
+        .collect(Collectors.toList());
     }
 
     @GetMapping("/{id}/check-availability")
