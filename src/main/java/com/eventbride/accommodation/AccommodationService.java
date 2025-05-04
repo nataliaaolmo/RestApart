@@ -7,7 +7,6 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Service;
@@ -146,12 +145,25 @@ public class AccommodationService {
     }
     
     @Transactional
-    public Accommodation update(Integer id, Accommodation accommodation){
-        Accommodation newAccommodation = accommodationRepository.findById(id).orElseThrow(() -> new RuntimeException("No se ha encontrado ningún apartamento con esa Id"));
+    public Accommodation update(Integer id, Accommodation updatedAccommodation){
+        Accommodation existing = accommodationRepository.findById(id)
+        .orElseThrow(() -> new RuntimeException("No encontrado"));
 
-        BeanUtils.copyProperties(accommodation, newAccommodation, "id", "comments", "advertisement", "owner");
+    existing.setRooms(updatedAccommodation.getRooms());
+    existing.setBeds(updatedAccommodation.getBeds());
+    existing.setPricePerDay(updatedAccommodation.getPricePerDay());
+    existing.setPricePerMonth(updatedAccommodation.getPricePerMonth());
+    existing.setDescription(updatedAccommodation.getDescription());
+    existing.setLatitud(updatedAccommodation.getLatitud());
+    existing.setLongitud(updatedAccommodation.getLongitud());
+    existing.setAvailability(updatedAccommodation.getAvailability());
+    existing.setStudents(updatedAccommodation.getStudents());
+    existing.setWifi(updatedAccommodation.getWifi());
+    existing.setIsEasyParking(updatedAccommodation.getIsEasyParking());
+
+    existing.setImages(updatedAccommodation.getImages());
  
-        return accommodationRepository.save(newAccommodation);
+        return accommodationRepository.save(existing);
 
     }
 

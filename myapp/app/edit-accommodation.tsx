@@ -1,0 +1,377 @@
+import React, { useEffect, useState } from 'react';
+import {
+  View, Text, TextInput, StyleSheet, TouchableOpacity, ScrollView, Switch, Platform, Image, Alert,
+} from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
+import { Ionicons } from '@expo/vector-icons';
+import { useLocalSearchParams, useRouter } from 'expo-router';
+import api from './api';
+
+interface CustomInputProps {
+  label: string;
+  value: string;
+  onChangeText: (text: string) => void;
+  icon: keyof typeof Ionicons.glyphMap;
+  [key: string]: any;
+}
+
+const CustomInput: React.FC<CustomInputProps> = ({ label, value, onChangeText, icon, ...props }) => (
+  <View style={styles.inputWrapper}>
+    <Ionicons name={icon} size={20} color="#E0E1DD" style={styles.inputIcon} />
+    <TextInput
+      style={styles.input}
+      value={value}
+      onChangeText={onChangeText}
+      placeholder={label}
+      placeholderTextColor="#A0AEC0"
+      {...props}
+    />
+  </View>
+);
+
+export default function EditAccommodation() {
+  const { id } = useLocalSearchParams();
+  const router = useRouter();
+
+  const [form, setForm] = useState({
+    title: '', description: '', address: '', rooms: '', beds: '', pricePerDay: '',
+    pricePerMonth: '', students: '', wifi: false, isEasyParking: false,
+  });
+  const [latLng, setLatLng] = useState<{ lat: number; lon: number } | null>(null);
+  const [errorMessage, setErrorMessage] = useState('');
+  const [images, setImages] = useState<string[]>([]);
+  const [newImages, setNewImages] = useState<ImagePicker.ImagePickerAsset[]>([]);
+  const [availability, setAvailability] = useState({startDate: '', endDate: ''});
+  const [addressWarning, setAddressWarning] = useState('');
+  const [suggestion, setSuggestion] = useState('');
+
+
+  const handleChange = (name: string, value: string | boolean) => {
+    setForm(prev => ({ ...prev, [name]: value }));
+    if (name === 'address' && typeof value === 'string') {
+        const suggested = maybeSuggestAddress(value);
+        setSuggestion(suggested !== value ? suggested : '');
+      }
+  };
+
+const showError = (msg: string): void => {
+    if (Platform.OS === 'web') setErrorMessage(msg);
+    else Alert.alert('Error', msg);
+};
+
+const maybeSuggestAddress = (input: string): string => {
+    let suggestion = input;
+    if (input.includes('Av.') || input.includes('Av ')) {
+      suggestion = suggestion.replace(/\bAv\.?\b/gi, 'Avenida');
+    }
+    if (!/España/i.test(suggestion)) {
+      suggestion += ', España';
+    }
+    return suggestion;
+  };
+  
+
+  const fetchLatLng = async (address: string | number | boolean) => {
+    try {
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`, {
+        headers: { 'User-Agent': 'MyStudentApp/1.0' },
+      });
+      const data = await res.json();
+      if (data.length > 0) {
+        const coords = { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon) };
+        setLatLng(coords);
+        return coords;
+      } else {
+        throw new Error('Dirección no encontrada.');
+      }
+    } catch (err) {
+      console.error('Geocoding error:', err);
+      Alert.alert('Error', 'No se pudo obtener la ubicación.');
+      return null;
+    }
+  };
+
+  const pickImage = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ImagePicker.MediaTypeOptions.Images });
+    if (!result.canceled) {
+      setNewImages(prev => [...prev, ...result.assets]);
+    }
+  };
+
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        const token = localStorage.getItem('jwt');
+        const res = await api.get(`/accommodations/${id}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const data = res.data;
+        setAvailability(data.availability);
+        setForm({
+          title: data.advertisement.title,
+          description: data.description,
+          address: '',
+          rooms: String(data.rooms),
+          beds: String(data.beds),
+          pricePerDay: String(data.pricePerDay),
+          pricePerMonth: String(data.pricePerMonth),
+          students: String(data.students),
+          wifi: data.wifi,
+          isEasyParking: data.isEasyParking,
+        });
+        setImages(data.images);
+        const coords = { lat: data.latitud, lon: data.longitud };
+        setLatLng(coords);
+
+        const response = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${coords.lat}&lon=${coords.lon}&zoom=18&addressdetails=1`, {
+          headers: { 'User-Agent': 'MyStudentApp/1.0' }
+        });
+        const reverse = await response.json();
+        const fullAddress = reverse.display_name || '';
+        handleChange('address', fullAddress);
+
+      } catch (err) {
+        console.error('Error al cargar alojamiento:', err);
+      }
+    };
+    loadData();
+  }, [id]);
+
+  const isValidAddress = (address: string) => {
+    const clean = address.trim().toLowerCase();
+    const hasPrefix = ['calle', 'av', 'avenida', 'camino', 'plaza', 'paseo'].some(prefix =>
+      clean.includes(prefix)
+    );
+    const hasNumber = /\d+/.test(clean);
+    return clean.length > 5 && hasPrefix && hasNumber;
+  };
+
+  const handleSave = async () => {
+    setErrorMessage('');
+    setAddressWarning('');
+    if (!form.title || !form.rooms || !form.beds || !form.pricePerMonth || !form.pricePerDay || !availability.startDate || !availability.endDate || !form.students || !form.address) {
+      showError('Por favor, completa todos los campos obligatorios.');
+      return;
+    }
+
+    if (isNaN(Number(form.rooms)) || isNaN(Number(form.beds)) || isNaN(Number(form.pricePerDay)) || isNaN(Number(form.pricePerMonth)) || isNaN(Number(form.students))){
+      showError('Asegúrate de que los campos númericos son válidos.');
+      return;
+    }
+
+    if (Number(form.pricePerDay) <= 0 || Number(form.pricePerMonth) <= 0){
+      showError('Los precios deben ser mayores que 0.');
+      return;
+    }
+
+    if(Number(form.rooms) <= 0 || Number(form.beds) <= 0 || Number(form.students) <= 0){
+      showError('Las habitaciones, camas y plazas deben ser mayores que 0.');
+      return;
+    }
+
+    if(availability.startDate.length !==10 || availability.endDate.length !==10){
+      showError('Las fechas deben tener el formato YYYY-MM-DD.');
+      return;
+    }
+
+    if(availability.startDate > availability.endDate){
+      showError('La fecha de inicio no puede ser posterior a la fecha de fin.');
+      return;
+    }
+
+    if (!isValidAddress(form.address)) {
+      setAddressWarning('⚠️ Introduce la dirección con calle, número, ciudad y país. Ej: "Calle Real 5, Madrid, España"');
+      return;
+    }
+    if (!latLng) {
+      showError('Debes obtener la ubicación exacta antes de crear el alojamiento.');
+      return;
+    }
+    try {
+      const coords = await fetchLatLng(form.address);
+      if (!coords) return;
+
+      const token = localStorage.getItem('jwt');
+      let imageUrls = images;
+
+      if (newImages.length > 0) {
+        const formData = new FormData();
+        for (const [i, img] of newImages.entries()) {
+          const response = await fetch(img.uri);
+          const blob = await response.blob();
+          const file = new File([blob], img.fileName || `image-${i}.jpg`, { type: img.mimeType || 'image/jpeg' });
+          formData.append('files', file);
+        }
+        const uploadRes = await fetch('http://localhost:8080/api/images/upload', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+          body: formData,
+        });
+        if (!uploadRes.ok) throw new Error('Error subiendo imágenes');
+        const newImageUrls = await uploadRes.json();
+        imageUrls = [...images, ...newImageUrls]; 
+      }
+
+      await api.put(`/accommodations/${id}`, {
+        rooms: parseInt(form.rooms),
+        beds: parseInt(form.beds),
+        pricePerDay: parseFloat(form.pricePerDay),
+        pricePerMonth: parseFloat(form.pricePerMonth),
+        description: form.description,
+        latitud: coords.lat,
+        longitud: coords.lon,
+        availability: {
+          startDate: availability.startDate,
+          endDate: availability.endDate,
+        },
+        students: parseInt(form.students),
+        wifi: form.wifi,
+        isEasyParking: form.isEasyParking,
+        images: imageUrls,
+      }, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      
+
+      router.back();
+    } catch (err) {
+      console.error('Error al guardar cambios:', err);
+      setErrorMessage('No se pudo guardar el alojamiento.');
+    }
+  };
+
+  return (
+    <ScrollView contentContainerStyle={styles.container}>
+      <Text style={styles.title}>Editar Alojamiento</Text>
+      {Platform.OS === 'web' && errorMessage !== '' && <Text style={styles.errorText}>{errorMessage}</Text>}
+
+      <Text style={styles.section}>Información general</Text>
+      <CustomInput label="Título *" value={form.title} onChangeText={val => handleChange('title', val)} icon="home-outline" />
+      <CustomInput label="Descripción" value={form.description} onChangeText={val => handleChange('description', val)} icon="document-text-outline" multiline numberOfLines={3} />
+      <CustomInput label="Dirección (calle, número, ciudad, país)" value={form.address} onChangeText={val => handleChange('address', val)} icon="location-outline" />
+
+<TouchableOpacity
+  style={styles.button}
+  onPress={async () => {
+    if (!isValidAddress(form.address)) {
+      setAddressWarning('⚠️ Dirección inválida. Ej: "Calle Real 10, Sevilla, España"');
+      return;
+    }
+    const coords = await fetchLatLng(form.address);
+    if (coords) {
+      setLatLng(coords);
+      setAddressWarning('');
+    }
+  }}
+>
+  <Text style={styles.buttonText}>Obtener ubicación exacta</Text>
+</TouchableOpacity>
+
+{addressWarning !== '' && (
+  <View style={{ marginTop: 5 }}>
+    <Text style={styles.errorText}>{addressWarning}</Text>
+    {suggestion && (
+      <TouchableOpacity onPress={() => handleChange('address', suggestion)}>
+        <Text style={styles.warningText}>
+          👉 Usar sugerencia: <Text style={{ fontWeight: 'bold' }}>{suggestion}</Text>
+        </Text>
+      </TouchableOpacity>
+    )}
+  </View>
+)}
+
+{latLng && (
+  <Text style={{ color: '#90EE90', marginTop: 10 }}>
+    📍 Ubicación encontrada: {latLng.lat.toFixed(5)}, {latLng.lon.toFixed(5)}
+  </Text>
+)}
+
+
+      <Text style={styles.section}>Detalles del alojamiento</Text>
+      <CustomInput label="Habitaciones" value={form.rooms} onChangeText={val => handleChange('rooms', val)} icon="bed-outline" keyboardType="numeric" />
+      <CustomInput label="Camas" value={form.beds} onChangeText={val => handleChange('beds', val)} icon="bed-outline" keyboardType="numeric" />
+      <CustomInput label="Precio por día (€)" value={form.pricePerDay} onChangeText={val => handleChange('pricePerDay', val)} icon="cash-outline" keyboardType="numeric" />
+      <CustomInput label="Precio por mes (€)" value={form.pricePerMonth} onChangeText={val => handleChange('pricePerMonth', val)} icon="card-outline" keyboardType="numeric" />
+      <CustomInput label="Plazas para estudiantes" value={form.students} onChangeText={val => handleChange('students', val)} icon="people-outline" keyboardType="numeric" />
+
+      <View style={styles.switchRow}>
+        <Text style={styles.label}>Wifi</Text>
+        <Switch value={form.wifi} onValueChange={(val) => handleChange('wifi', val)} />
+      </View>
+      <View style={styles.switchRow}>
+        <Text style={styles.label}>Fácil aparcamiento</Text>
+        <Switch value={form.isEasyParking} onValueChange={(val) => handleChange('isEasyParking', val)} />
+      </View>
+
+      <Text style={styles.section}>Imágenes actuales</Text>
+      <ScrollView horizontal>
+      {images.map((img, index) => (
+  <View key={index} style={{ position: 'relative', marginRight: 10 }}>
+    <Image
+      source={{ uri: `http://localhost:8080/images/${img}` }}
+      style={{ width: 80, height: 80, borderRadius: 10 }}
+    />
+    <TouchableOpacity
+      style={{
+        position: 'absolute',
+        top: 0,
+        right: 0,
+        backgroundColor: 'rgba(0,0,0,0.6)',
+        borderRadius: 10,
+        padding: 2,
+      }}
+      onPress={() => {
+        setImages(prev => prev.filter((_, i) => i !== index));
+      }}
+    >
+      <Ionicons name="close-circle" size={20} color="white" />
+    </TouchableOpacity>
+  </View>
+))}
+
+      </ScrollView>
+
+      <TouchableOpacity style={styles.button} onPress={pickImage}>
+        <Text style={styles.buttonText}>Seleccionar nuevas imágenes</Text>
+      </TouchableOpacity>
+
+      <TouchableOpacity style={styles.button} onPress={handleSave}>
+        <Text style={styles.buttonText}>Guardar Cambios</Text>
+      </TouchableOpacity>
+    </ScrollView>
+  );
+}
+
+const styles = StyleSheet.create({
+  container: { backgroundColor: '#0D1B2A', padding: 20 },
+  title: { fontSize: 22, fontWeight: 'bold', color: '#E0E1DD', marginBottom: 20, textAlign: 'center' },
+  section: { fontSize: 18, color: '#E0E1DD', marginTop: 20, marginBottom: 10, fontWeight: '600' },
+  inputWrapper: {
+    flexDirection: 'row', alignItems: 'center', backgroundColor: '#162A40', borderRadius: 10,
+    paddingHorizontal: 10, marginBottom: 15, borderWidth: 1, borderColor: '#415A77',
+  },
+  inputIcon: { marginRight: 10 },
+  input: { flex: 1, paddingVertical: 12, color: '#E0E1DD' },
+  label: { color: '#E0E1DD' },
+  switchRow: {
+    flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginVertical: 10,
+  },
+  button: {
+    backgroundColor: '#A8DADC', marginTop: 20, padding: 15, borderRadius: 10,
+  },
+  buttonText: {
+    color: '#0D1B2A', fontWeight: 'bold', textAlign: 'center',
+  },
+  errorText: {
+    color: 'tomato', backgroundColor: '#fff3f3', padding: 10, borderRadius: 10,
+    marginBottom: 15, textAlign: 'center', fontWeight: '600'
+  },
+  warningText: {
+    color: '#F4A261',
+    backgroundColor: '#1B263B',
+    padding: 10,
+    borderRadius: 8,
+    marginTop: 5,
+    fontSize: 14,
+  },  
+});

@@ -281,6 +281,7 @@ const applyFilters = () => {
         }
       >
         <View style={styles.card}>
+        {role === 'STUDENT' && (
         <TouchableOpacity
             style={styles.favoriteIcon}
             onPress={() => toggleFavorite(item.id)}
@@ -289,6 +290,7 @@ const applyFilters = () => {
               {favorites.includes(item.id) ? '❤️' : '🤍'}
             </Text>
           </TouchableOpacity>
+        )}
 
           <View style={{ position: 'relative' }}>
           <FlatList
@@ -299,14 +301,10 @@ const applyFilters = () => {
               <Image source={{ uri: `http://localhost:8080/images/${item}` }} style={styles.cardImage} />
             )}
             showsHorizontalScrollIndicator={false}
-          />
-        </View>
+              />
+            </View>
 
           <View style={{ marginTop: 10 }}>
-            <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
-              <Text style={styles.cardTitle}>{item.advertisement?.title || 'Sin título'}</Text>
-              {item.isNew && <Text style={styles.newBadge}>NUEVO</Text>}
-            </View>
             <View style={styles.cardInfoRow}>
               <View style={styles.cardInfoLeft}>
                 <View style={styles.cardInfoItem}>
@@ -554,17 +552,34 @@ const applyFilters = () => {
         {role === 'OWNER' && (
           <>
             <Text style={styles.resultsTitle}>Mis alojamientos</Text>
+
+            {accommodationsByOwner.length > 0 ? (
+              <Text style={styles.ownerSummaryText}>
+                Tienes <Text style={{ fontWeight: 'bold' }}>{accommodationsByOwner.length}</Text> alojamientos publicados.
+              </Text>
+            ) : (
+              <Text style={styles.ownerEmptyText}>
+                Aún no has publicado ningún alojamiento. ¡Empieza creando uno!
+              </Text>
+            )}
+
             <FlatList
               data={accommodationsByOwner}
               keyExtractor={(item) => item.id?.toString()}
               renderItem={renderAccommodation}
-              ListEmptyComponent={<Text style={{ color: '#ccc' }}>No tienes alojamientos publicados.</Text>}
+              ListEmptyComponent={null}
             />
-            <TouchableOpacity style={styles.button} onPress={() => router.push('../create-accommodation')}>
-              <Text style={styles.buttonText}>Crear nuevo anuncio</Text>
+
+            <TouchableOpacity
+              style={styles.createButton}
+              onPress={() => router.push('../create-accommodation')}
+            >
+              <Feather name="plus-circle" size={20} color="#0D1B2A" style={{ marginRight: 10 }} />
+              <Text style={styles.createButtonText}>Crear nuevo anuncio</Text>
             </TouchableOpacity>
           </>
         )}
+
       </ScrollView>
     </View>
   );
@@ -831,6 +846,35 @@ const styles = StyleSheet.create({
   borderWidth: 1,
   borderColor: '#415A77',
 },
+createButton: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'center',
+  backgroundColor: '#E0E1DD',
+  paddingVertical: 14,
+  paddingHorizontal: 20,
+  borderRadius: 10,
+  marginTop: 20,
+},
 
-  
+createButtonText: {
+  color: '#0D1B2A',
+  fontWeight: 'bold',
+  fontSize: 16,
+},
+
+ownerEmptyText: {
+  color: '#AFC1D6',
+  fontSize: 16,
+  textAlign: 'center',
+  marginVertical: 10,
+  fontStyle: 'italic',
+},
+
+ownerSummaryText: {
+  color: '#AFC1D6',
+  fontSize: 15,
+  textAlign: 'center',
+  marginBottom: 15,
+}, 
 });

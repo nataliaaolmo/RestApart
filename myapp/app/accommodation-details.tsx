@@ -44,6 +44,7 @@ export default function AccommodationDetailsScreen() {
   
   const [tempStartDate, setTempStartDate] = useState(stayRange.startDate || '');
   const [tempEndDate, setTempEndDate] = useState(stayRange.endDate || '');
+  const [addressInfo, setAddressInfo] = useState<string | null>(null);
   
 const checkAlreadyLiving = async () => {
   try {
@@ -113,6 +114,34 @@ const checkAlreadyLiving = async () => {
     } catch (error) {
       console.error('Error obteniendo zona:', error);
       setZone('Zona desconocida');
+    }
+  };
+
+  const fetchStreetType = async (lat: number, lon: number) => {
+    try {
+      const response = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lon}&zoom=17&addressdetails=1`,
+        {
+          headers: {
+            'User-Agent': 'MyStudentApp/1.0'
+          }
+        }
+      );
+      const data = await response.json();
+      const addr = data.address;
+  
+      const possibleFields = ['road', 'pedestrian', 'footway', 'cycleway', 'street'];
+      const found = possibleFields.find(field => addr[field]);
+      if (found) {
+        const raw = addr[found];
+        const sinNumero = raw.replace(/\d+.*$/, '').trim();
+        setAddressInfo(sinNumero);
+      } else {
+        setAddressInfo(null);
+      }
+    } catch (err) {
+      console.error('Error obteniendo tipo de vía:', err);
+      setAddressInfo(null);
     }
   };
 
@@ -188,6 +217,7 @@ const checkAlreadyLiving = async () => {
       }      
       setLatitude(response.data.latitud);
       setLongitude(response.data.longitud);
+      fetchStreetType(response.data.latitud, response.data.longitud);
     } catch (error) {
       console.error('Error buscando alojamiento', error);
     }
@@ -343,11 +373,63 @@ const checkAlreadyLiving = async () => {
                 <Text style={styles.ownerName}>Dueño: {owner.user.firstName} {owner.user.lastName}</Text>
                 <Text style={styles.ownerExperience}>{owner.experienceYears} años de experiencia</Text>
               </View>
+              {isOwner && (
+  <View style={{ flexDirection: 'row', marginTop: 10 }}>
+    <TouchableOpacity
+      style={[styles.addCommentButton, { backgroundColor: '#1B9AAA', marginRight: 10 }]}
+      onPress={() => router.push({ pathname: '/edit-accommodation', params: { id } })}
+    >
+      <Text style={styles.addCommentButtonText}>Editar</Text>
+    </TouchableOpacity>
+    <TouchableOpacity
+      style={[styles.addCommentButton, { backgroundColor: '#E63946' }]}
+      onPress={async () => {
+        try {
+          const token = localStorage.getItem('jwt');
+          await api.delete(`/accommodations/${id}`, {
+            headers: { Authorization: `Bearer ${token}` }
+          });
+          if (Platform.OS === 'web') {
+            setFilterError('Alojamiento eliminado.');
+          } else {
+            Alert.alert('Éxito', 'Alojamiento eliminado');
+          }
+          router.replace('/(tabs)/welcome-screen');
+        } catch (err) {
+          console.error('Error eliminando alojamiento', err);
+          if (Platform.OS === 'web') {
+            setFilterError('Error eliminando alojamiento.');
+          } else {
+            Alert.alert('Error', 'No se pudo eliminar el alojamiento.');
+          }
+        }
+      }}
+    >
+      <Text style={styles.addCommentButtonText}>Eliminar</Text>
+    </TouchableOpacity>
+  </View>
+)}
+
             </View>
           )}
 
           <Text style={styles.sectionTitle}>Inquilinos actuales</Text>
-          {!stayRange.startDate || !stayRange.endDate ? (
+          {isOwner ? (
+          <View style={[styles.card, { borderColor: '#1B9AAA', borderWidth: 1 }]}>
+            <Text style={{ color: '#AFC1D6', fontSize: 15 }}>
+              Puedes ver los inquilinos alojados desde la pestaña{" "}
+              <Text style={{ fontWeight: 'bold' }}>"Estudiantes alojados"</Text> en tu perfil.
+            </Text>
+
+            <TouchableOpacity
+              onPress={() => router.push('/favorites-or-students')}
+              style={[styles.addCommentButton, { marginTop: 15, alignSelf: 'center' }]}
+            >
+              <Text style={styles.addCommentButtonText}>Ir a mis estudiantes</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          !stayRange.startDate || !stayRange.endDate ? (
             <View style={[styles.card, { marginTop: 0, borderColor: '#A8DADC', borderWidth: 1 }]}>
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
               <Ionicons name="calendar-outline" size={20} color="#E63946" style={{ marginRight: 6 }} />
@@ -410,6 +492,7 @@ const checkAlreadyLiving = async () => {
             </TouchableOpacity>
           ))}
         </ScrollView>
+        )
         )}
 
           <Text style={styles.sectionTitle}>Descripción</Text>
@@ -421,6 +504,12 @@ const checkAlreadyLiving = async () => {
                 <Text style={styles.zoneText}>Zona: {zone}</Text>
               </View>
             )}
+            {addressInfo && (
+  <Text style={[styles.zoneText, { marginTop: 5 }]}>
+    Situado en: {addressInfo} (ubicación aproximada por privacidad)
+  </Text>
+)}
+
             <Text style={styles.sectionTitle}>Comentarios</Text>
             {comments.map((comment, index) => (
               <View key={index} style={styles.commentBox}>
@@ -730,7 +819,6 @@ const styles = StyleSheet.create({
     marginRight: 10,
   },
   description: { color: '#E0E1DD' },
-  mapImage: { width: '100%', height: 150, borderRadius: 10 },
   commentBox: {
     backgroundColor: '#E0E1DD',
     padding: 10,

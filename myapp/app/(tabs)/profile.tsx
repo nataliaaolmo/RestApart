@@ -154,7 +154,6 @@ export default function ProfileScreen() {
       console.error('Error al obtener las reservas:', error);
     }
   };
-  
 
     const showFilterError = (msg: string) => {
       if (Platform.OS === 'web') {
@@ -465,9 +464,39 @@ export default function ProfileScreen() {
             </>
           ) : (
             <>
-              <Text style={styles.detail}>{userData.experienceYears} años de experiencia</Text>
-              </>
-          )}
+            <Text style={styles.description}>{userData.description}</Text>
+        
+            <View style={styles.card}>
+              <Text style={styles.sectionTitle}>Datos de contacto</Text>
+              <View style={styles.row}>
+                <Icon name="mail" size={18} color="#AFC1D6" style={styles.icon} />
+                <Text style={styles.text}>{userData.email}</Text>
+              </View>
+              <View style={styles.row}>
+                <Icon name="phone" size={18} color="#AFC1D6" style={styles.icon} />
+                <Text style={styles.text}>{userData.telephone}</Text>
+              </View>
+            </View>
+        
+            <View style={styles.card}>
+              <Text style={styles.sectionTitle}>Más información</Text>
+              <View style={styles.row}>
+                <Icon name="briefcase" size={18} color="#AFC1D6" style={styles.icon} />
+                <Text style={styles.text}>{userData.experienceYears} años de experiencia</Text>
+              </View>
+              <View style={styles.row}>
+                <Icon name="calendar" size={18} color="#AFC1D6" style={styles.icon} />
+                <Text style={styles.text}>
+                  Fecha de nacimiento: {new Date(userData.dateOfBirth).toLocaleDateString()}
+                </Text>
+              </View>
+              <View style={styles.row}>
+                <Icon name="user" size={18} color="#AFC1D6" style={styles.icon} />
+                <Text style={styles.text}>Género: {userData.gender === 'WOMAN' ? 'Mujer' : 'Hombre'}</Text>
+              </View>
+            </View>
+          </>
+        )}
         </>
       )}
 <View style={{ marginTop: 30 }}>

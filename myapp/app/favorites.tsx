@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image } from 'react-native';
 import { useRouter } from 'expo-router';
-import api from '../../app/api'; // ajusta si está en otra ruta
+import api from "../app/api"; 
 
 export default function FavoritesScreen() {
   const router = useRouter();
@@ -127,3 +127,4 @@ const styles = StyleSheet.create({
     fontSize: 16,
   },
 });
+
