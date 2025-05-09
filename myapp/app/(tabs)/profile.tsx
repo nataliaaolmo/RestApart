@@ -6,6 +6,8 @@ import { RouteProp, useRoute, useNavigation } from '@react-navigation/native';
 import { router } from 'expo-router';
 import { useLayoutEffect } from 'react';
 import Icon from 'react-native-vector-icons/Feather';
+import StarRating from '@/components/StarRating';
+
 
 export default function ProfileScreen() {
   interface UserData {
@@ -594,50 +596,86 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         )}
 
-            <Modal
-              visible={commentModalVisible}
-              transparent
-              animationType="slide"
-              onRequestClose={() => setCommentModalVisible(false)}
-            >
-              <View style={styles.modalBackground2}>
-                <View style={styles.modalBox2}>
-                  <Text style={styles.modalTitle2}>Añadir Comentario</Text>
-      
-                  <TextInput
-                    style={styles.input}
-                    placeholder="Escribe tu comentario"
-                    placeholderTextColor="#AFC1D6"
-                    value={text}
-                    onChangeText={setText}
-                  />
-      
-                  <TextInput
-                    style={styles.input2}
-                    placeholder="Calificación (1-5)"
-                    placeholderTextColor="#AFC1D6"
-                    keyboardType="numeric"
-                    value={rating.toString()}
-                    onChangeText={(value) => setRating(Number(value))}
-                  />
-      
-                  <View style={styles.modalButtons}>
-                    <TouchableOpacity
-                      style={styles.modalButton2}
-                      onPress={makeComment}
-                    >
-                      <Text style={styles.modalButtonText2}>Aceptar</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                      style={styles.modalButtonCancel}
-                      onPress={() => setCommentModalVisible(false)}
-                    >
-                      <Text style={styles.modalButtonText2}>Cancelar</Text>
-                    </TouchableOpacity>
-                  </View>
-                </View>
-              </View>
-            </Modal>
+<Modal
+  visible={commentModalVisible}
+  transparent
+  animationType="slide"
+  onRequestClose={() => setCommentModalVisible(false)}
+>
+  <View style={styles.modalBackground2}>
+    <View style={styles.modalBox2}>
+      <Text style={styles.modalTitle2}>Añadir Comentario</Text>
+
+      <TextInput
+        style={styles.input}
+        placeholder="Escribe tu comentario"
+        placeholderTextColor="#AFC1D6"
+        value={text}
+        onChangeText={setText}
+      />
+
+      <Text style={styles.modalLabel}>Puntuación</Text>
+      <StarRating rating={rating} onChange={setRating} />
+
+      {filterError !== '' && (
+        <Text style={{ color: 'red', marginBottom: 10, textAlign: 'center' }}>
+          {filterError}
+        </Text>
+      )}
+
+      <View style={styles.modalButtons}>
+        <TouchableOpacity
+          style={styles.modalButton2}
+          onPress={async () => {
+            setFilterError('');
+            if (rating < 1 || rating > 5) {
+              showFilterError('Puntuación inválida. Selecciona una puntuación entre 1 y 5 estrellas.');
+              return;
+            }
+            if (text.trim().length < 5) {
+              showFilterError('Comentario demasiado corto. Por favor, escribe un comentario más detallado.');
+              return;
+            }
+
+            try {
+              const token = localStorage.getItem('jwt');
+              const sanitizedText = text.trim().replace(/[<>$%&]/g, '');
+
+              const commentData = {
+                text: sanitizedText,
+                rating: rating,
+              };
+
+              const response = await api.post(`/comments/users/${userId}`, commentData, {
+                headers: { Authorization: `Bearer ${token}` },
+              });
+
+              setComments([...comments, response.data]);
+              setCommentModalVisible(false);
+              setText('');
+              setRating(0);
+            } catch (error) {
+              console.error('Error al comentar perfil:', error);
+              Alert.alert('Error', 'No se pudo enviar el comentario');
+            }
+          }}
+        >
+          <Text style={styles.modalButtonText2}>Aceptar</Text>
+        </TouchableOpacity>
+        <TouchableOpacity
+          style={styles.modalButtonCancel}
+          onPress={() => {
+            setCommentModalVisible(false);
+            setFilterError('');
+          }}
+        >
+          <Text style={styles.modalButtonText2}>Cancelar</Text>
+        </TouchableOpacity>
+      </View>
+    </View>
+  </View>
+</Modal>
+
       
     </ScrollView> 
   );
@@ -795,5 +833,12 @@ const styles = StyleSheet.create({
   bookingText: {
     color: '#E0E1DD',
     fontSize: 14,
-  },      
+  },  
+  modalLabel: {
+    color: '#0D1B2A',
+    fontWeight: 'bold',
+    marginBottom: 8,
+    marginTop: 10,
+    textAlign: 'center',
+  },    
 });

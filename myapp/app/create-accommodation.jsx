@@ -7,20 +7,35 @@ import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import api from './api';
 import { useRouter } from 'expo-router';
+import axios from 'axios';
 
-const CustomInput = ({ label, value, onChangeText, icon, ...props }) => (
-  <View style={styles.inputWrapper}>
-    <Ionicons name={icon} size={20} color="#E0E1DD" style={styles.inputIcon} />
-    <TextInput
-      style={styles.input}
-      value={value}
-      onChangeText={onChangeText}
-      placeholder={label}
-      placeholderTextColor="#A0AEC0"
-      {...props}
-    />
-  </View>
-);
+const CustomInput = ({ label, value, onChangeText, icon, helpText, ...props }) => {
+  const [showHelp, setShowHelp] = useState(false);
+
+  return (
+    <View style={{ marginBottom: 15 }}>
+      <View style={styles.inputWrapper}>
+        <Ionicons name={icon} size={20} color="#E0E1DD" style={styles.inputIcon} />
+        <TextInput
+          style={styles.input}
+          value={value}
+          onChangeText={onChangeText}
+          placeholder={label}
+          placeholderTextColor="#A0AEC0"
+          {...props}
+        />
+        {helpText && (
+          <TouchableOpacity onPress={() => setShowHelp(!showHelp)}>
+            <Ionicons name="information-circle-outline" size={20} color="#AFC1D6" />
+          </TouchableOpacity>
+        )}
+      </View>
+      {showHelp && helpText && (
+        <Text style={styles.helpText}>{helpText}</Text>
+      )}
+    </View>
+  );
+};
 
 export default function CreateAccommodation() {
   const [form, setForm] = useState({
@@ -33,6 +48,12 @@ export default function CreateAccommodation() {
   const [errorMessage, setErrorMessage] = useState('');
   const [addressWarning, setAddressWarning] = useState('');
   const [suggestion, setSuggestion] = useState('');
+  const [streetType, setStreetType] = useState('');
+  const [streetName, setStreetName] = useState('');
+  const [streetNumber, setStreetNumber] = useState('');
+  const [city, setCity] = useState('');
+  const [country, setCountry] = useState('España');
+
 
   function convertToBackendFormat(dateStr) {
     const [dd, mm, yyyy] = dateStr.split('-');
@@ -45,6 +66,9 @@ export default function CreateAccommodation() {
     if (Platform.OS === 'web') setErrorMessage(msg);
     else Alert.alert('Error', msg);
   };
+  const buildFullAddress = () =>
+    `${streetType} ${streetName} ${streetNumber}, ${city}, ${country}`.trim();
+  
 
   const handleChange = (name, value) => {
     setForm({ ...form, [name]: value });
@@ -87,15 +111,11 @@ export default function CreateAccommodation() {
   };
 
   const geocodeAddress = async () => {
+    const fullAddress = `${streetType} ${streetName} ${streetNumber}, ${city}, ${country}`;
     try {
-      const response = await fetch(
-        `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(form.address)}&limit=1`,
-        {
-          headers: {
-            'User-Agent': 'MyStudentApp/1.0',
-          },
-        }
-      );
+      const response = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fullAddress)}&limit=1`, {
+        headers: { 'User-Agent': 'MyStudentApp/1.0' },
+      });
       const data = await response.json();
       if (data.length > 0) {
         setAddressWarning('');
@@ -104,7 +124,7 @@ export default function CreateAccommodation() {
           lon: parseFloat(data[0].lon),
         };
       } else {
-        setAddressWarning('No se ha podido encontrar la dirección. ¿Es correcta?');
+        setAddressWarning('No se ha encontrado la dirección. ¿Es correcta?');
         return null;
       }
     } catch (error) {
@@ -112,11 +132,11 @@ export default function CreateAccommodation() {
       setAddressWarning('Error consultando la dirección. Inténtalo de nuevo.');
       return null;
     }
-  };
+  };  
 
   const handleSubmit = async () => {
     setErrorMessage('');
-    if (!form.title || !form.rooms || !form.beds || !form.pricePerMonth || !form.pricePerDay || !form.startDate || !form.endDate || !form.students || !form.address) {
+    if (!form.title || !form.rooms || !form.beds || !form.pricePerMonth || !form.pricePerDay || !form.startDate || !form.endDate || !form.students || !buildFullAddress()) {
       showError('Por favor, completa todos los campos obligatorios.');
       return;
     }
@@ -161,7 +181,7 @@ export default function CreateAccommodation() {
       showError('Debes seleccionar al menos una imagen.');
       return;
     }
-    if (!isValidAddress(form.address)) {
+    if (!isValidAddress(buildFullAddress())) {
       setAddressWarning('⚠️ Introduce la dirección con calle, número, ciudad y país. Ej: "Calle Real 5, Madrid, España"');
       return;
     }
@@ -175,18 +195,58 @@ export default function CreateAccommodation() {
       if (!token) return showError('No se encontró el token.');
 
       const formData = new FormData();
-      selectedImages.forEach((img, i) => {
-        const file = img.file ?? new File([img], img.fileName || `image-${i}.jpg`, { type: img.mimeType || 'image/jpeg' });
-        formData.append('files', file);
-      });
 
-      const uploadRes = await fetch('http://localhost:8080/api/images/upload', {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-        body: formData,
+      for (let i = 0; i < selectedImages.length; i++) {
+        const img = selectedImages[i];
+        let file = img.file;
+        console.log('img', img);
+  
+        if (!file && img.uri.startsWith('data:image/')) {
+          console.warn(`⚠️ Imagen base64 descartada: ${img.fileName || `imagen-${i + 1}`}`);
+          continue;
+        }
+  
+        if (!file) {
+          try {
+            file = new File([img], img.fileName || `image-${i}.jpg`, {
+              type: img.mimeType || 'image/jpeg',
+            });
+          } catch (e) {
+            console.warn(`❌ No se pudo construir File para la imagen #${i}`, e);
+            continue;
+          }
+        }
+  
+        if (!file.type.startsWith('image/')) {
+          console.warn(`❌ Archivo no permitido (no es imagen): ${file.name}`);
+          continue;
+        }
+  
+        if (file.size > 1024 * 1024) {
+          showError(`❌ La imagen "${file.name}" supera 1 MB. Reduce su tamaño e inténtalo de nuevo.`);
+          return;
+        }
+          file = file ?? new File([img], img.fileName || `image-${i}.jpg`, {
+            type: img.mimeType || 'image/jpeg'
+          });
+
+        formData.append('files', file);
+      }
+  
+      if (formData.getAll('files').length === 0) {
+        return showError('❌ No se ha podido subir ninguna imagen válida.');
+      }
+      
+      console.log(formData.getAll('files'));
+      
+      const uploadRes = await axios.post('http://localhost:8080/api/images/upload', formData, {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'multipart/form-data',
+        },
       });
-      if (!uploadRes.ok) return showError('Error al subir imágenes.');
-      const imageUrls = await uploadRes.json();
+      
+      const imageUrls = uploadRes.data;
 
       const accommodationData = {
         rooms: parseInt(form.rooms),
@@ -236,6 +296,7 @@ export default function CreateAccommodation() {
   value={form.title}
   onChangeText={(val) => handleChange('title', val)}
   icon="home-outline"
+  helpText="Introduce un título corto y descriptivo para el alojamiento. Ej: 'Piso luminoso en Reina Mercedes'."
 />
 <CustomInput
   label="Descripción"
@@ -244,18 +305,50 @@ export default function CreateAccommodation() {
   multiline
   numberOfLines={3}
   icon="document-text-outline"
+  helpText="Describe el alojamiento con más detalle: comodidades, normas, entorno, etc."
 />
 <CustomInput
-  label="Dirección* (tipo de vía, nombre, número, ciudad, país. Ej: Calle Real 10, Sevilla, España)"
-  value={form.address}
-  onChangeText={(val) => handleChange('address', val)}
-  icon="location-outline"
+  label="Tipo de vía (ej. Calle, Avenida...)"
+  value={streetType}
+  onChangeText={setStreetType}
+  icon="pricetag-outline"
+  helpText="Indica si es Calle, Avenida, Camino, Plaza, etc."
 />
+<CustomInput
+  label="Nombre de la calle"
+  value={streetName}
+  onChangeText={setStreetName}
+  icon="navigate-outline"
+  helpText="Escribe el nombre de la vía sin el tipo ni número. Ej: 'Real Alcázar'."
+/>
+<CustomInput
+  label="Número"
+  value={streetNumber}
+  onChangeText={setStreetNumber}
+  keyboardType="numeric"
+  icon="list-outline"
+  helpText="Número exacto del edificio o portal. Ej: 42"
+/>
+<CustomInput
+  label="Ciudad"
+  value={city}
+  onChangeText={setCity}
+  icon="business-outline"
+  helpText="Ciudad donde se encuentra el alojamiento. Ej: Sevilla"
+/>
+<CustomInput
+  label="País"
+  value={country}
+  onChangeText={setCountry}
+  icon="flag-outline"
+  helpText="País del alojamiento. Por defecto: España."
+/>
+
 
 <TouchableOpacity
   style={[styles.button]}
   onPress={async () => {
-    if (!isValidAddress(form.address)) {
+    if (!isValidAddress(buildFullAddress())) {
       setAddressWarning('Dirección inválida. Ej: "Calle Real 10, Sevilla, España"');
       return;
     }
@@ -284,7 +377,6 @@ export default function CreateAccommodation() {
     📍 Ubicación encontrada: {latLng.lat.toFixed(5)}, {latLng.lon.toFixed(5)}
   </Text>
 )}
-
 <Text style={styles.section}>Detalles de alojamiento</Text>
 <CustomInput
   label="Habitaciones *"
@@ -292,13 +384,16 @@ export default function CreateAccommodation() {
   onChangeText={(val) => handleChange('rooms', val)}
   keyboardType="numeric"
   icon="bed-outline"
+  helpText="Número total de habitaciones disponibles en el alojamiento."
 />
+
 <CustomInput
   label="Camas *"
   value={form.beds}
   onChangeText={(val) => handleChange('beds', val)}
   keyboardType="numeric"
   icon="bed-outline"
+  helpText="Número total de camas en el alojamiento (no necesariamente igual al número de habitaciones)."
 />
 <CustomInput
   label="Precio por día (€) *"
@@ -306,6 +401,7 @@ export default function CreateAccommodation() {
   onChangeText={(val) => handleChange('pricePerDay', val)}
   keyboardType="numeric"
   icon="cash-outline"
+  helpText="Precio diario aproximado que pagarían los inquilinos. Se utiliza para calcular estancias cortas."
 />
 <CustomInput
   label="Precio por mes (€) *"
@@ -313,6 +409,7 @@ export default function CreateAccommodation() {
   onChangeText={(val) => handleChange('pricePerMonth', val)}
   keyboardType="numeric"
   icon="card-outline"
+  helpText="Precio mensual por el alojamiento completo o por habitación según el caso."
 />
 <CustomInput
   label="Plazas para estudiantes *"
@@ -320,6 +417,7 @@ export default function CreateAccommodation() {
   onChangeText={(val) => handleChange('students', val)}
   keyboardType="numeric"
   icon="people-outline"
+  helpText="Número de estudiantes que pueden alojarse a la vez en este inmueble."
 />
 
 <Text style={styles.section}>Disponibilidad</Text>
@@ -328,12 +426,14 @@ export default function CreateAccommodation() {
   value={form.startDate}
   onChangeText={(val) => handleChange('startDate', val)}
   icon="calendar-outline"
+  helpText="Día en que estará disponible el alojamiento. Usa el formato DD-MM-YYYY."
 />
 <CustomInput
   label="Fecha fin (DD-MM-YYYY) *"
   value={form.endDate}
   onChangeText={(val) => handleChange('endDate', val)}
   icon="calendar-outline"
+  helpText="Último día disponible para reservar el alojamiento. Usa el formato DD-MM-YYYY."
 />
       <View style={styles.switchRow}>
         <Text style={styles.label}>Wifi</Text>
@@ -349,10 +449,24 @@ export default function CreateAccommodation() {
       </TouchableOpacity>
 
       {selectedImages.length > 0 && (
-        <Text style={{ color: '#E0E1DD', marginTop: 10 }}>
-          {selectedImages.length} imagen(es) seleccionada(s) ✅
+  <View style={{ marginTop: 10 }}>
+    {selectedImages.map((img, idx) => (
+      <View key={idx} style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 5 }}>
+        <Text style={{ color: '#E0E1DD', flex: 1 }}>
+          {img.file?.name || img.fileName || `Imagen ${idx + 1}`}
         </Text>
-      )}
+        <TouchableOpacity
+          onPress={() =>
+            setSelectedImages((prev) => prev.filter((_, i) => i !== idx))
+          }
+        >
+          <Ionicons name="trash-outline" size={20} color="tomato" />
+        </TouchableOpacity>
+      </View>
+    ))}
+  </View>
+)}
+
 
       <TouchableOpacity style={styles.button} onPress={handleSubmit}>
         <Text style={styles.buttonText}>Crear Alojamiento</Text>
@@ -420,4 +534,13 @@ const styles = StyleSheet.create({
     paddingVertical: 12,
     color: '#E0E1DD',
   },
+  helpText: {
+    color: '#AFC1D6',
+    fontSize: 13,
+    marginTop: 5,
+    fontStyle: 'italic',
+    backgroundColor: '#1B263B',
+    padding: 8,
+    borderRadius: 8,
+  }
 });

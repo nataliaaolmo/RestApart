@@ -44,6 +44,11 @@ export default function EditAccommodation() {
   const [availability, setAvailability] = useState({startDate: '', endDate: ''});
   const [addressWarning, setAddressWarning] = useState('');
   const [suggestion, setSuggestion] = useState('');
+  const [streetType, setStreetType] = useState('');
+  const [streetName, setStreetName] = useState('');
+  const [streetNumber, setStreetNumber] = useState('');
+  const [city, setCity] = useState('');
+  const [country, setCountry] = useState('España');
 
   function convertToBackendFormat(dateStr: string): string {
     const [dd, mm, yyyy] = dateStr.split('-');
@@ -67,6 +72,8 @@ const showError = (msg: string): void => {
     if (Platform.OS === 'web') setErrorMessage(msg);
     else Alert.alert('Error', msg);
 };
+const buildFullAddress = () =>
+  `${streetType} ${streetName} ${streetNumber}, ${city}, ${country}`.trim();
 
 const maybeSuggestAddress = (input: string): string => {
     let suggestion = input;
@@ -79,10 +86,10 @@ const maybeSuggestAddress = (input: string): string => {
     return suggestion;
   };
   
-
   const fetchLatLng = async (address: string | number | boolean) => {
+    const fullAddress = `${streetType} ${streetName} ${streetNumber}, ${city}, ${country}`;
     try {
-      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`, {
+      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(fullAddress)}&limit=1`, {
         headers: { 'User-Agent': 'MyStudentApp/1.0' },
       });
       const data = await res.json();
@@ -139,8 +146,13 @@ const maybeSuggestAddress = (input: string): string => {
           headers: { 'User-Agent': 'MyStudentApp/1.0' }
         });
         const reverse = await response.json();
-        const fullAddress = reverse.display_name || '';
-        handleChange('address', fullAddress);
+        const addr = reverse.address || {};
+
+        setStreetType(addr.road?.split(' ')[0] || 'Calle');
+        setStreetName(addr.road?.replace(/^(\w+)\s/, '') || '');
+        setStreetNumber(addr.house_number || '');
+        setCity(addr.city || addr.town || addr.village || '');
+        setCountry(addr.country || '');
 
       } catch (err) {
         console.error('Error al cargar alojamiento:', err);
@@ -161,7 +173,7 @@ const maybeSuggestAddress = (input: string): string => {
   const handleSave = async () => {
     setErrorMessage('');
     setAddressWarning('');
-    if (!form.title || !form.rooms || !form.beds || !form.pricePerMonth || !form.pricePerDay || !availability.startDate || !availability.endDate || !form.students || !form.address) {
+    if (!form.title || !form.rooms || !form.beds || !form.pricePerMonth || !form.pricePerDay || !availability.startDate || !availability.endDate || !form.students || !buildFullAddress) {
       showError('Por favor, completa todos los campos obligatorios.');
       return;
     }
@@ -202,7 +214,7 @@ const maybeSuggestAddress = (input: string): string => {
       return;
     }
 
-    if (!isValidAddress(form.address)) {
+    if (!isValidAddress(buildFullAddress())) {
       setAddressWarning('⚠️ Introduce la dirección con calle, número, ciudad y país. Ej: "Calle Real 5, Madrid, España"');
       return;
     }
@@ -211,7 +223,7 @@ const maybeSuggestAddress = (input: string): string => {
       return;
     }
     try {
-      const coords = await fetchLatLng(form.address);
+      const coords = await fetchLatLng(buildFullAddress());
       if (!coords) return;
 
       const token = localStorage.getItem('jwt');
@@ -271,16 +283,51 @@ const maybeSuggestAddress = (input: string): string => {
       <Text style={styles.section}>Información general</Text>
       <CustomInput label="Título *" value={form.title} onChangeText={val => handleChange('title', val)} icon="home-outline" />
       <CustomInput label="Descripción" value={form.description} onChangeText={val => handleChange('description', val)} icon="document-text-outline" multiline numberOfLines={3} />
-      <CustomInput label="Dirección (calle, número, ciudad, país)" value={form.address} onChangeText={val => handleChange('address', val)} icon="location-outline" />
+      <CustomInput
+          label="Tipo de vía (ej. Calle, Avenida...)"
+          value={streetType}
+          onChangeText={setStreetType}
+          icon="pricetag-outline"
+          helpText="Indica si es Calle, Avenida, Camino, Plaza, etc."
+        />
+      <CustomInput
+          label="Nombre de la calle"
+          value={streetName}
+          onChangeText={setStreetName}
+          icon="navigate-outline"
+          helpText="Escribe el nombre de la vía sin el tipo ni número. Ej: 'Real Alcázar'."
+        />
+        <CustomInput
+          label="Número"
+          value={streetNumber}
+          onChangeText={setStreetNumber}
+          keyboardType="numeric"
+          icon="list-outline"
+          helpText="Número exacto del edificio o portal. Ej: 42"
+        />
+        <CustomInput
+          label="Ciudad"
+          value={city}
+          onChangeText={setCity}
+          icon="business-outline"
+          helpText="Ciudad donde se encuentra el alojamiento. Ej: Sevilla"
+        />
+        <CustomInput
+          label="País"
+          value={country}
+          onChangeText={setCountry}
+          icon="flag-outline"
+          helpText="País del alojamiento. Por defecto: España."
+        />
 
 <TouchableOpacity
   style={styles.button}
   onPress={async () => {
-    if (!isValidAddress(form.address)) {
+    if (!isValidAddress(buildFullAddress())) {
       setAddressWarning('⚠️ Dirección inválida. Ej: "Calle Real 10, Sevilla, España"');
       return;
     }
-    const coords = await fetchLatLng(form.address);
+    const coords = await fetchLatLng(buildFullAddress());
     if (coords) {
       setLatLng(coords);
       setAddressWarning('');
