@@ -24,6 +24,11 @@ export default function StudentsInMyAccommodations() {
   const [totalStudents, setTotalStudents] = useState(0);
   const router = useRouter();
 
+  function convertToBackendFormat(dateStr: string): string {
+    const [dd, mm, yyyy] = dateStr.split('-');
+    return `${yyyy}-${mm.toString().padStart(2, '0')}-${dd.toString().padStart(2, '0')}`;
+  } 
+
   useEffect(() => {
     fetchAccommodations();
   }, []);
@@ -44,10 +49,10 @@ export default function StudentsInMyAccommodations() {
   const fetchStudents = async (accommodation: any) => {
     try {
       const token = localStorage.getItem('jwt');
-      const today = new Date().toISOString().split('T')[0];
-      const start = startDate || today;
-      const end = endDate || '2100-01-01';
-      const url = `/accommodations/${accommodation.id}/students?startDate=${start}&endDate=${end}`;
+      const today = new Date().toLocaleDateString('es-ES').split('/').reverse().join('-');
+      const start = startDate ? convertToBackendFormat(startDate) : today;
+      const end = endDate ? convertToBackendFormat(endDate) : '2100-01-01';
+      const url = `/accommodations/${accommodation.id}/students?startDate=${start}&endDate=${end}`;      
       const res = await api.get(url, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -150,14 +155,14 @@ export default function StudentsInMyAccommodations() {
       <Text style={styles.header}>Estudiantes en mis alojamientos</Text>
       <View style={styles.filterContainer}>
         <TextInput
-          placeholder="Fecha inicio (YYYY-MM-DD)"
+          placeholder="Fecha inicio (DD-MM-YYYY)"
           placeholderTextColor="#AFC1D6"
           style={styles.input}
           value={startDate}
           onChangeText={setStartDate}
         />
         <TextInput
-          placeholder="Fecha fin (YYYY-MM-DD)"
+          placeholder="Fecha fin (DD-MM-YYYY)"
           placeholderTextColor="#AFC1D6"
           style={styles.input}
           value={endDate}

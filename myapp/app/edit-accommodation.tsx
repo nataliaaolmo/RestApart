@@ -45,6 +45,15 @@ export default function EditAccommodation() {
   const [addressWarning, setAddressWarning] = useState('');
   const [suggestion, setSuggestion] = useState('');
 
+  function convertToBackendFormat(dateStr: string): string {
+    const [dd, mm, yyyy] = dateStr.split('-');
+    return `${yyyy}-${mm.toString().padStart(2, '0')}-${dd.toString().padStart(2, '0')}`;
+  }
+  
+  function formatToSpanish(dateStr: string): string {
+    const [yyyy, mm, dd] = dateStr.split('-');
+    return `${dd}-${mm}-${yyyy}`;
+  }  
 
   const handleChange = (name: string, value: string | boolean) => {
     setForm(prev => ({ ...prev, [name]: value }));
@@ -106,7 +115,10 @@ const maybeSuggestAddress = (input: string): string => {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = res.data;
-        setAvailability(data.availability);
+        setAvailability({
+          startDate: formatToSpanish(data.availability.startDate),
+          endDate: formatToSpanish(data.availability.endDate)
+        });
         setForm({
           title: data.advertisement.title,
           description: data.description,
@@ -169,12 +181,23 @@ const maybeSuggestAddress = (input: string): string => {
       return;
     }
 
-    if(availability.startDate.length !==10 || availability.endDate.length !==10){
-      showError('Las fechas deben tener el formato YYYY-MM-DD.');
+    if (availability.startDate.length !== 10 || availability.endDate.length !== 10) {
+      showError('Las fechas deben tener el formato DD-MM-YYYY.');
       return;
     }
 
-    if(availability.startDate > availability.endDate){
+    const [startDay, startMonth, startYear] = availability.startDate.split('-').map(Number);
+    const [endDay, endMonth, endYear] = availability.endDate.split('-').map(Number);
+
+    const startDate = new Date(startYear, startMonth - 1, startDay);
+    const endDate = new Date(endYear, endMonth - 1, endDay);
+
+    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+      showError('Las fechas deben ser válidas.');
+      return;
+    }
+
+    if (startDate > endDate) {
       showError('La fecha de inicio no puede ser posterior a la fecha de fin.');
       return;
     }
@@ -221,9 +244,9 @@ const maybeSuggestAddress = (input: string): string => {
         latitud: coords.lat,
         longitud: coords.lon,
         availability: {
-          startDate: availability.startDate,
-          endDate: availability.endDate,
-        },
+          startDate: convertToBackendFormat(availability.startDate),
+          endDate: convertToBackendFormat(availability.endDate),
+        },        
         students: parseInt(form.students),
         wifi: form.wifi,
         isEasyParking: form.isEasyParking,

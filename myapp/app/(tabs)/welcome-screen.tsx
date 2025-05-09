@@ -61,10 +61,47 @@ export default function WelcomeScreen() {
       setFavorites(JSON.parse(storedFavorites));
     }
   }, []);
+
+  useEffect(() => {
+    const savedFilters = localStorage.getItem('accommodationFilters');
+    if (savedFilters) {
+      const f = JSON.parse(savedFilters);
+      setMaxPrice(f.maxPrice);
+      setStartDate(f.startDate);
+      setEndDate(f.endDate);
+      setStudents(f.students);
+      setWifi(f.wifi);
+      setIsEasyParking(f.isEasyParking);
+      setAcademicCareerAffinity(f.academicCareerAffinity);
+      setHobbiesAffinity(f.hobbiesAffinity);
+      setAllowSmoking(f.allowSmoking);
+      setLatitude(f.latitude);
+      setLongitude(f.longitude);
+      setRadius(f.radius);
+      setZoneQuery(f.zoneQuery);
+      setLocationConfirmed(f.locationConfirmed);
+      getFilteredAccommodations();
+    }
+    if (role === 'STUDENT') {
+      const savedFilters = localStorage.getItem('accommodationFilters');
+      if (savedFilters) {
+        getFilteredAccommodations();
+      } else {
+        findAllAccommodations();
+      }
+    } else if (role === 'OWNER') {
+      findAccommodationsByOwner();
+    }
+  }, []);  
   
   useEffect(() => {
     if (role === 'STUDENT') {
-      findAllAccommodations();
+      const savedFilters = localStorage.getItem('accommodationFilters');
+      if (savedFilters) {
+        getFilteredAccommodations();
+      } else {
+        findAllAccommodations();
+      }
     } else if (role === 'OWNER') {
       findAccommodationsByOwner();
     }
@@ -174,10 +211,10 @@ const applyFilters = () => {
     return;
   }
 
-  const isValidDate = (date: string) => /^\d{4}-\d{2}-\d{2}$/.test(date);
+  const isValidDate = (date: string) => /^\d{2}-\d{2}-\d{4}$/.test(date);
 
   if ((startDate && !isValidDate(startDate)) || (endDate && !isValidDate(endDate))) {
-    showFilterError('Las fechas deben estar en formato YYYY-MM-DD');
+    showFilterError('Las fechas deben estar en formato DD-MM-YYYY');
     return;
   }
 
@@ -198,16 +235,29 @@ const applyFilters = () => {
     return;
   }
 
+  const filters = {
+    maxPrice, startDate, endDate, students, wifi, isEasyParking,
+    academicCareerAffinity, hobbiesAffinity, allowSmoking,
+    latitude, longitude, radius, zoneQuery, locationConfirmed
+  };
+  localStorage.setItem('accommodationFilters', JSON.stringify(filters));
   getFilteredAccommodations();
   setModalVisible(false);
 };
+
+function formatDateToISO(dateString: string | null): string | null {
+  if (!dateString) return null;
+  const [day, month, year] = dateString.split("-");
+  return `${year}-${month}-${day}`;
+}
+
   const getFilteredAccommodations = async () => {
     try {
       const token = localStorage.getItem('jwt');
       const params: any = {
         maxPrice: maxPrice ? Number(maxPrice) : null,
-        startDate: startDate || null,
-        endDate: endDate || null,
+        startDate: formatDateToISO(startDate) || null,
+        endDate: formatDateToISO(endDate) || null,
         students: students ? Number(students) : null,
         wifi: wifi || null,
         isEasyParking: isEasyParking || null,
@@ -274,8 +324,8 @@ const applyFilters = () => {
               price: item.pricePerMonth,
               latitude: item.latitude,
               longitude: item.longitude,
-              startDate: startDate,
-              endDate: endDate,
+              startDate: formatDateToISO(startDate),
+              endDate: formatDateToISO(endDate),              
             },
           })
         }
@@ -364,8 +414,7 @@ const applyFilters = () => {
     setIsEasyParking(false);
     setAcademicCareerAffinity(false);
     setHobbiesAffinity(false);
-    
-    // Si guardas los resultados visibles en un estado aparte
+    localStorage.removeItem('accommodationFilters');
     findAllAccommodations();
   };
   
@@ -465,13 +514,13 @@ const applyFilters = () => {
               <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                 <TextInput
                   style={[styles.input, { flex: 1, marginRight: 5 }]}
-                  placeholder="Inicio (YYYY-MM-DD)"
+                  placeholder="Inicio (DD-MM-YYYY)"
                   value={startDate}
                   onChangeText={setStartDate}
                 />
                 <TextInput
                   style={[styles.input, { flex: 1, marginLeft: 5 }]}
-                  placeholder="Fin (YYYY-MM-DD)"
+                  placeholder="Fin (DD-MM-YYYY)"
                   value={endDate}
                   onChangeText={setEndDate}
                 />

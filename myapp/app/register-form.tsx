@@ -27,6 +27,10 @@ export default function RegisterFormScreen() {
   });
 
   const [errorMessage, setErrorMessage] = useState('');
+  function convertToBackendFormat(dateStr: string): string {
+    const [dd, mm, yyyy] = dateStr.split('-');
+    return `${yyyy}-${mm.toString().padStart(2, '0')}-${dd.toString().padStart(2, '0')}`;
+  }  
 
   const showError = (msg: string) => {
     if (Platform.OS === 'web') {
@@ -42,7 +46,7 @@ export default function RegisterFormScreen() {
 
   const handleSubmit = async () => {
     setErrorMessage(''); 
-    if (!form.username || !form.password || !form.firstName || !form.lastName || !form.email || !form.telephone || !form.dateOfBirth || !form.experienceYears) {
+    if (!form.username || !form.password || !form.firstName || !form.lastName || !form.email || !form.telephone || !form.dateOfBirth) {
       showError('Todos los campos obligatorios deben estar completos.');
       return;
     }
@@ -87,24 +91,31 @@ export default function RegisterFormScreen() {
     }  
     
     const isValidDate = (dateString: string): boolean => {
-      const regex = /^\d{4}-\d{2}-\d{2}$/;
+      const regex = /^\d{2}-\d{2}-\d{4}$/;
       if (!regex.test(dateString)) return false;
-    
-      const date = new Date(dateString);
+
+      const [day, month, year] = dateString.split('-').map(Number);
+      const date = new Date(year, month - 1, day);
       const today = new Date();
       const age = today.getFullYear() - date.getFullYear();
       const m = today.getMonth() - date.getMonth();
-    
+
       const isOver18 =
-        age > 18 || (age === 18 && m >= 0 && today.getDate() >= date.getDate());
-    
-      return !isNaN(date.getTime()) && isOver18;
+      age > 18 || (age === 18 && (m > 0 || (m === 0 && today.getDate() >= day)));
+
+      return (
+      !isNaN(date.getTime()) &&
+      date.getDate() === day &&
+      date.getMonth() === month - 1 &&
+      date.getFullYear() === year &&
+      isOver18
+      );
     };
-    
+
     if (!isValidDate(form.dateOfBirth)) {
-      showError('La fecha debe tener formato YYYY-MM-DD y ser mayor de 18 años');
+      showError('La fecha debe tener formato DD-MM-YYYY y ser mayor de 18 años');
       return;
-    }     
+    }
 
     const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailPattern.test(form.email)) {
@@ -126,7 +137,7 @@ export default function RegisterFormScreen() {
       email: form.email,
       telephone: form.telephone,
       gender: form.gender,
-      dateOfBirth: form.dateOfBirth,
+      dateOfBirth: convertToBackendFormat(form.dateOfBirth),
       description: form.description,
       profilePicture: form.profilePicture,
     };
@@ -138,6 +149,8 @@ export default function RegisterFormScreen() {
       requestData.academicCareer = form.academicCareer;
       requestData.hobbies = form.hobbies;
     }
+
+    console.log('Request Data:', requestData);
 
     try {
       const response = await api.post('/users/auth/register', requestData);
@@ -152,6 +165,14 @@ export default function RegisterFormScreen() {
       } else {
         Alert.alert('Registro exitoso', 'Usuario registrado correctamente');
       }
+
+      const loginResponse = await api.post('/users/auth/login', {
+        username: form.username,
+        password: form.password
+      });
+      
+      const jwt = loginResponse.data.token;
+      localStorage.setItem('jwt', jwt);
 
       router.push({
         pathname: '/(tabs)/welcome-screen',
@@ -245,7 +266,7 @@ export default function RegisterFormScreen() {
 
       <CustomInput
         icon="calendar"
-        placeholder="Fecha de nacimiento (YYYY-MM-DD)"
+        placeholder="Fecha de nacimiento (DD-MM-YYYY)"
         onChangeText={(v: string) => handleChange('dateOfBirth', v)}
       />
 

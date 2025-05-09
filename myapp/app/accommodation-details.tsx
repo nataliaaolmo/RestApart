@@ -45,12 +45,34 @@ export default function AccommodationDetailsScreen() {
   const [tempStartDate, setTempStartDate] = useState(stayRange.startDate || '');
   const [tempEndDate, setTempEndDate] = useState(stayRange.endDate || '');
   const [addressInfo, setAddressInfo] = useState<string | null>(null);
+
+  function formatToSpanish(dateStr: string): string {
+    if (!dateStr) return '';
+    const [yyyy, mm, dd] = dateStr.split('-');
+    return `${dd}-${mm}-${yyyy}`;
+  }
+  
+  function convertToBackendFormat(dateStr: string): string {
+    const [dd, mm, yyyy] = dateStr.split('-');
+    return `${yyyy}-${mm.toString().padStart(2, '0')}-${dd.toString().padStart(2, '0')}`;
+  }
+  
+  function toBackendFormatIfNeeded(date: string): string {
+    // Si ya viene en formato yyyy-mm-dd, no cambia nada
+    if (/^\d{4}-\d{2}-\d{2}$/.test(date)) return date;
+    // Si viene como dd-mm-yyyy, lo convertimos
+    const [dd, mm, yyyy] = date.split('-');
+    return `${yyyy}-${mm}-${dd}`;
+  }  
   
 const checkAlreadyLiving = async () => {
   try {
     const token = localStorage.getItem('jwt');
     const res = await api.get(`/accommodations/${id}/students`, {
-      params: stayRange,
+      params: {
+        startDate: toBackendFormatIfNeeded(stayRange.startDate!),
+        endDate: toBackendFormatIfNeeded(stayRange.endDate!)
+      },      
       headers: { Authorization: `Bearer ${token}` },
     });
     const alreadyTenant = res.data.some((s: any) => s.id === currentUserId);
@@ -229,9 +251,9 @@ const checkAlreadyLiving = async () => {
       return;
     }
   
-    const isValidDate = (date: string) => /^\d{4}-\d{2}-\d{2}$/.test(date);
+    const isValidDate = (date: string) => /^\d{2}-\d{2}-\d{4}$/.test(date);
     if (!isValidDate(start) || !isValidDate(end)) {
-      showFilterError('Formato de fecha inválido. Usa YYYY-MM-DD.');
+      showFilterError('Formato de fecha inválido. Usa DD-MM-YYYY.');
       return;
     }
   
@@ -248,7 +270,10 @@ const checkAlreadyLiving = async () => {
     try {
       const token = localStorage.getItem('jwt');
       const response = await api.get(`/accommodations/${id}/students`, {
-        params: stayRange,
+        params: {
+          startDate: toBackendFormatIfNeeded(stayRange.startDate!),
+          endDate: toBackendFormatIfNeeded(stayRange.endDate!)
+        },        
         headers: { Authorization: `Bearer ${token}` },
       });
       console.log('Tenants:', response.data);
@@ -262,7 +287,10 @@ const checkAlreadyLiving = async () => {
     const token = localStorage.getItem('jwt');
     try {
       const isAvailable = await api.get(`/accommodations/${id}/check-availability`, {
-        params: range,
+        params: {
+          startDate: toBackendFormatIfNeeded(range.startDate),
+          endDate: toBackendFormatIfNeeded(range.endDate)
+        },
         headers: { Authorization: `Bearer ${token}` },
       }).then(res => res.data);
   
@@ -271,12 +299,15 @@ const checkAlreadyLiving = async () => {
         return;
       }
   
-      const start = new Date(range.startDate);
-      const end = new Date(range.endDate);
+      const [startDay, startMonth, startYear] = range.startDate.split('-').map(Number);
+      const [endDay, endMonth, endYear] = range.endDate.split('-').map(Number);
+
+      const start = new Date(startYear, startMonth - 1, startDay);
+      const end = new Date(endYear, endMonth - 1, endDay);
       const diffInMs = end.getTime() - start.getTime();
       const days = Math.ceil(diffInMs / (1000 * 60 * 60 * 24));
       const months = (end.getFullYear() - start.getFullYear()) * 12 + (end.getMonth() - start.getMonth());
-  
+
       let basePrice = 0;
       if (start.getDate() === end.getDate() && months > 0) {
         basePrice = months * Number(price);
@@ -290,8 +321,8 @@ const checkAlreadyLiving = async () => {
         params: {
           amount: totalPrice,
           currency: 'EUR',
-          description: `Reserva alojamiento ID ${id} del ${range.startDate} al ${range.endDate}`,
-          returnUrl: `http://localhost:8081/paypal-success?id=${id}&startDate=${range.startDate}&endDate=${range.endDate}`
+          description: `Reserva alojamiento ID ${id} del ${formatToSpanish(range.startDate)} al ${formatToSpanish(range.endDate)}`,
+          returnUrl: `http://localhost:8081/paypal-success?id=${id}&startDate=${toBackendFormatIfNeeded(range.startDate)}&endDate=${toBackendFormatIfNeeded(range.endDate)}`
         },
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -440,14 +471,14 @@ const checkAlreadyLiving = async () => {
 
             <TextInput
               style={styles.input2}
-              placeholder="Fecha de inicio (YYYY-MM-DD)"
+              placeholder="Fecha de inicio (DD-MM-YYYY)"
               placeholderTextColor="#AFC1D6"
               value={tempStartDate}
               onChangeText={setTempStartDate}
             />
             <TextInput
               style={styles.input2}
-              placeholder="Fecha de fin (YYYY-MM-DD)"
+              placeholder="Fecha de fin (DD-MM-YYYY)"
               placeholderTextColor="#AFC1D6"
               value={tempEndDate}
               onChangeText={setTempEndDate}
@@ -456,18 +487,21 @@ const checkAlreadyLiving = async () => {
             <TouchableOpacity
               style={styles.addCommentButton}
               onPress={() => {
-                const isValidDate = (date: string) => /^\d{4}-\d{2}-\d{2}$/.test(date);
+                const isValidDate = (date: string) => /^\d{2}-\d{2}-\d{4}$/.test(date);
                 if (!tempStartDate || !tempEndDate) {
                   showFilterError('Debes introducir ambas fechas.');
                   return;
                 }
                 if (!isValidDate(tempStartDate) || !isValidDate(tempEndDate)) {
-                  showFilterError('Formato de fecha inválido. Usa YYYY-MM-DD.');
+                  showFilterError('Formato de fecha inválido. Usa DD-MM-YYYY.');
                   return;
                 }
 
-                const start = new Date(tempStartDate);
-                const end = new Date(tempEndDate);
+                const [startDay, startMonth, startYear] = tempStartDate.split('-').map(Number);
+                const [endDay, endMonth, endYear] = tempEndDate.split('-').map(Number);
+
+                const start = new Date(startYear, startMonth - 1, startDay);
+                const end = new Date(endYear, endMonth - 1, endDay);
                 if (start >= end) {
                   showFilterError('La fecha de inicio debe ser anterior a la de fin.');
                   return;
@@ -547,46 +581,50 @@ const checkAlreadyLiving = async () => {
 
             <><Text style={styles.modalLabel}>Fecha de inicio</Text><TextInput
                 style={styles.input}
-                placeholder="YYYY-MM-DD"
+                placeholder="DD-MM-YYYY"
                 value={tempStartDate}
                 onChangeText={setTempStartDate} /><Text style={styles.modalLabel}>Fecha de fin</Text><TextInput
                   style={styles.input}
-                  placeholder="YYYY-MM-DD"
+                  placeholder="DD-MM-YYYY"
                   value={tempEndDate}
                   onChangeText={setTempEndDate} /></>
             )}
 
-            {tempStartDate && tempEndDate && (() => {
-              {(tempStartDate && tempEndDate) && (
-                <Text style={{ color: '#0D1B2A', fontWeight: 'bold', marginTop: 10, textAlign: 'center' }}>
-                  Reserva del {tempStartDate} al {tempEndDate}
-                </Text>
-              )}              
-              try {
-                const start = new Date(tempStartDate);
-                const end = new Date(tempEndDate);
-                const diffInMs = end.getTime() - start.getTime();
-                const days = Math.ceil(diffInMs / (1000 * 60 * 60 * 24));
-                if (days <= 0) return null;
+          {tempStartDate && tempEndDate && (
+            <>
+              <Text style={{ color: '#0D1B2A', fontWeight: 'bold', marginTop: 10, textAlign: 'center' }}>
+                Reserva del {formatToSpanish(tempStartDate)} al {formatToSpanish(tempEndDate)}
+              </Text>
+              {(() => {
+                try {
+                  const [startDay, startMonth, startYear] = tempStartDate.split('-').map(Number);
+                  const [endDay, endMonth, endYear] = tempEndDate.split('-').map(Number);
+                  const start = new Date(startYear, startMonth - 1, startDay);
+                  const end = new Date(endYear, endMonth - 1, endDay);
+                  const diffInMs = end.getTime() - start.getTime();
+                  const days = Math.ceil(diffInMs / (1000 * 60 * 60 * 24));
+                  if (days <= 0) return null;
 
-                let basePrice = 0;
-                if (days >= 30) {
-                  const months = Math.floor(days / 30);
-                  basePrice = months * Number(price);
-                } else {
-                  basePrice = days * (Number(price) / 30);
+                  let basePrice = 0;
+                  if (days >= 30) {
+                    const months = Math.floor(days / 30);
+                    basePrice = months * Number(price);
+                  } else {
+                    basePrice = days * (Number(price) / 30);
+                  }
+
+                  const total = Math.round(basePrice * 1.02 * 100) / 100;
+                  return (
+                    <Text style={{ color: '#0D1B2A', fontWeight: 'bold', marginTop: 10 }}>
+                      Precio estimado: {total} €
+                    </Text>
+                  );
+                } catch {
+                  return null;
                 }
-
-                const total = Math.round(basePrice * 1.02 * 100) / 100;
-                return (
-                  <Text style={{ color: '#0D1B2A', fontWeight: 'bold', marginTop: 10 }}>
-                    Precio estimado: {total} €
-                  </Text>
-                );
-              } catch {
-                return null;
-              }
-            })()}
+              })()}
+            </>
+          )}
 
             {filterError !== '' && (
               <Text style={{ color: 'red', marginTop: 10, textAlign: 'center' }}>{filterError}</Text>
@@ -596,27 +634,31 @@ const checkAlreadyLiving = async () => {
             <TouchableOpacity
             style={styles.modalButton2}
             onPress={() => {
-              const finalStart = datesSetFromTenantsSection ? stayRange.startDate! : tempStartDate;
-              const finalEnd = datesSetFromTenantsSection ? stayRange.endDate! : tempEndDate;
+                const finalStart = datesSetFromTenantsSection ? stayRange.startDate! : tempStartDate;
+                const finalEnd = datesSetFromTenantsSection ? stayRange.endDate! : tempEndDate;
 
-              const isValidDate = (date: string) => /^\d{4}-\d{2}-\d{2}$/.test(date);
-              if (!finalStart || !finalEnd) {
+                const isValidDate = (date: string) => /^\d{2}-\d{2}-\d{4}$/.test(date);
+                if (!finalStart || !finalEnd) {
                 showFilterError('Debes introducir ambas fechas.');
                 return;
-              }
-              if (!isValidDate(finalStart) || !isValidDate(finalEnd)) {
-                showFilterError('Formato de fecha inválido. Usa YYYY-MM-DD.');
+                }
+                if (!isValidDate(finalStart) || !isValidDate(finalEnd)) {
+                showFilterError('Formato de fecha inválido. Usa DD-MM-YYYY.');
                 return;
-              }
+                }
 
-              const start = new Date(finalStart);
-              const end = new Date(finalEnd);
-              if (start >= end) {
+                const [startDay, startMonth, startYear] = finalStart.split('-').map(Number);
+                const [endDay, endMonth, endYear] = finalEnd.split('-').map(Number);
+
+                const start = new Date(startYear, startMonth - 1, startDay);
+                const end = new Date(endYear, endMonth - 1, endDay);
+                if (start >= end) {
                 showFilterError('La fecha de inicio debe ser anterior a la fecha de fin.');
                 return;
-              }
+                }
 
-              handleReservationConfirm(finalStart, finalEnd);
+                handleReservationConfirm(finalStart, finalEnd);
+
             }}
           >
             <Text style={styles.modalButtonText2}>Confirmar y pagar</Text>

@@ -33,6 +33,12 @@ export default function CreateAccommodation() {
   const [errorMessage, setErrorMessage] = useState('');
   const [addressWarning, setAddressWarning] = useState('');
   const [suggestion, setSuggestion] = useState('');
+
+  function convertToBackendFormat(dateStr) {
+    const [dd, mm, yyyy] = dateStr.split('-');
+    return `${yyyy}-${mm.toString().padStart(2, '0')}-${dd.toString().padStart(2, '0')}`;
+  }
+  
   const router = useRouter();
 
   const showError = (msg) => {
@@ -130,12 +136,23 @@ export default function CreateAccommodation() {
       return;
     }
 
-    if(form.startDate.length !==10 || form.endDate.length !==10){
-      showError('Las fechas deben tener el formato YYYY-MM-DD.');
+    if (form.startDate.length !== 10 || form.endDate.length !== 10) {
+      showError('Las fechas deben tener el formato DD-MM-YYYY.');
       return;
     }
 
-    if(form.startDate> form.endDate){
+    const [startDay, startMonth, startYear] = form.startDate.split('-').map(Number);
+    const [endDay, endMonth, endYear] = form.endDate.split('-').map(Number);
+
+    const startDate = new Date(startYear, startMonth - 1, startDay);
+    const endDate = new Date(endYear, endMonth - 1, endDay);
+
+    if (isNaN(startDate.getTime()) || isNaN(endDate.getTime())) {
+      showError('Las fechas deben ser válidas.');
+      return;
+    }
+
+    if (startDate > endDate) {
       showError('La fecha de inicio no puede ser posterior a la fecha de fin.');
       return;
     }
@@ -180,9 +197,9 @@ export default function CreateAccommodation() {
         latitud: latLng.lat,
         longitud: latLng.lon,
         availability: {
-          startDate: form.startDate,
-          endDate: form.endDate
-        },
+          startDate: convertToBackendFormat(form.startDate),
+          endDate: convertToBackendFormat(form.endDate)
+        },        
         students: parseInt(form.students),
         wifi: form.wifi,
         isEasyParking: form.isEasyParking,
@@ -307,13 +324,13 @@ export default function CreateAccommodation() {
 
 <Text style={styles.section}>Disponibilidad</Text>
 <CustomInput
-  label="Fecha inicio (YYYY-MM-DD) *"
+  label="Fecha inicio (DD-MM-YYYY) *"
   value={form.startDate}
   onChangeText={(val) => handleChange('startDate', val)}
   icon="calendar-outline"
 />
 <CustomInput
-  label="Fecha fin (YYYY-MM-DD) *"
+  label="Fecha fin (DD-MM-YYYY) *"
   value={form.endDate}
   onChangeText={(val) => handleChange('endDate', val)}
   icon="calendar-outline"

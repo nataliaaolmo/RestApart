@@ -50,27 +50,33 @@ export default function ProfileScreen() {
   const [originalTelephone, setOriginalTelephone] = useState('');
   const [bookings, setBookings] = useState<any[]>([]);
 
+  function convertToBackendFormat(dateStr: string): string {
+    const [dd, mm, yyyy] = dateStr.split('-');
+    return `${yyyy}-${mm.toString().padStart(2, '0')}-${dd.toString().padStart(2, '0')}`;
+  } 
+
+  const toSpanishFormat = (isoDate: string) => {
+    const [year, month, day] = isoDate.split('-');
+    return `${day}-${month}-${year}`;
+  };
+  
+
   const fetchProfile = async () => {
     try {
       const token = localStorage.getItem('jwt');
-      const url = userId
-        ? `/users/${userId}`
-        : '/users/auth/current-user';
-  
+      const url = userId ? `/users/${userId}` : '/users/auth/current-user';
       const response = await api.get(url, {
         headers: { Authorization: `Bearer ${token}` },
       });
-  
       const user = userId ? response.data : response.data.user;
       setUserData(user);
       setOriginalUsername(user.username);
       setOriginalEmail(user.email);
       setOriginalTelephone(user.telephone);
-
     } catch (error) {
       console.error('Error al obtener el perfil:', error);
     }
-  };  
+  };
 
   useEffect(() => {
     fetchProfile();
@@ -264,17 +270,28 @@ export default function ProfileScreen() {
       return false;
     }
   };
+  function calculateAge(dateStr: string): number {
+    const [day, month, year] = dateStr.split('-').map(Number);
+    const birthDate = new Date(year, month - 1, day);
+    const today = new Date();
+    let age = today.getFullYear() - birthDate.getFullYear();
+    const hasHadBirthdayThisYear =
+      today.getMonth() > birthDate.getMonth() ||
+      (today.getMonth() === birthDate.getMonth() && today.getDate() >= birthDate.getDate());
+    if (!hasHadBirthdayThisYear) {
+      age--;
+    }
+    return age;
+  }  
   
-
   const saveChanges = async () => {
     if (!userData) return;
-
     if (saving) return;
     setSaving(true);
-
+  
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const phoneRegex = /^[0-9]{7,15}$/;
-
+  
     if (!userData.firstName.trim() || !userData.lastName.trim() || !userData.username.trim()) {
       showFilterError('Error. Nombre, apellido y usuario son obligatorios');
       setSaving(false);
@@ -290,30 +307,30 @@ export default function ProfileScreen() {
       setSaving(false);
       return;
     }
+  
     const isUsernameTaken = await checkIfExists('username', userData.username);
     if (isUsernameTaken && (userData.username !== originalUsername || userData.id !== currentUserId)) {
       showFilterError('El nombre de usuario ya está en uso');
       setSaving(false);
       return;
     }
-
+  
     const isEmailTaken = await checkIfExists('email', userData.email);
     if (isEmailTaken && (userData.email !== originalEmail || userData.id !== currentUserId)) {
       showFilterError('El email ya está en uso');
       setSaving(false);
       return;
     }
-
+  
     const isPhoneTaken = await checkIfExists('telephone', userData.telephone);
     if (isPhoneTaken && (userData.telephone !== originalTelephone || userData.id !== currentUserId)) {
       showFilterError('El teléfono ya está en uso');
       setSaving(false);
       return;
     }
-
+  
     try {
       const token = localStorage.getItem('jwt');
-  
       const updatedUser = {
         username: sanitizeInput(userData.username),
         password: userData.password || 'Temp1234*',
@@ -321,7 +338,7 @@ export default function ProfileScreen() {
         firstName: sanitizeInput(userData.firstName),
         lastName: sanitizeInput(userData.lastName),
         telephone: sanitizeInput(userData.telephone),
-        dateOfBirth: userData.dateOfBirth,
+        dateOfBirth: convertToBackendFormat(userData.dateOfBirth),
         gender: userData.gender,
         description: sanitizeInput(userData.description),
         profilePicture: userData.profilePicture,
@@ -336,6 +353,7 @@ export default function ProfileScreen() {
         headers: { Authorization: `Bearer ${token}` },
       });
   
+      res.data.dateOfBirth = toSpanishFormat(res.data.dateOfBirth);
       setUserData(res.data);
       setEditing(false);
       fetchProfile();
@@ -344,8 +362,7 @@ export default function ProfileScreen() {
       console.error('Error actualizando perfil:', error);
       Alert.alert('Error al actualizar perfil');
     }
-  };  
-
+  };
 
   if (!userData) return <Text style={styles.loadingText}>Cargando perfil...</Text>;
 
@@ -379,7 +396,7 @@ export default function ProfileScreen() {
           <TextInput style={styles.input} value={userData.username} onChangeText={(text) => setUserData(prev => prev ? { ...prev, username: text } : null)} placeholder="Usuario" />
           <TextInput style={styles.input} value={userData.email} onChangeText={(text) => setUserData(prev => prev ? { ...prev, email: text } : null)} placeholder="Email" />
           <TextInput style={styles.input} value={userData.telephone} onChangeText={(text) => setUserData(prev => prev ? { ...prev, telephone: text } : null)} placeholder="Teléfono" />
-          <TextInput style={styles.input} value={userData.dateOfBirth} onChangeText={(text) => setUserData(prev => prev ? { ...prev, dateOfBirth: text } : null)} placeholder="Fecha de nacimiento (YYYY-MM-DD)" />
+          <TextInput style={styles.input} value={userData.dateOfBirth} onChangeText={(text) => setUserData(prev => prev ? { ...prev, dateOfBirth: text } : null)} placeholder="Fecha de nacimiento (DD-MM-YYYY)" />
           <TextInput style={styles.input} value={userData.gender} onChangeText={(text) => setUserData(prev => prev ? { ...prev, gender: text } : null)} placeholder="Género (MAN/WOMAN)" />
           <TextInput style={styles.input} value={userData.description} onChangeText={(text) => setUserData(prev => prev ? { ...prev, description: text } : null)} placeholder="Descripción" />
 
@@ -423,46 +440,47 @@ export default function ProfileScreen() {
           </TouchableOpacity>
         )}
 
-          {isStudent ? (
-            <>
-              <Text style={styles.detail}>{userData.gender === 'WOMAN' ? 'Mujer' : 'Hombre'} - {new Date().getFullYear() - new Date(userData.dateOfBirth).getFullYear()} años</Text>
-              <Text style={styles.description}>{userData.description}</Text>
-              <View style={styles.card}>
-              <Text style={styles.sectionTitle}>Datos de contacto</Text>
-              <View style={styles.row}>
-                <Icon name="mail" size={18} color="#AFC1D6" style={styles.icon} />
-                <Text style={styles.text}>{userData.email}</Text>
-              </View>
-              <View style={styles.row}>
-                <Icon name="phone" size={18} color="#AFC1D6" style={styles.icon} />
-                <Text style={styles.text}>{userData.telephone}</Text>
-              </View>
-              </View>
-              <View style={styles.card}>
-              <Text style={styles.sectionTitle}>Más información</Text>
+{isStudent ? (
+  <>
+    <Text style={styles.detail}>
+      {userData.gender === 'WOMAN' ? 'Mujer' : 'Hombre'} -{' '}
+      {calculateAge(toSpanishFormat(userData.dateOfBirth))} años
+    </Text>
+    <Text style={styles.description}>{userData.description}</Text>
 
-              <View style={styles.row}>
-                <Icon name={userData.isSmoker ? 'smile' : 'slash'} size={18} color="#AFC1D6" style={styles.icon} />
-                <Text style={styles.text}>{userData.isSmoker ? 'Fumador/a' : 'No fumador/a'}</Text>
-              </View>
+    <View style={styles.card}>
+      <Text style={styles.sectionTitle}>Datos de contacto</Text>
+      <View style={styles.row}>
+        <Icon name="mail" size={18} color="#AFC1D6" style={styles.icon} />
+        <Text style={styles.text}>{userData.email}</Text>
+      </View>
+      <View style={styles.row}>
+        <Icon name="phone" size={18} color="#AFC1D6" style={styles.icon} />
+        <Text style={styles.text}>{userData.telephone}</Text>
+      </View>
+    </View>
 
-              <View style={styles.row}>
-                <Icon name="book-open" size={18} color="#AFC1D6" style={styles.icon} />
-                <Text style={styles.text}>{userData.academicCareer}</Text>
-              </View>
-
-              <View style={[styles.row, { alignItems: 'flex-start' }]}>
-                <Icon name="heart" size={18} color="#AFC1D6" style={styles.icon} />
-                <View style={{ flex: 1 }}>
-                  {userData.hobbies?.split(',').map((hobby, index) => (
-                    <Text key={index} style={styles.text}>{hobby.trim()}</Text>
-                  ))}
-                </View>
-              </View>
-            </View>
-
-            </>
-          ) : (
+    <View style={styles.card}>
+      <Text style={styles.sectionTitle}>Más información</Text>
+      <View style={styles.row}>
+        <Icon name={userData.isSmoker ? 'smile' : 'slash'} size={18} color="#AFC1D6" style={styles.icon} />
+        <Text style={styles.text}>{userData.isSmoker ? 'Fumador/a' : 'No fumador/a'}</Text>
+      </View>
+      <View style={styles.row}>
+        <Icon name="book-open" size={18} color="#AFC1D6" style={styles.icon} />
+        <Text style={styles.text}>{userData.academicCareer}</Text>
+      </View>
+      <View style={[styles.row, { alignItems: 'flex-start' }]}>
+        <Icon name="heart" size={18} color="#AFC1D6" style={styles.icon} />
+        <View style={{ flex: 1 }}>
+          {userData.hobbies?.split(',').map((hobby, index) => (
+            <Text key={index} style={styles.text}>{hobby.trim()}</Text>
+          ))}
+        </View>
+      </View>
+    </View>
+  </>
+) : (
             <>
             <Text style={styles.description}>{userData.description}</Text>
         
@@ -487,7 +505,7 @@ export default function ProfileScreen() {
               <View style={styles.row}>
                 <Icon name="calendar" size={18} color="#AFC1D6" style={styles.icon} />
                 <Text style={styles.text}>
-                  Fecha de nacimiento: {new Date(userData.dateOfBirth).toLocaleDateString()}
+                Fecha de nacimiento: {toSpanishFormat(userData.dateOfBirth)}
                 </Text>
               </View>
               <View style={styles.row}>
@@ -516,7 +534,9 @@ export default function ProfileScreen() {
               {comment.student?.user?.firstName} {comment.student?.user?.lastName}
             </Text>
             <Text style={styles.commentDate}>
-              {comment.commentDate ? new Date(comment.commentDate).toLocaleDateString() : 'Fecha no disponible'}
+            {comment.commentDate
+            ? new Date(comment.commentDate).toLocaleDateString('es-ES')
+            : 'Fecha no disponible'}
             </Text>
           </View>
         </View>
@@ -553,7 +573,7 @@ export default function ProfileScreen() {
               <View style={styles.bookingItemRow}>
                 <Icon name="calendar" size={18} color="#AFC1D6" style={styles.bookingIcon} />
                 <Text style={styles.bookingText}>
-                  {booking.stayRange.startDate} → {booking.stayRange.endDate}
+                {toSpanishFormat(booking.stayRange.startDate)} → {toSpanishFormat(booking.stayRange.endDate)}
                 </Text>
               </View>
               <View style={styles.bookingItemRow}>
