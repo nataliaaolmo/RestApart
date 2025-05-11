@@ -46,7 +46,6 @@ export default function ProfileScreen() {
   const sanitizeInput = (text: string) => text.replace(/<script.*?>.*?<\/script>/gi, '').trim();
   const [saving, setSaving] = useState(false);
   const [filterError, setFilterError] = useState('');
-  const [errorMessage, setErrorMessage] = useState('');
   const [originalUsername, setOriginalUsername] = useState('');
   const [originalEmail, setOriginalEmail] = useState('');
   const [originalTelephone, setOriginalTelephone] = useState('');

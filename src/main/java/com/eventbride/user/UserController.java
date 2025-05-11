@@ -10,6 +10,7 @@ import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.eventbride.dto.UserDTO;
+import com.eventbride.dto.UserDTO2;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.validation.Valid;
@@ -52,6 +53,14 @@ public class UserController {
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
         UserDTO userDTO = new UserDTO(user);
         return ResponseEntity.ok(userDTO);
+    }
+
+    @GetMapping("/{id}/without-account")
+    public ResponseEntity<UserDTO2> getUserByIdWithoutAccount(@PathVariable Integer id) {
+        User user = userService.getUserById(id)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
+        UserDTO2 userDTO2 = new UserDTO2(user);
+        return ResponseEntity.ok(userDTO2);
     }
 
     @GetMapping("/username/{username}")

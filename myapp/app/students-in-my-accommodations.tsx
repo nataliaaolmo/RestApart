@@ -10,10 +10,12 @@ import {
   Platform,
   Alert,
   ScrollView,
+  Modal,
 } from 'react-native';
 import api from '../app/api';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { Picker } from '@react-native-picker/picker';
 
 export default function StudentsInMyAccommodations() {
   const [accommodations, setAccommodations] = useState<any[]>([]);
@@ -23,11 +25,17 @@ export default function StudentsInMyAccommodations() {
   const [endDate, setEndDate] = useState('');
   const [totalStudents, setTotalStudents] = useState(0);
   const router = useRouter();
+  const [modalVisible, setModalVisible] = useState(false);
+  const [selectedAccommodationId, setSelectedAccommodationId] = useState<number | null>(null);
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
+  const [photo, setPhoto] = useState('');
+  const [statusMessage, setStatusMessage] = useState('');
 
   function convertToBackendFormat(dateStr: string): string {
     const [dd, mm, yyyy] = dateStr.split('-');
     return `${yyyy}-${mm.toString().padStart(2, '0')}-${dd.toString().padStart(2, '0')}`;
-  } 
+  }
 
   useEffect(() => {
     fetchAccommodations();
@@ -52,7 +60,7 @@ export default function StudentsInMyAccommodations() {
       const today = new Date().toLocaleDateString('es-ES').split('/').reverse().join('-');
       const start = startDate ? convertToBackendFormat(startDate) : today;
       const end = endDate ? convertToBackendFormat(endDate) : '2100-01-01';
-      const url = `/accommodations/${accommodation.id}/students?startDate=${start}&endDate=${end}`;      
+      const url = `/accommodations/${accommodation.id}/students?startDate=${start}&endDate=${end}`;
       const res = await api.get(url, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -66,14 +74,13 @@ export default function StudentsInMyAccommodations() {
               headers: { Authorization: `Bearer ${token}` },
             });
             const bookings = bookingRes.data;
-            const matchingBooking = bookings.find((b: any) => b.accommodation.id === accommodation.id);
-            
-            if (matchingBooking && matchingBooking.stayRange) {
+            const matchingBooking = bookings.find((b: any) => b.accommodationId === accommodation.id);
+            if (matchingBooking && matchingBooking.startDate && matchingBooking.endDate) {
               newBookingMap[student.id] = {
-                startDate: matchingBooking.stayRange.startDate,
-                endDate: matchingBooking.stayRange.endDate,
+                startDate: matchingBooking.startDate,
+                endDate: matchingBooking.endDate,
               };
-            }            
+            }
           } catch (err) {
             console.error(`Error al obtener booking para estudiante ${student.id}`, err);
           }
@@ -84,6 +91,57 @@ export default function StudentsInMyAccommodations() {
       console.error(`Error al obtener estudiantes del alojamiento ${accommodation.id}:`, err);
     }
   };
+
+  const registerStudentWithoutAccount = async () => {
+    if (!selectedAccommodationId || !startDate || !endDate || !firstName || !lastName) {
+      Alert.alert('Error', 'Rellena todos los campos obligatorios.');
+      return;
+    }
+  
+    try {
+      const token = localStorage.getItem('jwt');
+  
+      const registerResponse = await api.post(
+        '/users/auth/register-without-account',
+        {
+          firstName,
+          lastName,
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+  
+      const newStudentId = registerResponse.data.user.studentId;
+  
+      await api.post(
+        `/bookings/${selectedAccommodationId}/${newStudentId}/register-without-account`,
+        {
+          stayRange: {
+            startDate: convertToBackendFormat(startDate),
+            endDate: convertToBackendFormat(endDate),
+          },
+        },
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
+  
+      setStatusMessage('Estudiante registrado correctamente.');
+      setModalVisible(false);
+      fetchAccommodations();
+
+      setFirstName('');
+      setLastName('');
+      setPhoto('');
+      setSelectedAccommodationId(null);
+      setStartDate('');
+      setEndDate('');
+    } catch (err) {
+      console.error('Error al registrar estudiante sin cuenta:', err);
+      Alert.alert('Error', 'No se pudo registrar el estudiante.');
+    }
+  };  
 
   const applyDateFilter = () => {
     setStudentMap({});
@@ -128,19 +186,17 @@ export default function StudentsInMyAccommodations() {
                 )}
               </View>
               <TouchableOpacity
-                onPress={() =>
-                  router.push({ pathname: '/(tabs)/profile', params: { id: student.id } })
-                }
+                onPress={() => router.push({ pathname: '/(tabs)/profile', params: { id: student.userId } })}
               >
                 <Ionicons name="person-circle-outline" size={26} color="#AFC1D6" />
               </TouchableOpacity>
-              <TouchableOpacity
-                onPress={() =>
-                  router.push({ pathname: '/private-chat', params: { id: student.id } })
-                }
-              >
-                <Ionicons name="chatbubble-ellipses-outline" size={24} color="#AFC1D6" style={{ marginLeft: 8 }} />
-              </TouchableOpacity>
+              {!!student.username && (
+                <TouchableOpacity
+                  onPress={() => router.push({ pathname: '/private-chat', params: { id: student.id } })}
+                >
+                  <Ionicons name="chatbubble-ellipses-outline" size={24} color="#AFC1D6" style={{ marginLeft: 8 }} />
+                </TouchableOpacity>
+              )}
             </View>
           ))
         ) : (
@@ -151,7 +207,7 @@ export default function StudentsInMyAccommodations() {
   };
 
   return (
-    <ScrollView style={styles.container}>
+    <><ScrollView style={styles.container}>
       <Text style={styles.header}>Estudiantes en mis alojamientos</Text>
       <View style={styles.filterContainer}>
         <TextInput
@@ -159,15 +215,13 @@ export default function StudentsInMyAccommodations() {
           placeholderTextColor="#AFC1D6"
           style={styles.input}
           value={startDate}
-          onChangeText={setStartDate}
-        />
+          onChangeText={setStartDate} />
         <TextInput
           placeholder="Fecha fin (DD-MM-YYYY)"
           placeholderTextColor="#AFC1D6"
           style={styles.input}
           value={endDate}
-          onChangeText={setEndDate}
-        />
+          onChangeText={setEndDate} />
         <TouchableOpacity style={styles.filterButton} onPress={applyDateFilter}>
           <Text style={styles.filterButtonText}>Filtrar</Text>
         </TouchableOpacity>
@@ -175,13 +229,58 @@ export default function StudentsInMyAccommodations() {
 
       <Text style={styles.totalText}>Total estudiantes alojados: {totalStudents}</Text>
 
+      {statusMessage !== '' && (
+        <Text style={{ color: '#90EE90', textAlign: 'center', marginBottom: 10 }}>{statusMessage}</Text>
+      )}
+
       <FlatList
         data={accommodations}
         keyExtractor={(item) => item.id.toString()}
         renderItem={renderAccommodation}
-        contentContainerStyle={{ padding: 20 }}
-      />
+        contentContainerStyle={{ padding: 20 }} />
+
+      <TouchableOpacity
+        style={[styles.filterButton, { margin: 20 }]}
+        onPress={() => setModalVisible(true)}
+      >
+        <Text style={styles.filterButtonText}>➕ Añadir nuevo estudiante a alojamiento</Text>
+      </TouchableOpacity>
+
     </ScrollView>
+    <Modal visible={modalVisible} transparent animationType="slide" onRequestClose={() => setModalVisible(false)}>
+        <View style={styles.modalBackground2}>
+          <View style={styles.modalBox2}>
+            <Text style={styles.modalTitle2}>Nuevo estudiante sin cuenta</Text>
+
+            <Text style={styles.modalLabel}>Alojamiento</Text>
+            <Picker
+                selectedValue={selectedAccommodationId}
+                onValueChange={(val) => setSelectedAccommodationId(val)}
+                style={styles.input}
+              >
+                <Picker.Item label="Selecciona un alojamiento" value={null} />
+                {accommodations.map(acc => (
+                  <Picker.Item label={acc.advertisement.title} value={acc.id} key={acc.id} />
+                ))}
+              </Picker>
+
+            <TextInput placeholder="Nombre" value={firstName} onChangeText={setFirstName} style={styles.input} />
+            <TextInput placeholder="Apellido" value={lastName} onChangeText={setLastName} style={styles.input} />
+            <TextInput placeholder="Fecha inicio (DD-MM-YYYY)" value={startDate} onChangeText={setStartDate} style={styles.input} />
+            <TextInput placeholder="Fecha fin (DD-MM-YYYY)" value={endDate} onChangeText={setEndDate} style={styles.input} />
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity style={styles.modalButton2} onPress={registerStudentWithoutAccount}>
+                <Text style={styles.modalButtonText2}>Registrar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.modalButtonCancel} onPress={() => setModalVisible(false)}>
+                <Text style={styles.modalButtonText2}>Cancelar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal></>
+
   );
 }
 
@@ -266,4 +365,52 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     marginTop: 10,
   },
+  modalBackground2: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.6)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  modalBox2: {
+    backgroundColor: '#fff',
+    padding: 20,
+    borderRadius: 10,
+    width: '80%',
+  },
+  modalTitle2: {
+    fontWeight: 'bold',
+    fontSize: 18,
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+  modalButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  modalButton2: {
+    backgroundColor: '#A8DADC',
+    padding: 12,
+    borderRadius: 8,
+    flex: 1,
+    marginRight: 5,
+  },
+  modalButtonCancel: {
+    backgroundColor: '#E63946',
+    padding: 12,
+    borderRadius: 8,
+    flex: 1,
+    marginLeft: 5,
+  },
+  modalButtonText2: {
+    color: '#fff',
+    textAlign: 'center',
+    fontWeight: 'bold',
+  },
+  modalLabel: {
+    color: '#0D1B2A',
+    fontWeight: 'bold',
+    marginBottom: 8,
+    marginTop: 10,
+    textAlign: 'center',
+  },  
 });

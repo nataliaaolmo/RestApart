@@ -82,7 +82,7 @@ public class AccommodationController {
         return students.stream()
             .map(student -> new StudentProfileDTO(
                 student.getUser().getFirstName(),
-                student.getUser().getPhoto(), student.getUser().getId()
+                student.getUser().getPhoto(), student.getId(), student.getUser().getId()
             ))
             .collect(Collectors.toList());
     }

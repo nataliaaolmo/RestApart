@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.eventbride.config.jwt.services.UserManagementService;
 import com.eventbride.dto.ReqRes;
+import com.eventbride.dto.ReqRes2;
 
 import jakarta.validation.Valid;
 
@@ -29,6 +30,11 @@ public class UserManagementController {
     @PostMapping("/auth/register")
     public ResponseEntity<ReqRes> register(@Valid @RequestBody ReqRes reg){
         return ResponseEntity.ok(userManagementService.register(reg));
+    }
+
+    @PostMapping("/auth/register-without-account")
+    public ResponseEntity<ReqRes2> registerWithoutAccount(@Valid @RequestBody ReqRes2 reg){
+        return ResponseEntity.ok(userManagementService.registerStudentWithoutAccount(reg));
     }
 
     @PostMapping("/auth/login")

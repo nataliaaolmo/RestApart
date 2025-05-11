@@ -2,6 +2,8 @@ package com.eventbride.booking;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.stream.Collectors;
+
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,9 +22,9 @@ import org.springframework.web.bind.annotation.RestController;
 import com.eventbride.student.Student;
 import com.eventbride.student.StudentRepository;
 import com.eventbride.user.User;
-import com.eventbride.user.UserRepository;
 import com.eventbride.accommodation.Accommodation;
 import com.eventbride.accommodation.AccommodationRepository;
+import com.eventbride.dto.BookingDTO;
 
 import jakarta.validation.Valid;
 
@@ -34,14 +36,12 @@ public class BookingController {
     private final BookingService bookingService;
     private final StudentRepository studentRepository;
     private final AccommodationRepository accommodationRepository;
-    private final UserRepository userRepository;
 
     @Autowired
-    public BookingController(BookingService bookingService, StudentRepository studentRepository, AccommodationRepository accommodationRepository, UserRepository userRepository) {
+    public BookingController(BookingService bookingService, StudentRepository studentRepository, AccommodationRepository accommodationRepository) {
         this.bookingService = bookingService;
         this.studentRepository=studentRepository;
         this.accommodationRepository = accommodationRepository;
-        this.userRepository = userRepository;
     }
 
     @GetMapping
@@ -49,11 +49,16 @@ public class BookingController {
         return bookingService.findAll();
     }
 
-    @GetMapping("/{userId}")
-    public List<Booking> findAllBookingsByUser(@PathVariable Integer userId) {
-        User user = userRepository.findById(userId)
+    @GetMapping("/{studentId}")
+    public ResponseEntity<List<BookingDTO>> findAllBookingsByUser(@PathVariable Integer studentId) {
+        Student student = studentRepository.findById(studentId)
             .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
-        return bookingService.findAllByUser(user);
+        List<Booking> bookings= bookingService.findAllByUser(student);
+        List<BookingDTO> dtoList = bookings.stream().map(b -> {
+        return new BookingDTO(b);
+    }).collect(Collectors.toList());
+
+    return ResponseEntity.ok(dtoList);
     }
 
     @PostMapping("/{accommodationId}")
@@ -99,6 +104,49 @@ public class BookingController {
         
         return new ResponseEntity<>(savedBooking, HttpStatus.CREATED);
     }
+
+    @PostMapping("/{accommodationId}/{studentId}/register-without-account")
+    @ResponseStatus(HttpStatus.CREATED)
+    public ResponseEntity<BookingDTO> bookForStudentWithoutAccount(
+            @RequestBody @Valid Booking booking,
+            @PathVariable Integer accommodationId,
+            @PathVariable Integer studentId) {
+
+        Student student = studentRepository.findById(studentId)
+                .orElseThrow(() -> new RuntimeException("Estudiante no encontrado"));
+
+        Accommodation accommodation = accommodationRepository.findById(accommodationId)
+                .orElseThrow(() -> new RuntimeException("Alojamiento no encontrado"));
+
+        LocalDate startDate = booking.getStayRange().getStartDate();
+        LocalDate endDate = booking.getStayRange().getEndDate();
+
+        long existingBookings = bookingService.countBookingsInRange(accommodation, startDate, endDate);
+        if (accommodation.getStudents() - existingBookings <= 0) {
+            throw new RuntimeException("No hay plazas disponibles");
+        }
+
+        Booking newBooking = new Booking();
+        BeanUtils.copyProperties(booking, newBooking, "id");
+        newBooking.setAccommodation(accommodation);
+        newBooking.setStudent(student);
+        newBooking.setBookingDate(LocalDate.now());
+        newBooking.setStayRange(booking.getStayRange());
+
+        long daysBetween = java.time.temporal.ChronoUnit.DAYS.between(startDate, endDate);
+        long monthsBetween = java.time.temporal.ChronoUnit.MONTHS.between(startDate, endDate);
+
+        double price = (startDate.getDayOfMonth() == endDate.getDayOfMonth() && monthsBetween > 0)
+            ? monthsBetween * accommodation.getPricePerMonth()
+            : daysBetween * accommodation.getPricePerDay();
+
+        newBooking.setPrice(price);
+
+        Booking savedBooking = bookingService.save(newBooking);
+        updateAccommodationVisibility(accommodation);
+        return new ResponseEntity<>(new BookingDTO(savedBooking), HttpStatus.CREATED);
+    }
+
 
     @Transactional
     public void updateAccommodationVisibility(Accommodation accommodation) {

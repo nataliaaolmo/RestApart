@@ -45,6 +45,7 @@ export default function AccommodationDetailsScreen() {
   const [tempStartDate, setTempStartDate] = useState(stayRange.startDate || '');
   const [tempEndDate, setTempEndDate] = useState(stayRange.endDate || '');
   const [addressInfo, setAddressInfo] = useState<string | null>(null);
+  const [selectedUsername, setSelectedUsername] = useState<string | null>(null);
 
   function formatToSpanish(dateStr: string): string {
     if (!dateStr) return '';
@@ -337,11 +338,13 @@ const checkAlreadyLiving = async () => {
     }
   };
 
-  const handleUserPress = (userId: number) => {
+  const handleUserPress = (userId: number, username: string | null = null) => {
     setSelectedUserId(userId);
+    setSelectedUsername(username);
     setActionModalVisible(true);
     setFilterError('');
   };
+  
 
   return (
     <View style={styles.container}>
@@ -449,7 +452,7 @@ const checkAlreadyLiving = async () => {
           <View style={[styles.card, { borderColor: '#1B9AAA', borderWidth: 1 }]}>
             <Text style={{ color: '#AFC1D6', fontSize: 15 }}>
               Puedes ver los inquilinos alojados desde la pestaña{" "}
-              <Text style={{ fontWeight: 'bold' }}>"Estudiantes alojados"</Text> en tu perfil.
+              <Text style={{ fontWeight: 'bold' }}>"❤️"</Text>
             </Text>
 
             <TouchableOpacity
@@ -517,14 +520,17 @@ const checkAlreadyLiving = async () => {
           </View>
         ) : (
           <ScrollView horizontal style={styles.tenantsRow}>
-          {tenants.map((tenant, index) => (
-            <TouchableOpacity key={index} onPress={() => handleUserPress(tenant.id)}>
-              <Image
-                source={{ uri: `http://localhost:8080/images/${tenant.photo}` }}
-                style={styles.tenantPhoto}
-              />
-            </TouchableOpacity>
-          ))}
+        {tenants.map((tenant, index) => (
+          <TouchableOpacity
+            key={index}
+            onPress={() => handleUserPress(tenant.id, tenant.username ?? null)}
+          >
+            <Image
+              source={{ uri: `http://localhost:8080/images/${tenant.photo}` }}
+              style={styles.tenantPhoto}
+            />
+          </TouchableOpacity>
+        ))}
         </ScrollView>
         )
         )}
@@ -749,6 +755,12 @@ const checkAlreadyLiving = async () => {
         <View style={styles.modalBackground}>
           <View style={styles.modalBox}>
             <Text style={styles.modalTitle}>¿Qué deseas hacer?</Text>
+
+            {/* Mensaje si no tiene cuenta */}
+            {!selectedUsername && (
+              <Text style={styles.informativeTag}>🔒 Este estudiante no tiene cuenta. Solo puedes ver su perfil.</Text>
+            )}
+
             <TouchableOpacity
               style={styles.modalButton}
               onPress={() => {
@@ -763,19 +775,22 @@ const checkAlreadyLiving = async () => {
               <Text style={styles.modalButtonText}>Ver perfil</Text>
             </TouchableOpacity>
 
-            <TouchableOpacity
-              style={styles.modalButton}
-              onPress={() => {
-                setActionModalVisible(false);
-                if (selectedUserId === currentUserId) {
-                  showFilterError('No puedes iniciar un chat contigo mismo.');
-                  return;
-                }
-                router.push({ pathname: '/private-chat', params: { id: selectedUserId } });
-              }}
-            >
-              <Text style={styles.modalButtonText}>Chatear</Text>
-            </TouchableOpacity>
+            {selectedUsername && (
+              <TouchableOpacity
+                style={styles.modalButton}
+                onPress={() => {
+                  setActionModalVisible(false);
+                  if (selectedUserId === currentUserId) {
+                    showFilterError('No puedes iniciar un chat contigo mismo.');
+                    return;
+                  }
+                  router.push({ pathname: '/private-chat', params: { id: selectedUserId } });
+                }}
+              >
+                <Text style={styles.modalButtonText}>Chatear</Text>
+              </TouchableOpacity>
+            )}
+
             <TouchableOpacity
               onPress={() => {
                 setActionModalVisible(false);
@@ -1127,5 +1142,11 @@ const styles = StyleSheet.create({
     marginBottom: 15,
     color: '#FFFFFF', 
   },
-  
+  informativeTag: {
+    color: '#F1C40F',
+    fontSize: 13,
+    fontStyle: 'italic',
+    textAlign: 'center',
+    marginBottom: 10,
+  }
 });

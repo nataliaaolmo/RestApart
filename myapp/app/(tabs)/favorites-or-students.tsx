@@ -26,7 +26,7 @@ export default function SharedTab() {
   }, []);
 
   if (loading) {
-    return null; // o spinner si quieres
+    return null; 
   }
 
   if (role === 'OWNER') {

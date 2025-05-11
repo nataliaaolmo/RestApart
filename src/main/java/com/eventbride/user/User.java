@@ -7,8 +7,6 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import jakarta.persistence.*;
 import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.Getter;
@@ -35,47 +33,38 @@ public class User implements UserDetails {
 
     @Column(unique = true, length =20)
     @Size(max=20, message="El nombre de usuario no puede tener más de 20 caracteres")
-    @NotBlank(message="El nombre de usuario es obligatorio")
     private String username;
 
-    @Column(nullable = false)
-    @NotBlank(message = "La contraseña es obligatoria")
+    @Column(nullable = true)
     @Size(min = 8, message = "La contraseña debe tener al menos 8 caracteres")
     private String password;
 
-    @Column(name = "role", nullable = false)
-    @NotBlank(message = "El rol es obligatorio")
+    @Column(name = "role", nullable = true)
     @Pattern(regexp = "OWNER|STUDENT", message = "El rol debe ser OWNER o STUDENT")
     private String role;
 
-    @Column(name = "first_name", nullable = false, length = 50)
+    @Column(name = "first_name", nullable = true, length = 50)
     @Size(max = 50, message = "El primer nombre no puede tener más de 50 caracteres")
-    @NotBlank(message = "El primer nombre es obligatorio")
     private String firstName;
 
-    @Column(name = "last_name", nullable = false, length = 50)
+    @Column(name = "last_name", nullable = true, length = 50)
     @Size(max = 50, message = "El apellido no puede tener más de 50 caracteres")
-    @NotBlank(message = "El apellido es obligatorio")
     private String lastName;
 
-    @Column(name = "email", nullable = false, unique = true)
+    @Column(name = "email", nullable = true, unique = true)
     @Email(message = "Debe proporcionar un correo electrónico válido")
-    @NotBlank(message = "El correo electrónico es obligatorio")
     private String email;
 
-    @Column(name = "telephone", nullable = false, length = 15)
+    @Column(name = "telephone", nullable = true, length = 15)
     @Size(max = 15, message = "El número de teléfono no puede tener más de 15 caracteres")
-    @NotBlank(message = "El teléfono es obligatorio")
     private String telephone;
 
     @Column(name = "date_of_birth")
     @DateTimeFormat(pattern = "yyyy-MM-dd")
-    @NotNull
     private LocalDate dateOfBirth;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "gender")
-    @NotNull
     private Gender gender;
 
     @Column(name = "description", length = 255)

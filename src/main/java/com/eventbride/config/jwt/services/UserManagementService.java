@@ -12,7 +12,9 @@ import org.springframework.stereotype.Service;
 
 import com.eventbride.config.jwt.JWTUtils;
 import com.eventbride.dto.ReqRes;
+import com.eventbride.dto.ReqRes2;
 import com.eventbride.dto.UserDTO;
+import com.eventbride.dto.UserDTO2;
 import com.eventbride.owner.Owner;
 import com.eventbride.owner.OwnerRepository;
 import com.eventbride.student.Student;
@@ -120,6 +122,53 @@ public class UserManagementService {
         return reqRes;
     }
 
+    public ReqRes2 registerStudentWithoutAccount(@Valid ReqRes2 registrationRequest) {
+        ReqRes2 resp = new ReqRes2();
+        try {
+            User user = new User();
+            
+            user.setFirstName(registrationRequest.getFirstName());
+            user.setLastName(registrationRequest.getLastName());
+            user.setEmail(registrationRequest.getEmail());
+            user.setTelephone(registrationRequest.getTelephone());
+            user.setDateOfBirth(registrationRequest.getDateOfBirth());
+            user.setGender(registrationRequest.getGender());
+            user.setDescription(registrationRequest.getDescription());
+            user.setPhoto(registrationRequest.getProfilePicture());
+            user.setIsVerified(false);
+    
+            user = userRepo.save(user);
+
+                Student student = new Student();
+                student.setUser(user);
+                student.setIsSmoker(registrationRequest.getIsSmoker());
+                student.setAcademicCareer(registrationRequest.getAcademicCareer());
+                student.setHobbies(registrationRequest.getHobbies());
+                student = studentRepository.save(student);
+                user.setStudent(student);
+    
+                UserDTO2 dto = new UserDTO2(user);
+                if (user.getStudent() != null) {
+                    dto.setStudentId(user.getStudent().getId());
+                }
+                resp.setUser(dto);
+                
+            resp.setMessage("Usuario registrado exitosamente");
+            resp.setStatusCode(200);
+    
+        } catch (DataIntegrityViolationException e) {
+            resp.setStatusCode(400);
+            resp.setError("El usuario con este nombre de usuario o correo electrónico ya existe.");
+        } catch (ConstraintViolationException e) {
+            resp.setStatusCode(400);
+            resp.setError("Faltan campos obligatorios o son inválidos.");
+        } catch (Exception e) {
+            resp.setStatusCode(500);
+            resp.setError("Ocurrió un error inesperado: " + e.getMessage());
+        }
+        return resp;
+    }
+    
     public ReqRes login(ReqRes loginRequest) {
     ReqRes response = new ReqRes();
     try {

@@ -11,7 +11,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.eventbride.accommodation.Accommodation;
 import com.eventbride.student.Student;
-import com.eventbride.user.User;
 
 @Service
 public class BookingService {
@@ -47,8 +46,7 @@ public class BookingService {
         return bookingRepository.countBookingsInRange(accommodation.getId(), startDate, endDate);
     }
 
-    public List<Booking> findAllByUser(User user) {
-        Student student= user.getStudent();
+    public List<Booking> findAllByUser(Student student) {
         return bookingRepository.findAllByUser(student);
     }
 

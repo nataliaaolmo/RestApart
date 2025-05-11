@@ -21,7 +21,6 @@ import org.springframework.dao.InvalidDataAccessResourceUsageException;
 
 import com.eventbride.accommodation.Accommodation;
 import com.eventbride.student.Student;
-import com.eventbride.user.User;
 
 
 public class BookingServiceTest {
@@ -165,15 +164,13 @@ public class BookingServiceTest {
         Student student = new Student();
         student.setId(2);
 
-        User user = new User();
-        user.setStudent(student);
 
         Booking b1 = new Booking();
         Booking b2 = new Booking();
 
         when(bookingRepository.findAllByUser(student)).thenReturn(List.of(b1, b2));
 
-        List<Booking> result = bookingService.findAllByUser(user);
+        List<Booking> result = bookingService.findAllByUser(student);
 
         assertEquals(2, result.size());
         verify(bookingRepository).findAllByUser(student);
@@ -184,12 +181,9 @@ public class BookingServiceTest {
         Student student = new Student();
         student.setId(3);
 
-        User user = new User();
-        user.setStudent(student);
-
         when(bookingRepository.findAllByUser(student)).thenReturn(List.of());
 
-        List<Booking> result = bookingService.findAllByUser(user);
+        List<Booking> result = bookingService.findAllByUser(student);
 
         assertTrue(result.isEmpty());
         verify(bookingRepository).findAllByUser(student);
