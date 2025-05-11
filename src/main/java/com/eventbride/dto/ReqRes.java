@@ -63,6 +63,9 @@ public class ReqRes {
     @NotNull
     private Gender gender;
 
+    @Column(name = "is_verified")
+    private Boolean isVerified;
+
     @Size(max = 255, message = "La descripción no puede tener más de 255 caracteres")
     private String description;
     private String profilePicture;

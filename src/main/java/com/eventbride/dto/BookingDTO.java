@@ -17,6 +17,8 @@ public class BookingDTO {
     private LocalDate endDate;
     private LocalDate bookingDate;
     private Double price;
+    private String bookingName;
+    private Boolean isVerified;
 
     public BookingDTO(Booking booking) {
         this.id = booking.getId();
@@ -26,5 +28,7 @@ public class BookingDTO {
         this.endDate = booking.getStayRange().getEndDate();
         this.bookingDate = booking.getBookingDate();
         this.price = booking.getPrice();
+        this.bookingName = booking.getAccommodation().getAdvertisement().getTitle();
+        this.isVerified = booking.getIsVerified();
     }
 }

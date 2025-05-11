@@ -149,19 +149,21 @@ public class AccommodationService {
         Accommodation existing = accommodationRepository.findById(id)
         .orElseThrow(() -> new RuntimeException("No encontrado"));
 
-    existing.setRooms(updatedAccommodation.getRooms());
-    existing.setBeds(updatedAccommodation.getBeds());
-    existing.setPricePerDay(updatedAccommodation.getPricePerDay());
-    existing.setPricePerMonth(updatedAccommodation.getPricePerMonth());
-    existing.setDescription(updatedAccommodation.getDescription());
-    existing.setLatitud(updatedAccommodation.getLatitud());
-    existing.setLongitud(updatedAccommodation.getLongitud());
-    existing.setAvailability(updatedAccommodation.getAvailability());
-    existing.setStudents(updatedAccommodation.getStudents());
-    existing.setWifi(updatedAccommodation.getWifi());
-    existing.setIsEasyParking(updatedAccommodation.getIsEasyParking());
+        existing.setRooms(updatedAccommodation.getRooms());
+        existing.setBeds(updatedAccommodation.getBeds());
+        existing.setPricePerDay(updatedAccommodation.getPricePerDay());
+        existing.setPricePerMonth(updatedAccommodation.getPricePerMonth());
+        existing.setDescription(updatedAccommodation.getDescription());
+        existing.setLatitud(updatedAccommodation.getLatitud());
+        existing.setLongitud(updatedAccommodation.getLongitud());
+        existing.setAvailability(updatedAccommodation.getAvailability());
+        existing.setStudents(updatedAccommodation.getStudents());
+        existing.setWifi(updatedAccommodation.getWifi());
+        existing.setIsEasyParking(updatedAccommodation.getIsEasyParking());
+        existing.setIsVerified(updatedAccommodation.getIsVerified());
+        existing.setVerifications(updatedAccommodation.getVerifications());
 
-    existing.setImages(updatedAccommodation.getImages());
+        existing.setImages(updatedAccommodation.getImages());
  
         return accommodationRepository.save(existing);
 

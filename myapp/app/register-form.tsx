@@ -5,6 +5,8 @@ import api from '../app/api';
 import axios from 'axios';
 import Icon from 'react-native-vector-icons/FontAwesome';
 import { Picker } from '@react-native-picker/picker';
+import { RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
+import { auth } from '../components/firebaseConfig'; 
 
 export default function RegisterFormScreen() {
   const { role } = useLocalSearchParams();
@@ -27,47 +29,71 @@ export default function RegisterFormScreen() {
   });
 
   const [errorMessage, setErrorMessage] = useState('');
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [isPhoneVerified, setIsPhoneVerified] = useState(false);
+
   function convertToBackendFormat(dateStr: string): string {
     const [dd, mm, yyyy] = dateStr.split('-');
     return `${yyyy}-${mm.toString().padStart(2, '0')}-${dd.toString().padStart(2, '0')}`;
   }  
 
-  const showError = (msg: string) => {
+  const showMessage = (title: string, message: string) => {
     if (Platform.OS === 'web') {
-      setErrorMessage(msg);
+      alert(`${title}: ${message}`);
     } else {
-      Alert.alert('Error', msg);
+      Alert.alert(title, message);
     }
   };
 
-  const handleChange = (name: string, value: string | boolean) => {
-    setForm({ ...form, [name]: value });
+    const handleChange = (name: string, value: string | boolean) => {
+      setForm({ ...form, [name]: value });
+    };
+
+    const handlePhoneVerification = async () => {
+    try {
+      if (!window.recaptchaVerifier) {
+        window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', { size: 'invisible' });
+      }
+      const appVerifier = window.recaptchaVerifier;
+
+      const confirmation = await signInWithPhoneNumber(auth, '+34' + form.telephone, appVerifier);
+      const code = prompt('Introduce el código SMS recibido');
+      if (code) {
+        await confirmation.confirm(code);
+        setIsPhoneVerified(true);
+        showMessage('Éxito', 'Teléfono verificado correctamente');
+      }
+
+    } catch (error) {
+      console.error('Error verificando teléfono:', error);
+      showMessage('Error', 'No se pudo verificar el número');
+    }
   };
 
   const handleSubmit = async () => {
     setErrorMessage(''); 
     if (!form.username || !form.password || !form.firstName || !form.lastName || !form.email || !form.telephone || !form.dateOfBirth) {
-      showError('Todos los campos obligatorios deben estar completos.');
+      showMessage('Error', 'Todos los campos obligatorios deben estar completos.');
       return;
     }
 
     if (form.username.length > 20) {
-      showError(`El nombre de usuario no puede superar los 50 caracteres`)
+      showMessage('Error',`El nombre de usuario no puede superar los 50 caracteres`)
       return
     }
 
     if (form.firstName.length > 50) {
-      showError(`El primer nombre no puede tener más de 50 caracteres`)
+      showMessage('Error',`El primer nombre no puede tener más de 50 caracteres`)
       return
     }
 
     if (form.password.length < 8) {
-      showError(`La contraseña debe tener al menos 8 caracteres`)
+      showMessage('Error',`La contraseña debe tener al menos 8 caracteres`)
       return
     }
 
     if (form.lastName.length > 50) {
-      showError(`El apellido no puede tener más de 50 caracteres`)
+      showMessage('Error',`El apellido no puede tener más de 50 caracteres`)
       return
     }
   
@@ -76,20 +102,29 @@ export default function RegisterFormScreen() {
     };  
 
     if (!isOnlyLetters(form.firstName)) {
-      showError('El nombre solo debe contener letras');
+      showMessage('Error','El nombre solo debe contener letras');
       return;
     }
     
     if (!isOnlyLetters(form.lastName)) {
-      showError('El apellido solo debe contener letras');
+      showMessage('Error','El apellido solo debe contener letras');
       return;
     }
     
     if (!/^[A-Za-z0-9_]+$/.test(form.username)) {
-      showError('El nombre de usuario solo puede contener letras, números y guiones bajos');
+      showMessage('Error','El nombre de usuario solo puede contener letras, números y guiones bajos');
       return;
     }  
-    
+
+    if (!acceptedTerms) {
+      showMessage('Error','Debes aceptar los términos y condiciones para continuar');
+      return;
+    }
+
+    if (!isPhoneVerified) {
+      showMessage('Recomendación', 'Se recomienda verificar tu teléfono para generar más confianza.');
+    }
+
     const isValidDate = (dateString: string): boolean => {
       const regex = /^\d{2}-\d{2}-\d{4}$/;
       if (!regex.test(dateString)) return false;
@@ -113,21 +148,22 @@ export default function RegisterFormScreen() {
     };
 
     if (!isValidDate(form.dateOfBirth)) {
-      showError('La fecha debe tener formato DD-MM-YYYY y ser mayor de 18 años');
+      showMessage('Error','La fecha debe tener formato DD-MM-YYYY y ser mayor de 18 años');
       return;
     }
 
     const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailPattern.test(form.email)) {
-      showError("El correo electrónico no es válido")
+      showMessage('Error',"El correo electrónico no es válido")
       return
     }
 
     const telephonePattern = /^[0-9]{9}$/
     if (!telephonePattern.test(form.telephone)) {
-      showError("El teléfono debe tener 9 numeros.")
+      showMessage('Error',"El teléfono debe tener 9 numeros.")
       return
     }
+
     const requestData: any = {
       username: form.username,
       password: form.password,
@@ -140,6 +176,7 @@ export default function RegisterFormScreen() {
       dateOfBirth: convertToBackendFormat(form.dateOfBirth),
       description: form.description,
       profilePicture: form.profilePicture,
+      isVerified: isPhoneVerified,
     };
 
     if (role === 'OWNER') {
@@ -156,14 +193,14 @@ export default function RegisterFormScreen() {
       const response = await api.post('/users/auth/register', requestData);
       console.log('Response:', response.data);
       if (response.data.error && response.data.error !== '') {
-        showError(response.data.error);
+        showMessage('Error',response.data.error);
         return;
       }
 
       if (Platform.OS === 'web') {
         setErrorMessage('');
       } else {
-        Alert.alert('Registro exitoso', 'Usuario registrado correctamente');
+        showMessage('Registro exitoso', 'Usuario registrado correctamente');
       }
 
       const loginResponse = await api.post('/users/auth/login', {
@@ -266,7 +303,7 @@ export default function RegisterFormScreen() {
 
       <CustomInput
         icon="calendar"
-        placeholder="Fecha de nacimiento (DD-MM-YYYY)"
+        placeholder="Fecha de nacimiento (DD-MM-YYYY)*"
         onChangeText={(v: string) => handleChange('dateOfBirth', v)}
       />
 
@@ -334,6 +371,32 @@ export default function RegisterFormScreen() {
           <CustomInput icon="briefcase" placeholder="Años de experiencia*" keyboardType="numeric" onChangeText={(v: string) => handleChange('experienceYears', v)} />
         </>
       )}
+
+      <TouchableOpacity
+        style={[styles.button, { backgroundColor: '#1B9AAA' }]}
+        onPress={handlePhoneVerification}
+      >
+        <Text style={styles.buttonText}>Verificar número por SMS</Text>
+      </TouchableOpacity>
+
+      {Platform.OS === 'web' && <div id="recaptcha-container" />}
+
+      <View style={{ flexDirection: 'row', alignItems: 'center', marginVertical: 10 }}>
+        <Switch
+          value={acceptedTerms}
+          onValueChange={setAcceptedTerms}
+          trackColor={{ true: '#A8DADC', false: '#ccc' }}
+        />
+        <Text style={{ color: '#E0E1DD', marginLeft: 10 }}>
+          Acepto los{' '}
+          <Text
+            style={{ textDecorationLine: 'underline' }}
+            onPress={() => window.open('/terminos-condiciones.pdf', '_blank')}
+          >
+            Términos y Condiciones
+          </Text>
+        </Text>
+      </View>
 
       <TouchableOpacity style={styles.button} onPress={handleSubmit}>
         <Text style={styles.buttonText}>Registrarse</Text>

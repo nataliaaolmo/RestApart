@@ -325,7 +325,8 @@ function formatDateToISO(dateString: string | null): string | null {
               latitude: item.latitude,
               longitude: item.longitude,
               startDate: formatDateToISO(startDate),
-              endDate: formatDateToISO(endDate),              
+              endDate: formatDateToISO(endDate),  
+              isVerified: item.isVerified,            
             },
           })
         }
@@ -376,6 +377,12 @@ function formatDateToISO(dateString: string | null): string | null {
             </Text>
 
             <View style={styles.servicesRow}>
+            {item.isVerified && (
+            <View style={styles.verifiedChip}>
+              <Feather name="shield" size={14} color="#0D1B2A" />
+              <Text style={styles.verifiedChipText}>Verificado</Text>
+            </View>
+          )}
             {item.wifi && (
               <View style={styles.serviceItem}>
                 <Icon name="wifi" size={16} color="#E0E1DD" style={{ marginRight: 6 }} />
@@ -905,13 +912,11 @@ createButton: {
   borderRadius: 10,
   marginTop: 20,
 },
-
 createButtonText: {
   color: '#0D1B2A',
   fontWeight: 'bold',
   fontSize: 16,
 },
-
 ownerEmptyText: {
   color: '#AFC1D6',
   fontSize: 16,
@@ -919,11 +924,28 @@ ownerEmptyText: {
   marginVertical: 10,
   fontStyle: 'italic',
 },
-
 ownerSummaryText: {
   color: '#AFC1D6',
   fontSize: 15,
   textAlign: 'center',
   marginBottom: 15,
 }, 
+verifiedChip: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  backgroundColor: '#A8DADC',
+  paddingVertical: 4,
+  paddingHorizontal: 10,
+  borderRadius: 20,
+  alignSelf: 'flex-start',
+  marginTop: 8,
+  marginBottom: -4,
+},
+verifiedChipText: {
+  color: '#0D1B2A',
+  marginLeft: 6,
+  fontSize: 13,
+  fontWeight: 'bold',
+  textTransform: 'uppercase',
+},
 });

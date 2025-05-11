@@ -62,7 +62,7 @@ public class UserManagementService {
             user.setGender(registrationRequest.getGender());
             user.setDescription(registrationRequest.getDescription());
             user.setPhoto(registrationRequest.getProfilePicture());
-            user.setIsVerified(false);
+            user.setIsVerified(registrationRequest.getIsVerified());
     
             user = userRepo.save(user);
     

@@ -11,6 +11,7 @@ import org.springframework.web.server.ResponseStatusException;
 
 import com.eventbride.dto.UserDTO;
 import com.eventbride.dto.UserDTO2;
+import com.eventbride.student.Student;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import jakarta.validation.Valid;
@@ -61,6 +62,14 @@ public class UserController {
             .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
         UserDTO2 userDTO2 = new UserDTO2(user);
         return ResponseEntity.ok(userDTO2);
+    }
+
+    @GetMapping("/{id}/get-student")
+    public ResponseEntity<Student> getStudentUserById(@PathVariable Integer id) {
+        User user = userService.getUserById(id)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
+        Student student = user.getStudent();
+        return ResponseEntity.ok(student);
     }
 
     @GetMapping("/username/{username}")
@@ -122,6 +131,15 @@ public class UserController {
             e.printStackTrace();
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error subiendo la foto");
         }
+    }
+
+    @PatchMapping("/{id}/verify-phone")
+    public ResponseEntity<Void> verifyPhone(@PathVariable Integer id) {
+        User user = userService.getUserById(id)
+            .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Usuario no encontrado"));
+        user.setIsVerified(true);
+        userRepository.save(user);
+        return ResponseEntity.noContent().build();
     }
 
     @PutMapping("/{id}")

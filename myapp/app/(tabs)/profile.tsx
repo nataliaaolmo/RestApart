@@ -7,6 +7,8 @@ import { router } from 'expo-router';
 import { useLayoutEffect } from 'react';
 import Icon from 'react-native-vector-icons/Feather';
 import StarRating from '@/components/StarRating';
+import { RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
+import { auth } from '@/components/firebaseConfig';
 
 
 export default function ProfileScreen() {
@@ -50,6 +52,8 @@ export default function ProfileScreen() {
   const [originalEmail, setOriginalEmail] = useState('');
   const [originalTelephone, setOriginalTelephone] = useState('');
   const [bookings, setBookings] = useState<any[]>([]);
+  const[isVerified, setIsVerified] = useState(false);
+  const[studentId, setStudentId] = useState<number | null>(null);
 
   function convertToBackendFormat(dateStr: string): string {
     const [dd, mm, yyyy] = dateStr.split('-');
@@ -74,6 +78,7 @@ export default function ProfileScreen() {
       setOriginalUsername(user.username);
       setOriginalEmail(user.email);
       setOriginalTelephone(user.telephone);
+      setIsVerified(user.isVerified);
     } catch (error) {
       console.error('Error al obtener el perfil:', error);
     }
@@ -111,10 +116,30 @@ export default function ProfileScreen() {
       fetchAverage(idToUse);
     }
 
+    const fetchStudent = async (id: number) => {
+      try {
+        const token = localStorage.getItem('jwt');
+        const response = await api.get(`/users/${id}/get-student`, {
+          headers: { Authorization: `Bearer ${token}` }
+        });
+        console.log('Student ID:', response.data);
+        setStudentId(response.data.id ?? null);
+      } catch (error) {
+        console.error('Error al obtener el id del estudiante', error);
+      }
+    };
+
     if (userData?.role === 'STUDENT' && currentUserId === userData.id) {
-      fetchBookings(currentUserId);
+      fetchStudent(currentUserId);
     }
   }, [userId, currentUserId]);
+
+  useEffect(() => {
+  if (studentId !== null) {
+    fetchBookings(studentId);
+  }
+}, [studentId]);
+
 
   useEffect(() => {
     const fetchCurrentUserId = async () => {
@@ -169,6 +194,58 @@ export default function ProfileScreen() {
         Alert.alert('Error en los filtros', msg);
       }
     };
+
+    const verifyAccommodationUser = async (accommodationId: number) => {
+      try {
+        const token = localStorage.getItem('jwt');
+        await api.patch(`/accommodations/${accommodationId}/${currentUserId}/verify-accommodation`, {}, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        showFilterError('Verificación enviada correctamente');
+          if (studentId !== null) {
+            fetchBookings(studentId);
+          }
+        checkIfAccommodationCanBeVerified(accommodationId);
+      } catch (err) {
+        console.error('Error al verificar alojamiento:', err);
+        showFilterError('Error al verificar alojamiento');
+      }
+    };
+
+    const checkIfAccommodationCanBeVerified = async (accommodationId: number) => {
+        try {
+          const token = localStorage.getItem('jwt');
+          await api.patch(`/accommodations/${accommodationId}/verify-accommodation`, {}, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+          showFilterError('✅ Alojamiento marcado como verificado');
+        } catch (err: any) {
+          console.error('Verificación global fallida:', err);
+          showFilterError('❌ Aún faltan verificaciones de otros usuarios');
+        }
+      };
+
+        const handlePhoneVerification = async () => {
+        try {
+          if (!window.recaptchaVerifier) {
+            window.recaptchaVerifier = new RecaptchaVerifier(auth, 'recaptcha-container', { size: 'invisible' });
+          }
+          const appVerifier = window.recaptchaVerifier;
+    
+          const confirmation = await signInWithPhoneNumber(auth, '+34' + userData?.telephone, appVerifier);
+          const code = prompt('Introduce el código SMS recibido');
+          if (code) {
+            await confirmation.confirm(code);
+            setIsVerified(true);
+            showFilterError('Teléfono verificado correctamente');
+          }
+    
+        } catch (error) {
+          console.error('Error verificando teléfono:', error);
+          showFilterError('No se pudo verificar el número');
+        }
+      };
+    
   
     const makeComment = async () => {
       try {
@@ -420,7 +497,17 @@ export default function ProfileScreen() {
         </>
       ) : (
         <>
-          <Text style={styles.name}>{fullName} - <Text style={styles.username}>@{userData.username}</Text></Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', flexWrap: 'wrap' }}>
+          <Text style={styles.name}>
+            {fullName} - <Text style={styles.username}>@{userData.username}</Text>
+          </Text>
+          {userData.isVerified && (
+            <View style={styles.verifiedBadge}>
+              <Icon name="check-circle" size={18} color="#A8DADC" style={{ marginLeft: 6 }} />
+              <Text style={styles.verifiedText}>Verificado</Text>
+            </View>
+          )}
+        </View>
           {typeof averageRating === 'number' ? (
             <View style={{ flexDirection: 'row', alignItems: 'center' }}>
               {[1, 2, 3, 4, 5].map(i => (
@@ -431,6 +518,10 @@ export default function ProfileScreen() {
           ) : (
             <Text style={styles.rating}>⭐ Sin valoraciones</Text>
           )}
+              <Text style={styles.detail}>
+      {userData.gender === 'WOMAN' ? 'Mujer' : 'Hombre'} -{' '}
+      {calculateAge(toSpanishFormat(userData.dateOfBirth))} años
+    </Text>
 
           {userId && (
           <TouchableOpacity
@@ -443,10 +534,6 @@ export default function ProfileScreen() {
 
 {isStudent ? (
   <>
-    <Text style={styles.detail}>
-      {userData.gender === 'WOMAN' ? 'Mujer' : 'Hombre'} -{' '}
-      {calculateAge(toSpanishFormat(userData.dateOfBirth))} años
-    </Text>
     <Text style={styles.description}>{userData.description}</Text>
 
     <View style={styles.card}>
@@ -568,19 +655,34 @@ export default function ProfileScreen() {
               <View style={styles.bookingItemRow}>
                 <Icon name="home" size={18} color="#AFC1D6" style={styles.bookingIcon} />
                 <Text style={styles.bookingText}>
-                  {booking.accommodation.advertisement.title || 'Alojamiento'}
+                  {booking.bookingName || 'Alojamiento'}
                 </Text>
               </View>
               <View style={styles.bookingItemRow}>
                 <Icon name="calendar" size={18} color="#AFC1D6" style={styles.bookingIcon} />
                 <Text style={styles.bookingText}>
-                {toSpanishFormat(booking.stayRange.startDate)} → {toSpanishFormat(booking.stayRange.endDate)}
+                {toSpanishFormat(booking.startDate)} → {toSpanishFormat(booking.endDate)}
                 </Text>
               </View>
               <View style={styles.bookingItemRow}>
                 <Icon name="dollar-sign" size={18} color="#AFC1D6" style={styles.bookingIcon} />
                 <Text style={styles.bookingText}>{booking.price} €</Text>
               </View>
+              {!booking.isVerified && (
+              <TouchableOpacity
+                style={styles.button}
+                onPress={() => verifyAccommodationUser(booking.accommodationId)}
+              >
+                <Text style={styles.buttonText}>Verificar alojamiento</Text>
+              </TouchableOpacity>
+              )}
+              <TouchableOpacity
+                style={[styles.button, { backgroundColor: '#AFC1D6' }]}
+                onPress={() => router.push({ pathname: '/accommodation-details', params: { id: booking.accommodationId } })}
+              >
+                <Text style={styles.buttonText}>Ver detalles del alojamiento</Text>
+              </TouchableOpacity>
+
             </View>
           ))
         ) : (
@@ -593,6 +695,15 @@ export default function ProfileScreen() {
           <TouchableOpacity style={styles.saveButton} onPress={() => setEditing(true)}>
             <Text style={styles.saveButtonText}>Editar perfil</Text>
           </TouchableOpacity>
+        )}
+
+        {!userId && currentUserId === userData.id && isVerified === false && (
+        <TouchableOpacity
+          style={[styles.button, { backgroundColor: '#1B9AAA' }]}
+          onPress={handlePhoneVerification}
+        >
+          <Text style={styles.buttonText}>Verificar número por SMS</Text>
+        </TouchableOpacity>
         )}
 
 <Modal
@@ -839,5 +950,33 @@ const styles = StyleSheet.create({
     marginBottom: 8,
     marginTop: 10,
     textAlign: 'center',
-  },    
+  },   
+    button: {
+    backgroundColor: '#E0E1DD',
+    paddingVertical: 12,
+    borderRadius: 20,
+    marginTop: 20,
+    alignItems: 'center',
+  },
+  buttonText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#0D1B2A',
+  }, 
+  verifiedBadge: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  backgroundColor: '#1B263B',
+  borderRadius: 12,
+  paddingHorizontal: 8,
+  paddingVertical: 4,
+  marginLeft: 10,
+  marginTop: 6,
+},
+verifiedText: {
+  color: '#A8DADC',
+  fontWeight: 'bold',
+  marginLeft: 4,
+  fontSize: 12,
+},
 });

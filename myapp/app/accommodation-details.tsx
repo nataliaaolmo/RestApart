@@ -11,9 +11,10 @@ import api from './api';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import StarRating from '@/components/StarRating';
+import Icon from 'react-native-vector-icons/FontAwesome';
 
 export default function AccommodationDetailsScreen() {
-  const { id, title, beds, bedrooms, price, startDate, endDate } = useLocalSearchParams();
+  const { id, title, beds, bedrooms, price, startDate, endDate, isVerified } = useLocalSearchParams();
   const [owner, setOwner] = useState<any>(null);
   const [images, setImages] = useState<string[]>([]);
   const [description, setDescription] = useState('');
@@ -339,12 +340,13 @@ const checkAlreadyLiving = async () => {
   };
 
   const handleUserPress = (userId: number, username: string | null = null) => {
+    console.log('User ID:', userId);
+    console.log('Username:', username);
     setSelectedUserId(userId);
     setSelectedUsername(username);
     setActionModalVisible(true);
     setFilterError('');
   };
-  
 
   return (
     <View style={styles.container}>
@@ -389,14 +391,17 @@ const checkAlreadyLiving = async () => {
     </ScrollView>
   </>
 )}
-
-
         <View style={styles.content}>
           <Text style={styles.subTitle}>{beds} camas - {bedrooms} dormitorios - 2 baños</Text>
-
+          {(isVerified === 'true' || isVerified === 'true'.toString()) && (
+            <View style={styles.verifiedChip}>
+              <Ionicons name="shield-checkmark" size={16} color="#0D1B2A" />
+              <Text style={styles.verifiedChipText}>Alojamiento verificado</Text>
+            </View>
+          )}
           {owner && (
             <View style={styles.ownerSection}>
-              <TouchableOpacity onPress={() => handleUserPress(owner.user.id)}>
+              <TouchableOpacity onPress={() => handleUserPress(owner.user.id, owner.user.username)}>
                 <Image
                   source={{ uri: `http://localhost:8080/images/${owner.user.photo || 'default.jpg'}` }}
                   style={styles.ownerImage}
@@ -1148,5 +1153,23 @@ const styles = StyleSheet.create({
     fontStyle: 'italic',
     textAlign: 'center',
     marginBottom: 10,
-  }
+  },
+verifiedChip: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  backgroundColor: '#A8DADC',
+  paddingVertical: 4,
+  paddingHorizontal: 10,
+  borderRadius: 20,
+  alignSelf: 'flex-start',
+  marginTop: 8,
+  marginBottom: -4,
+},
+verifiedChipText: {
+  color: '#0D1B2A',
+  marginLeft: 6,
+  fontSize: 13,
+  fontWeight: 'bold',
+  textTransform: 'uppercase',
+},
 });

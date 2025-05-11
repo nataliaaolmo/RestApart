@@ -40,6 +40,9 @@ public class Booking extends BaseEntity {
     @NotNull
     private DateRange stayRange;
 
+    @Column(name="is_verified", nullable = true)
+    private Boolean isVerified;
+    
     @ManyToOne(optional = false)
     @JoinColumn(name = "student_id")
 	@OnDelete(action = OnDeleteAction.CASCADE)

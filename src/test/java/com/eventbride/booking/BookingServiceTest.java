@@ -168,12 +168,12 @@ public class BookingServiceTest {
         Booking b1 = new Booking();
         Booking b2 = new Booking();
 
-        when(bookingRepository.findAllByUser(student)).thenReturn(List.of(b1, b2));
+        when(bookingRepository.findAllByStudent(student)).thenReturn(List.of(b1, b2));
 
-        List<Booking> result = bookingService.findAllByUser(student);
+        List<Booking> result = bookingService.findAllByStudent(student);
 
         assertEquals(2, result.size());
-        verify(bookingRepository).findAllByUser(student);
+        verify(bookingRepository).findAllByStudent(student);
     }
 
     @Test
@@ -181,11 +181,11 @@ public class BookingServiceTest {
         Student student = new Student();
         student.setId(3);
 
-        when(bookingRepository.findAllByUser(student)).thenReturn(List.of());
+        when(bookingRepository.findAllByStudent(student)).thenReturn(List.of());
 
-        List<Booking> result = bookingService.findAllByUser(student);
+        List<Booking> result = bookingService.findAllByStudent(student);
 
         assertTrue(result.isEmpty());
-        verify(bookingRepository).findAllByUser(student);
+        verify(bookingRepository).findAllByStudent(student);
     }
 }

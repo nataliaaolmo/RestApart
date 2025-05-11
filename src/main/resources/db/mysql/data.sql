@@ -30,18 +30,18 @@ INSERT IGNORE INTO advertisements (id, is_visible, title) VALUES
 (9, true, 'Ático con vistas cerca del Rectorado'),
 (10, true, 'Chalet para estudiantes en Felipe II');
 
-INSERT IGNORE INTO accommodations (id, rooms, beds, price_per_day, price_per_month, description, latitud, longitud, start_date, end_date, students, wifi, is_easy_parking, advertisement_id, owner_id) 
+INSERT IGNORE INTO accommodations (id, rooms, beds, price_per_day, price_per_month, description, latitud, longitud, start_date, end_date, students, wifi, is_easy_parking, advertisement_id, owner_id, is_verified, verifications) 
 VALUES 
-(1, 3, 4, 50.00, 1200.00, 'Piso amplio ideal para estudiantes a 5 minutos de Reina Mercedes', 37.3577, -5.9869, '2025-03-01', '2025-12-31', 2, true, false, 1, 1),
-(2, 2, 3, 35.00, 900.00, 'Habitación en piso compartido justo al lado de la ETSII', 37.3586, -5.9850, '2025-04-01', '2025-11-30', 1, true, true, 2, 2),
-(3, 4, 6, 70.00, 2000.00, 'Apartamento con buenas conexiones cerca de Viapol', 37.3760, -5.9768, '2025-05-15', '2025-10-15', 3, true, false, 3, 4),
-(4, 1, 1, 25.00, 600.00, 'Estudio acogedor a un paso del campus Ramón y Cajal', 37.3791, -5.9776, '2025-02-01', '2025-08-31', 1, false, true, 4, 4),
-(5, 2, 3, 40.00, 1000.00, 'Piso grande con terraza en Los Bermejales, ideal para compartir', 37.3479, -5.9901, '2025-06-01', '2025-12-15', 2, true, false, 5, 1),
-(6, 3, 4, 55.00, 1400.00, 'Dúplex moderno en zona El Porvenir, cerca de varias facultades', 37.3748, -5.9784, '2025-07-10', '2025-10-30', 2, true, true, 6, 6),
-(7, 5, 8, 80.00, 2500.00, 'Habitación individual en piso de estudiantes por Reina Mercedes', 37.3579, -5.9857, '2025-03-01', '2025-11-01', 4, true, true, 7, 2),
-(8, 1, 2, 30.00, 750.00, 'Apartamento tranquilo en Heliópolis con buen ambiente', 37.3513, -5.9871, '2025-01-15', '2025-09-30', 1, true, false, 8, 6),
-(9, 2, 2, 45.00, 1100.00, 'Ático con terraza y vistas, junto al Rectorado', 37.3845, -5.9879, '2025-05-01', '2025-10-01', 2, true, true, 9, 2),
-(10, 4, 5, 65.00, 1800.00, 'Chalet grande en zona Felipe II, ideal para grupos de estudio', 37.3711, -5.9735, '2025-06-15', '2025-12-31', 3, true, false, 10, 10);
+(1, 3, 4, 50.00, 1200.00, 'Piso amplio ideal para estudiantes a 5 minutos de Reina Mercedes', 37.3577, -5.9869, '2025-03-01', '2025-12-31', 1, true, false, 1, 1, true, 2),
+(2, 2, 3, 35.00, 900.00, 'Habitación en piso compartido justo al lado de la ETSII', 37.3586, -5.9850, '2025-04-01', '2025-11-30', 1, true, true, 2, 2, false, 1),
+(3, 4, 6, 70.00, 2000.00, 'Apartamento con buenas conexiones cerca de Viapol', 37.3760, -5.9768, '2025-05-15', '2025-10-15', 3, true, false, 3, 4, false, 1),
+(4, 1, 1, 25.00, 600.00, 'Estudio acogedor a un paso del campus Ramón y Cajal', 37.3791, -5.9776, '2025-02-01', '2025-08-31', 1, false, true, 4, 4, true, 2),
+(5, 2, 3, 40.00, 1000.00, 'Piso grande con terraza en Los Bermejales, ideal para compartir', 37.3479, -5.9901, '2025-06-01', '2025-12-15', 2, true, false, 5, 1, false, 2),
+(6, 3, 4, 55.00, 1400.00, 'Dúplex moderno en zona El Porvenir, cerca de varias facultades', 37.3748, -5.9784, '2025-07-10', '2025-10-30', 2, true, true, 6, 6, false, 1),
+(7, 5, 8, 80.00, 2500.00, 'Habitación individual en piso de estudiantes por Reina Mercedes', 37.3579, -5.9857, '2025-03-01', '2025-11-01', 4, true, true, 7, 2, false, 1),
+(8, 1, 2, 30.00, 750.00, 'Apartamento tranquilo en Heliópolis con buen ambiente', 37.3513, -5.9871, '2025-01-15', '2025-09-30', 1, true, false, 8, 6, false, 1),
+(9, 2, 2, 45.00, 1100.00, 'Ático con terraza y vistas, junto al Rectorado', 37.3845, -5.9879, '2025-05-01', '2025-10-01', 2, true, true, 9, 2, false, 1),
+(10, 4, 5, 65.00, 1800.00, 'Chalet grande en zona Felipe II, ideal para grupos de estudio', 37.3711, -5.9735, '2025-06-15', '2025-12-31', 3, true, false, 10, 10, false, 1);
 
 INSERT INTO accommodation_images (accommodation_id, image_url) VALUES 
 (1, 'piso1_1.jpg'),
@@ -85,12 +85,12 @@ INSERT INTO students (user_id, is_smoker, academic_career, hobbies) VALUES
 (8, true, 'Medicine', 'Cooking, Traveling'),
 (9, false, 'Architecture', 'Photography, Traveling');
 
-INSERT INTO bookings (student_id, booking_date, price, accommodation_id, start_date, end_date) VALUES
-(1, '2025-01-03', 400.0, 1, '2025-04-01', '2025-06-20'),
-(2, '2025-02-08', 450.0, 2, '2025-05-01', '2025-07-01'),
-(3, '2025-04-08', 850.0, 3, '2025-06-15', '2025-10-15'),
-(4, '2025-05-03', 475.0, 4, '2025-04-01', '2025-05-01'),
-(5, '2025-06-03', 1200.0, 5, '2025-08-01', '2025-10-28');
+INSERT INTO bookings (student_id, booking_date, price, accommodation_id, start_date, end_date, is_verified) VALUES
+(1, '2025-01-03', 400.0, 1, '2025-04-01', '2025-06-20', true),
+(2, '2025-02-08', 450.0, 2, '2025-05-01', '2025-07-01', false),
+(1, '2025-04-08', 850.0, 3, '2025-06-15', '2025-10-15', false),
+(4, '2025-05-03', 475.0, 4, '2025-04-01', '2025-05-01', true),
+(5, '2025-06-03', 1200.0, 5, '2025-08-01', '2025-10-28', true);
 
 INSERT IGNORE INTO comments (id, comment_date, text, rating, accommodation_id, author_id, student_id) VALUES
 (1, '2024-07-14', 'No me gustó la experiencia, esperaba más.', 5, 1, NULL, 9),

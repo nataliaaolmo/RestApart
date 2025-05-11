@@ -50,10 +50,10 @@ public class BookingController {
     }
 
     @GetMapping("/{studentId}")
-    public ResponseEntity<List<BookingDTO>> findAllBookingsByUser(@PathVariable Integer studentId) {
+    public ResponseEntity<List<BookingDTO>> findAllBookingsByStudent(@PathVariable Integer studentId) {
         Student student = studentRepository.findById(studentId)
             .orElseThrow(() -> new RuntimeException("Usuario no encontrado"));
-        List<Booking> bookings= bookingService.findAllByUser(student);
+        List<Booking> bookings= bookingService.findAllByStudent(student);
         List<BookingDTO> dtoList = bookings.stream().map(b -> {
         return new BookingDTO(b);
     }).collect(Collectors.toList());
@@ -77,6 +77,8 @@ public class BookingController {
         if (accommodation.getStudents() - existingBookings <= 0) {
             throw new RuntimeException("No hay plazas disponibles en este alojamiento para estas fechas.");
         }
+        accommodation.setStudents(accommodation.getStudents() - 1);
+        accommodationRepository.save(accommodation);
 
         Booking newBooking = new Booking();
         BeanUtils.copyProperties(booking, newBooking, "id");
@@ -126,6 +128,10 @@ public class BookingController {
             throw new RuntimeException("No hay plazas disponibles");
         }
 
+        accommodation.setStudents(accommodation.getStudents() - 1);
+        accommodation.setVerifications(accommodation.getVerifications() + 1);
+        accommodationRepository.save(accommodation);
+        
         Booking newBooking = new Booking();
         BeanUtils.copyProperties(booking, newBooking, "id");
         newBooking.setAccommodation(accommodation);

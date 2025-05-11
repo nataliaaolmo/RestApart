@@ -6,7 +6,7 @@ import { I18n } from 'i18n-js';
 
 const i18n = new I18n({
   en: {
-    welcome: 'Welcome to Rentapart',
+    welcome: 'Welcome to RestApart',
     start: 'START',
     continueAs: (name: string) => `Continue as ${name}`,
     slogans: [
@@ -16,7 +16,7 @@ const i18n = new I18n({
     ],
   },
   es: {
-    welcome: 'Bienvenido a Rentapart',
+    welcome: 'Bienvenido a RestApart',
     start: 'EMPEZAR',
     continueAs: (name: string) => `Continuar como ${name}`,
     slogans: [

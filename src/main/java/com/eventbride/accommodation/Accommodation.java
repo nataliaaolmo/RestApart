@@ -76,6 +76,12 @@ public class Accommodation extends BaseEntity {
     @Column(name = "is_easy_parking", nullable = false)
     private Boolean isEasyParking;
 
+    @Column(name= "is_verified", nullable = true)
+    private Boolean isVerified;
+
+    @Column(name="verifications", nullable = true)
+    private Integer verifications;
+
     @ElementCollection(fetch = FetchType.EAGER)
     @CollectionTable(name = "accommodation_images", joinColumns = @JoinColumn(name = "accommodation_id"))
     @Column(name = "image_url")

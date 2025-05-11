@@ -72,7 +72,7 @@ export default function LoginScreen() {
 
       <Text style={styles.registerText}>
         ¿No tienes una cuenta?{" "}
-        <Text style={styles.registerLink} onPress={() => router.push("/register-form")}>
+        <Text style={styles.registerLink} onPress={() => router.push("/role-selection")}>
           Regístrate aquí
         </Text>
       </Text>

@@ -46,9 +46,8 @@ public class BookingService {
         return bookingRepository.countBookingsInRange(accommodation.getId(), startDate, endDate);
     }
 
-    public List<Booking> findAllByUser(Student student) {
-        return bookingRepository.findAllByUser(student);
+    public List<Booking> findAllByStudent(Student student) {
+        return bookingRepository.findAllByStudent(student);
     }
-
 
 }

@@ -27,6 +27,6 @@ public interface BookingRepository extends CrudRepository<Booking, Integer>{
     void deleteByAccommodation(Accommodation accommodation);
 
     @Query("SELECT b FROM Booking b WHERE b.student = :student")
-    List<Booking> findAllByUser(Student student);
+    List<Booking> findAllByStudent(Student student);
 
 }

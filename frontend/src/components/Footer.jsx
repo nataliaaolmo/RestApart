@@ -4,7 +4,7 @@ import "../static/resources/css/Footer.css"; // Importa los estilos
 function Footer() {
   return (
     <footer className="footer">
-      <p>© 2025 RENTAPART. Todos los derechos reservados.</p>
+      <p>© 2025 RESTAPART. Todos los derechos reservados.</p>
     </footer>
   );
 }

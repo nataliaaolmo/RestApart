@@ -19,8 +19,8 @@ public interface AccommodationRepository extends CrudRepository<Accommodation, I
 
     @Query("SELECT a FROM Accommodation a " +
     "WHERE (:maxPrice IS NULL OR a.pricePerMonth <= :maxPrice) " +
-    "AND (:startDate IS NULL OR a.availability.startDate <= :startDate) " +
-    "AND (:endDate IS NULL OR a.availability.endDate >= :endDate) " +
+    "AND ((:startDate IS NULL OR :endDate IS NULL) OR" + 
+  "(a.availability.startDate <= :startDate AND a.availability.endDate >= :endDate)) " +
     "AND (:students IS NULL OR (a.students - " +
     "    (SELECT COUNT(b) FROM Booking b WHERE b.accommodation = a " +
     "    AND b.stayRange.startDate < :endDate " +
@@ -43,7 +43,5 @@ public interface AccommodationRepository extends CrudRepository<Accommodation, I
 
     @Query("SELECT a FROM Accommodation a WHERE a.owner.user.id = :id")
     List<Accommodation> getAccommodationsByOwner(@Param("id") Integer id);
-                                                        
-
-    
+                                                          
 }

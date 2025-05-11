@@ -6,7 +6,7 @@ function Home() {
   return (
     <div className="home-container">
       <header className="home-header">
-        <h1>Bienvenido a RENTAPART</h1>
+        <h1>Bienvenido a RESTAPART</h1>
         <p>Encuentra o publica alojamientos de manera sencilla.</p>
       </header>
 
@@ -18,7 +18,7 @@ function Home() {
 
         <section className="feature">
           <h2>Publicar un Alojamiento</h2>
-          <p>Registra y promociona tu alojamiento en RENTAPART.</p>
+          <p>Registra y promociona tu alojamiento en RESTAPART.</p>
         </section>
 
         <section className="feature">
