@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import FavoritesScreen from '../favorites'; 
+import AdminUsers from '../admin-data';
 import StudentsInMyProperties from '../students-in-my-accommodations'; 
 import api from '../api';
 
@@ -31,7 +32,9 @@ export default function SharedTab() {
 
   if (role === 'OWNER') {
     return <StudentsInMyProperties />;
-  } else {
+  } else if(role === 'STUDENT') {
     return <FavoritesScreen />;
+  }else{
+    return <AdminUsers/>; 
   }
 }

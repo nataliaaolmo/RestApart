@@ -42,7 +42,7 @@ public class UserDTO {
     private String profilePicture;
 
     @NotBlank(message = "El rol es obligatorio")
-    @Pattern(regexp = "OWNER|STUDENT", message = "El rol debe ser OWNER o STUDENT")
+    @Pattern(regexp = "OWNER|STUDENT|ADMIN", message = "El rol debe ser OWNER, STUDENT o ADMIN")
     private String role;
 
     @JsonFormat(shape = JsonFormat.Shape.STRING, pattern = "yyyy-MM-dd")

@@ -1,5 +1,6 @@
 package com.eventbride.config.jwt.services;
 
+import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Optional;
 
@@ -10,6 +11,8 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
+import com.eventbride.config.SystemStatus;
+import com.eventbride.config.SystemStatusRepository;
 import com.eventbride.config.jwt.JWTUtils;
 import com.eventbride.dto.ReqRes;
 import com.eventbride.dto.ReqRes2;
@@ -45,6 +48,9 @@ public class UserManagementService {
 
     @Autowired
     private OwnerRepository ownerRepository;
+
+    @Autowired
+    private SystemStatusRepository systemStatusRepository;
 
     public ReqRes register(@Valid ReqRes registrationRequest) {
         ReqRes resp = new ReqRes();
@@ -168,31 +174,63 @@ public class UserManagementService {
         }
         return resp;
     }
-    
+
     public ReqRes login(ReqRes loginRequest) {
-    ReqRes response = new ReqRes();
-    try {
-        authenticationManager.authenticate(
-            new UsernamePasswordAuthenticationToken(loginRequest.getUsername(), loginRequest.getPassword())
-        );
+        ReqRes response = new ReqRes();
+        try {
+            var user = userRepo.findByUsername(loginRequest.getUsername()).orElseThrow();
 
-        var user = userRepo.findByUsername(loginRequest.getUsername()).orElseThrow();
-        var jwt = jwtUtils.generateToken(user);
-        var refreshToken = jwtUtils.generateRefreshToken(new HashMap<>(), user);
+            if (!user.getRole().equals("ADMIN")) {
+                SystemStatus systemStatus = systemStatusRepository.findById(1L).orElse(new SystemStatus());
+                if (systemStatus.isLocked()) {
+                    response.setStatusCode(403);
+                    response.setMessage("El sistema está bloqueado por actividad sospechosa. Contacta con un administrador.");
+                    return response;
+                }
+            }
 
-        response.setStatusCode(200);
-        response.setToken(jwt);
-        response.setRole(user.getRole());
-        response.setRefreshToken(refreshToken);
-        response.setExpirationTime("24Hrs");
-        response.setMessage("Inicio de sesión exitoso");
+            authenticationManager.authenticate(
+                new UsernamePasswordAuthenticationToken(loginRequest.getUsername(), loginRequest.getPassword())
+            );
 
-    } catch (Exception e) {
-        response.setStatusCode(500);
-        response.setMessage("Error en inicio de sesión: " + e.getMessage());
+            // Resetear contador tras login exitoso
+            //user.setFailedAttempts(0);
+            userRepo.save(user);
+
+            var jwt = jwtUtils.generateToken(user);
+            var refreshToken = jwtUtils.generateRefreshToken(new HashMap<>(), user);
+
+            response.setStatusCode(200);
+            response.setToken(jwt);
+            response.setRole(user.getRole());
+            response.setRefreshToken(refreshToken);
+            response.setExpirationTime("24Hrs");
+            response.setMessage("Inicio de sesión exitoso");
+
+        } catch (Exception e) {
+            // ⚠️ Fallo de autenticación
+            Optional<User> optionalUser = userRepo.findByUsername(loginRequest.getUsername());
+            if (optionalUser.isPresent() && !optionalUser.get().getRole().equals("ADMIN")) {
+                User user = optionalUser.get();
+                //int fails = user.getFailedAttempts() + 1;
+                //user.setFailedAttempts(fails);
+                //user.setLastFailedLogin(LocalDateTime.now());
+                userRepo.save(user);
+
+                //if (fails >= 5) {
+                    //SystemStatus status = systemStatusRepository.findById(1L).orElse(new SystemStatus());
+                    //status.setLocked(true);
+                    //systemStatusRepository.save(status);
+                //}
+            }
+
+            response.setStatusCode(401);
+            response.setMessage("Credenciales incorrectas o cuenta bloqueada.");
+        }
+        return response;
     }
-    return response;
-}
+
+
 
 public ReqRes refreshToken(ReqRes refreshTokenRequest) {
     ReqRes response = new ReqRes();

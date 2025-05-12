@@ -9,7 +9,8 @@ INSERT INTO users (id, username, password, role, first_name, last_name, email, t
 (7, 'grace567', '$2a$10$gyqEuh5bpJVhwuN44YwkjeaR6/1u2KqFTGhjYxWtH27Dmka569AmK', 'STUDENT', 'Grace', 'Rodriguez', 'grace@example.com', '678901', '1993-04-13', 'WOMAN', 'Descripción Grace', 'grace.jpg', true),
 (8, 'harry001', '$2a$10$gyqEuh5bpJVhwuN44YwkjeaR6/1u2KqFTGhjYxWtH27Dmka569AmK', 'STUDENT', 'Harry', 'Lopez', 'harry@example.com', '234567', '1997-06-12', 'MAN', 'Descripción Harry', 'harry.jpg', false),
 (9, 'irene789', '$2a$10$gyqEuh5bpJVhwuN44YwkjeaR6/1u2KqFTGhjYxWtH27Dmka569AmK', 'STUDENT', 'Irene', 'Garcia', 'irene@example.com', '890123', '1996-09-08', 'WOMAN', 'Descripción Irene', 'irene.jpg', true),
-(10, 'jack456', '$2a$10$gyqEuh5bpJVhwuN44YwkjeaR6/1u2KqFTGhjYxWtH27Dmka569AmK', 'OWNER', 'Jack', 'Hernandez', 'jack@example.com', '456789', '1994-01-07', 'MAN', 'Descripción Jack', 'jack.jpg', true);
+(10, 'jack456', '$2a$10$gyqEuh5bpJVhwuN44YwkjeaR6/1u2KqFTGhjYxWtH27Dmka569AmK', 'OWNER', 'Jack', 'Hernandez', 'jack@example.com', '456789', '1994-01-07', 'MAN', 'Descripción Jack', 'jack.jpg', true),
+(11, 'natalichic', '$2a$10$gyqEuh5bpJVhwuN44YwkjeaR6/1u2KqFTGhjYxWtH27Dmka569AmK', 'ADMIN', 'Natalia', 'Olmo', 'natali@example.com', '123456789', '2003-04-17', 'WOMAN', 'Descripción Natalia', 'natalia.jpg', true);
 
 INSERT INTO owners (user_id, experience_years) VALUES 
 (1, 10),
@@ -17,6 +18,8 @@ INSERT INTO owners (user_id, experience_years) VALUES
 (4, 8),
 (6, 15),
 (10, 3);
+
+INSERT INTO system_status (id, locked) VALUES (1, false);
 
 INSERT IGNORE INTO advertisements (id, is_visible, title) VALUES
 (1, true, 'Piso cerca de Reina Mercedes'),

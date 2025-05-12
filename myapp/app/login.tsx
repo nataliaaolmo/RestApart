@@ -40,8 +40,11 @@ export default function LoginScreen() {
       });
 
     } catch (err) {
-      setError("Credenciales incorrectas o fallo al obtener el token");
-      console.error("Error en el inicio de sesión:", err);
+      if ((err as any).response?.status === 401) {
+    setError("Nombre de usuario o contraseña incorrectos.");
+  } else {
+    setError("El sistema está bloqueado temporalmente. Solo los administradores pueden acceder.");
+  }
     }
   };
 

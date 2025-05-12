@@ -36,6 +36,7 @@ import com.eventbride.advertisement.Advertisement;
 import com.eventbride.advertisement.AdvertisementService;
 import com.eventbride.booking.Booking;
 import com.eventbride.booking.BookingService;
+import com.eventbride.dto.AccomodationDTO;
 import com.eventbride.owner.Owner;
 import com.eventbride.owner.OwnerRepository;
 
@@ -194,6 +195,39 @@ public class AccommodationController {
             return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
     }
 
+    @PutMapping("/admin/{id}")
+    public ResponseEntity<?> update(@PathVariable Integer id, @Valid @RequestBody AccomodationDTO dto) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        List<String> roles = auth.getAuthorities().stream()
+            .map(GrantedAuthority::getAuthority)
+            .toList();
+        if (!(roles.contains("OWNER") || roles.contains("ADMIN"))) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        Optional<Accommodation> optional = accommodationService.findById(id);
+        if (optional.isEmpty()) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Apartamento no encontrado");
+        }
+
+        Accommodation accommodation = optional.get();
+
+        accommodation.setRooms(dto.getRooms());
+        accommodation.setBeds(dto.getBeds());
+        accommodation.setPricePerDay(dto.getPricePerDay());
+        accommodation.setPricePerMonth(dto.getPricePerMonth());
+        accommodation.setDescription(dto.getDescription());
+        accommodation.setLatitud(dto.getLatitud());
+        accommodation.setLongitud(dto.getLongitud());
+        accommodation.setAvailability(new DateRange(dto.getStartDate(), dto.getEndDate()));
+        accommodation.setStudents(dto.getStudents());
+        accommodation.setWifi(dto.getWifi());
+        accommodation.setIsEasyParking(dto.getIsEasyParking());
+        accommodation.setIsVerified(dto.getIsVerified());
+
+        return ResponseEntity.ok(accommodationService.update(id, accommodation));
+    }
+
     @PatchMapping("/{accommodationId}/{userId}/verify-accommodation")
     @ResponseStatus(HttpStatus.CREATED)
     public ResponseEntity<?> addVerification(@PathVariable Integer accommodationId, @PathVariable Integer userId) {
@@ -263,7 +297,7 @@ public class AccommodationController {
 		Authentication auth = SecurityContextHolder.getContext().getAuthentication();
 		Collection<? extends GrantedAuthority> authorities = auth.getAuthorities();
 		List<String> roles = authorities.stream().map(GrantedAuthority::getAuthority).collect(Collectors.toList());
-		if (roles.contains("OWNER")) {
+		if (roles.contains("OWNER") || roles.contains("ADMIN")) {
 			accommodationService.delete(id);
 			return new ResponseEntity<>("Borrado correctamente", HttpStatus.OK);
 		}

@@ -40,7 +40,7 @@ public class User implements UserDetails {
     private String password;
 
     @Column(name = "role", nullable = true)
-    @Pattern(regexp = "OWNER|STUDENT", message = "El rol debe ser OWNER o STUDENT")
+    @Pattern(regexp = "OWNER|STUDENT|ADMIN", message = "El rol debe ser OWNER o STUDENT")
     private String role;
 
     @Column(name = "first_name", nullable = true, length = 50)

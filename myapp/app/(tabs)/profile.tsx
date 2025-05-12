@@ -60,12 +60,12 @@ export default function ProfileScreen() {
     return `${yyyy}-${mm.toString().padStart(2, '0')}-${dd.toString().padStart(2, '0')}`;
   } 
 
-  const toSpanishFormat = (isoDate: string) => {
-    const [year, month, day] = isoDate.split('-');
-    return `${day}-${month}-${year}`;
-  };
+  function formatToSpanish(dateStr: string): string {
+    if (!dateStr) return '';
+    const [yyyy, mm, dd] = dateStr.split('-');
+    return `${dd}-${mm}-${yyyy}`;
+  }
   
-
   const fetchProfile = async () => {
     try {
       const token = localStorage.getItem('jwt');
@@ -74,6 +74,7 @@ export default function ProfileScreen() {
         headers: { Authorization: `Bearer ${token}` },
       });
       const user = userId ? response.data : response.data.user;
+      user.dateOfBirth = formatToSpanish(user.dateOfBirth);
       setUserData(user);
       setOriginalUsername(user.username);
       setOriginalEmail(user.email);
@@ -426,12 +427,13 @@ export default function ProfileScreen() {
         academicCareer: userData.role === 'STUDENT' ? sanitizeInput(userData.academicCareer) : null,
         hobbies: userData.role === 'STUDENT' ? sanitizeInput(userData.hobbies) : null,
         isSmoker: userData.role === 'STUDENT' ? userData.isSmoker : null,
+
       };
+      console.log('Updated user data:', updatedUser);
       const res = await api.put(`/users/${userData.id}`, updatedUser, {
         headers: { Authorization: `Bearer ${token}` },
       });
   
-      res.data.dateOfBirth = toSpanishFormat(res.data.dateOfBirth);
       setUserData(res.data);
       setEditing(false);
       fetchProfile();
@@ -478,15 +480,45 @@ export default function ProfileScreen() {
           <TextInput style={styles.input} value={userData.gender} onChangeText={(text) => setUserData(prev => prev ? { ...prev, gender: text } : null)} placeholder="Género (MAN/WOMAN)" />
           <TextInput style={styles.input} value={userData.description} onChangeText={(text) => setUserData(prev => prev ? { ...prev, description: text } : null)} placeholder="Descripción" />
 
-          {isStudent ? (
-            <>
-              <TextInput style={styles.input} value={userData.academicCareer} onChangeText={(text) => setUserData(prev => prev ? { ...prev, academicCareer: text } : null)} placeholder="Carrera" />
-              <TextInput style={styles.input} value={userData.hobbies} onChangeText={(text) => setUserData(prev => prev ? { ...prev, hobbies: text } : null)} placeholder="Aficiones" />
-              <TextInput style={styles.input} value={userData.isSmoker ? 'true' : 'false'} onChangeText={(text) => setUserData(prev => prev ? { ...prev, isSmoker: text === 'true' } : null)} placeholder="¿Fumador? (true/false)" />
-            </>
-          ) : (
-            <TextInput style={styles.input} value={userData.experienceYears?.toString()} onChangeText={(text) => setUserData(prev => prev ? { ...prev, experienceYears: parseInt(text) } : null)} placeholder="Años de experiencia" />
-          )}
+        {userData.role === 'STUDENT' && (
+          <>
+            <TextInput
+              style={styles.input}
+              value={userData.academicCareer}
+              onChangeText={(text) =>
+                setUserData(prev => prev ? { ...prev, academicCareer: text } : null)
+              }
+              placeholder="Carrera"
+            />
+            <TextInput
+              style={styles.input}
+              value={userData.hobbies}
+              onChangeText={(text) =>
+                setUserData(prev => prev ? { ...prev, hobbies: text } : null)
+              }
+              placeholder="Aficiones"
+            />
+            <TextInput
+              style={styles.input}
+              value={userData.isSmoker ? 'true' : 'false'}
+              onChangeText={(text) =>
+                setUserData(prev => prev ? { ...prev, isSmoker: text === 'true' } : null)
+              }
+              placeholder="¿Fumador? (true/false)"
+            />
+          </>
+        )}
+
+        {userData.role === 'OWNER' && (
+          <TextInput
+            style={styles.input}
+            value={userData.experienceYears?.toString() || ''}
+            onChangeText={(text) =>
+              setUserData(prev => prev ? { ...prev, experienceYears: parseInt(text) || 0 } : null)
+            }
+            placeholder="Años de experiencia"
+          />
+        )}
 
           {!userId && (
             <TouchableOpacity style={styles.saveButton} onPress={saveChanges}>
@@ -520,7 +552,7 @@ export default function ProfileScreen() {
           )}
               <Text style={styles.detail}>
       {userData.gender === 'WOMAN' ? 'Mujer' : 'Hombre'} -{' '}
-      {calculateAge(toSpanishFormat(userData.dateOfBirth))} años
+      {calculateAge((userData.dateOfBirth))} años
     </Text>
 
           {userId && (
@@ -593,7 +625,7 @@ export default function ProfileScreen() {
               <View style={styles.row}>
                 <Icon name="calendar" size={18} color="#AFC1D6" style={styles.icon} />
                 <Text style={styles.text}>
-                Fecha de nacimiento: {toSpanishFormat(userData.dateOfBirth)}
+                Fecha de nacimiento: {userData.dateOfBirth}
                 </Text>
               </View>
               <View style={styles.row}>
@@ -661,7 +693,7 @@ export default function ProfileScreen() {
               <View style={styles.bookingItemRow}>
                 <Icon name="calendar" size={18} color="#AFC1D6" style={styles.bookingIcon} />
                 <Text style={styles.bookingText}>
-                {toSpanishFormat(booking.startDate)} → {toSpanishFormat(booking.endDate)}
+                {(booking.startDate)} → {(booking.endDate)}
                 </Text>
               </View>
               <View style={styles.bookingItemRow}>

@@ -50,6 +50,7 @@ export default function WelcomeScreen() {
   const [filterError, setFilterError] = useState('');
   const [locationConfirmed, setLocationConfirmed] = useState(false);
   const [averageRatings, setAverageRatings] = useState<{ [key: number]: number }>({});
+  const [systemLocked, setSystemLocked] = useState(false);
 
   useEffect(() => {
     fetchProfile();
@@ -63,6 +64,7 @@ export default function WelcomeScreen() {
   }, []);
 
   useEffect(() => {
+    if(role === 'STUDENT' || role === 'OWNER') {
     const savedFilters = localStorage.getItem('accommodationFilters');
     if (savedFilters) {
       const f = JSON.parse(savedFilters);
@@ -92,6 +94,7 @@ export default function WelcomeScreen() {
     } else if (role === 'OWNER') {
       findAccommodationsByOwner();
     }
+  }
   }, []);  
   
   useEffect(() => {
@@ -116,11 +119,54 @@ export default function WelcomeScreen() {
       setUserData(response.data.user);
       setRole(response.data.user.role);
       setName(response.data.user.username);
+
+    if (response.data.user.role === 'ADMIN') {
+      fetchSystemStatus();
+    }
     } catch (error) {
       console.error('Error al obtener el perfil:', error);
     }
   };
 
+  const fetchSystemStatus = async () => {
+  try {
+    const token = localStorage.getItem('jwt');
+    const response = await api.get('admin/system/status', {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    setSystemLocked(response.data.locked);
+  } catch (error) {
+    console.error('Error al obtener el estado del sistema:', error);
+  }
+  };
+
+  const lockSystem = async () => {
+  try {
+    const token = localStorage.getItem('jwt');
+    await api.put('/admin/lock', null, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    setSystemLocked(true);
+    alert('Sistema bloqueado correctamente.');
+  } catch (error) {
+    console.error('Error bloqueando el sistema:', error);
+    alert('Error al bloquear el sistema.');
+  }
+};
+
+const unlockSystem = async () => {
+  try {
+    const token = localStorage.getItem('jwt');
+    await api.put('/admin/unlock', null, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    setSystemLocked(false);
+    alert('Sistema desbloqueado correctamente.');
+  } catch (error) {
+    console.error('Error desbloqueando el sistema:', error);
+    alert('Error al desbloquear el sistema.');
+  }
+};
   const showFilterError = (msg: string) => {
     if (Platform.OS === 'web') {
       setFilterError(msg);
@@ -636,6 +682,27 @@ function formatDateToISO(dateString: string | null): string | null {
           </>
         )}
 
+      {role === 'ADMIN' && (
+        <View>
+          <Text style={styles.resultsTitle}>Panel de administración</Text>
+
+          <Text style={{ color: '#E0E1DD', fontSize: 16, marginBottom: 15, textAlign: 'center' }}>
+            Estado actual del sistema:{' '}
+            <Text style={{ fontWeight: 'bold', color: systemLocked ? 'tomato' : 'lightgreen' }}>
+              {systemLocked ? 'BLOQUEADO' : 'DESBLOQUEADO'}
+            </Text>
+          </Text>
+
+          <TouchableOpacity
+            style={[styles.button, { backgroundColor: systemLocked ? '#48CAE4' : '#FF6B6B' }]}
+            onPress={systemLocked ? unlockSystem : lockSystem}
+          >
+            <Text style={styles.buttonText}>
+              {systemLocked ? 'Desbloquear sistema' : 'Bloquear sistema'}
+            </Text>
+          </TouchableOpacity>
+        </View>
+      )}
       </ScrollView>
     </View>
   );

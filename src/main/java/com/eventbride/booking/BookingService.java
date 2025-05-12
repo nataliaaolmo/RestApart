@@ -50,4 +50,8 @@ public class BookingService {
         return bookingRepository.findAllByStudent(student);
     }
 
+    public void deleteById(Integer bookingId) {
+        bookingRepository.deleteById(bookingId);
+    }
+
 }

@@ -31,4 +31,8 @@ public class BookingDTO {
         this.bookingName = booking.getAccommodation().getAdvertisement().getTitle();
         this.isVerified = booking.getIsVerified();
     }
+
+    public BookingDTO() {
+
+    }
 }
