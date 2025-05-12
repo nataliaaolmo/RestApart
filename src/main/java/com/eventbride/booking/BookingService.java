@@ -54,4 +54,8 @@ public class BookingService {
         bookingRepository.deleteById(bookingId);
     }
 
+    public List<Booking> findAllByAccommodation(Accommodation accommodation) {
+        return bookingRepository.findAllByAccommodation(accommodation);
+    }
+
 }

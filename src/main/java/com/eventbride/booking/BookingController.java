@@ -22,6 +22,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.eventbride.student.Student;
+import com.eventbride.student.StudentProfileDTO;
 import com.eventbride.student.StudentRepository;
 import com.eventbride.user.User;
 import com.eventbride.accommodation.Accommodation;
@@ -69,6 +70,23 @@ public class BookingController {
     }).collect(Collectors.toList());
 
     return ResponseEntity.ok(dtoList);
+    }
+
+    @GetMapping("/{accommodationId}/get-accommodation-bookings")
+    public List<StudentProfileDTO> findAllHistoryBookingsAccommodation(@PathVariable Integer accommodationId) {
+        Accommodation accommodation = accommodationRepository.findById(accommodationId)
+            .orElseThrow(() -> new RuntimeException("Alojamiento no encontrado"));
+        List<Booking> bookings= bookingService.findAllByAccommodation(accommodation);
+        List<Student> students = bookings.stream()
+            .map(Booking::getStudent)
+            .distinct()
+            .collect(Collectors.toList());
+        return students.stream()
+            .map(student -> new StudentProfileDTO(
+                student.getUser().getFirstName(),
+                student.getUser().getPhoto(), student.getId(), student.getUser().getId()
+            ))
+            .collect(Collectors.toList());
     }
 
     @PostMapping("/{accommodationId}")

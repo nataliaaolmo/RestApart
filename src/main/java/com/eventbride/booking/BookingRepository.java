@@ -29,4 +29,7 @@ public interface BookingRepository extends CrudRepository<Booking, Integer>{
     @Query("SELECT b FROM Booking b WHERE b.student = :student")
     List<Booking> findAllByStudent(Student student);
 
+    @Query("SELECT b FROM Booking b WHERE b.accommodation = :accommodation")
+    List<Booking> findAllByAccommodation(Accommodation accommodation);
+
 }

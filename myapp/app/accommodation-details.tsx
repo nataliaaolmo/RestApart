@@ -47,6 +47,12 @@ export default function AccommodationDetailsScreen() {
   const [tempEndDate, setTempEndDate] = useState(stayRange.endDate || '');
   const [addressInfo, setAddressInfo] = useState<string | null>(null);
   const [selectedUsername, setSelectedUsername] = useState<string | null>(null);
+  interface StudentProfileDTO {
+    id: number;
+    username?: string;
+    photo?: string;
+  }
+  const [pastTenants, setPastTenants] = useState<StudentProfileDTO[]>([]);
 
   function formatToSpanish(dateStr: string): string {
     if (!dateStr) return '';
@@ -86,6 +92,7 @@ const checkAlreadyLiving = async () => {
 
   useEffect(() => {
     findAccommodation();
+    fetchPastTenants();
     if (stayRange.startDate && stayRange.endDate) {
       loadTenants();
       checkAlreadyLiving();
@@ -264,6 +271,18 @@ const checkAlreadyLiving = async () => {
     setConfirmModalVisible(false);
     initiatePaypalPaymentWithRange(range);
   };
+
+const fetchPastTenants = async () => {
+  try {
+    const token = localStorage.getItem('jwt');
+    const response = await api.get(`/bookings/${id}/get-accommodation-bookings`, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    setPastTenants(response.data);
+  } catch (error) {
+    console.error('Error al cargar el historial de inquilinos', error);
+  }
+};
 
   const loadTenants = async () => {
     if (!stayRange.startDate || !stayRange.endDate) {
@@ -467,6 +486,7 @@ const checkAlreadyLiving = async () => {
               <Text style={styles.addCommentButtonText}>Ir a mis estudiantes</Text>
             </TouchableOpacity>
           </View>
+          
         ) : (
           !stayRange.startDate || !stayRange.endDate ? (
             <View style={[styles.card, { marginTop: 0, borderColor: '#A8DADC', borderWidth: 1 }]}>
@@ -539,6 +559,28 @@ const checkAlreadyLiving = async () => {
         </ScrollView>
         )
         )}
+
+        {pastTenants.length > 0 && (
+        <View style={{ marginTop: 24 }}>
+          <Text style={{ fontSize: 18, fontWeight: 'bold', color: '#E0E1DD', marginBottom: 8 }}>
+            Historial de inquilinos
+          </Text>
+          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
+            {pastTenants.map((tenant, index) => (
+          <TouchableOpacity
+            key={index}
+            onPress={() => handleUserPress(tenant.id, tenant.username ?? null)}
+          >
+            <Image
+              source={{ uri: `http://localhost:8080/images/${tenant.photo}` }}
+              style={styles.tenantPhoto}
+            />
+          </TouchableOpacity>
+        ))}
+          </ScrollView>
+        </View>
+      )}
+
 
           <Text style={styles.sectionTitle}>Descripción</Text>
           <Text style={styles.description}>{description}</Text>
