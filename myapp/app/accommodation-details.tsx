@@ -54,6 +54,12 @@ export default function AccommodationDetailsScreen() {
   }
   const [pastTenants, setPastTenants] = useState<StudentProfileDTO[]>([]);
 
+  const bannedWords = ['puta', 'gilipollas', 'cabron', 'mierda', 'idiota', 'estúpido', 'tonto']; // añade más si quieres
+
+  const containsBannedWord = (text: string): boolean => {
+    return bannedWords.some(word => text.toLowerCase().includes(word));
+  };
+
   function formatToSpanish(dateStr: string): string {
     if (!dateStr) return '';
     const [yyyy, mm, dd] = dateStr.split('-');
@@ -209,6 +215,11 @@ const checkAlreadyLiving = async () => {
       showFilterError('Comentario demasiado corto. Por favor, escribe un comentario más detallado.');
       return;
     }
+
+    if (containsBannedWord(text)) {
+    showFilterError('Tu comentario contiene palabras inapropiadas. Por favor, modifícalo.');
+    return;
+  }
     
     try {
       const token = localStorage.getItem('jwt');

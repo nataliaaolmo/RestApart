@@ -55,6 +55,12 @@ export default function ProfileScreen() {
   const[isVerified, setIsVerified] = useState(false);
   const[studentId, setStudentId] = useState<number | null>(null);
 
+  const bannedWords = ['puta', 'gilipollas', 'cabron', 'mierda', 'idiota', 'estúpido', 'tonto']; 
+
+  const containsBannedWord = (text: string): boolean => {
+    return bannedWords.some(word => text.toLowerCase().includes(word));
+  };
+
   function convertToBackendFormat(dateStr: string): string {
     const [dd, mm, yyyy] = dateStr.split('-');
     return `${yyyy}-${mm.toString().padStart(2, '0')}-${dd.toString().padStart(2, '0')}`;
@@ -776,6 +782,10 @@ export default function ProfileScreen() {
             }
             if (text.trim().length < 5) {
               showFilterError('Comentario demasiado corto. Por favor, escribe un comentario más detallado.');
+              return;
+            }
+            if (containsBannedWord(text)) {
+              showFilterError('Tu comentario contiene palabras inapropiadas. Por favor, modifícalo.');
               return;
             }
 
