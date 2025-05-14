@@ -348,13 +348,17 @@ const fetchPastTenants = async () => {
       }
   
       const totalPrice = Math.round(basePrice * 1.02 * 100) / 100;
+      sessionStorage.setItem("acc_id", id as string);
+      sessionStorage.setItem("startDate", toBackendFormatIfNeeded(range.startDate));
+      sessionStorage.setItem("endDate", toBackendFormatIfNeeded(range.endDate));
+
   
       const response = await api.post('/payments/paypal/create', null, {
         params: {
           amount: totalPrice,
           currency: 'EUR',
           description: `Reserva alojamiento ID ${id} del ${formatToSpanish(range.startDate)} al ${formatToSpanish(range.endDate)}`,
-          returnUrl: `http://localhost:8081/paypal-success?id=${id}&startDate=${toBackendFormatIfNeeded(range.startDate)}&endDate=${toBackendFormatIfNeeded(range.endDate)}`
+          returnUrl: `http://localhost:8081/payment-success?id=${id}&startDate=${toBackendFormatIfNeeded(range.startDate)}&endDate=${toBackendFormatIfNeeded(range.endDate)}`
         },
         headers: { Authorization: `Bearer ${token}` },
       });

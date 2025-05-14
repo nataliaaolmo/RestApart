@@ -136,6 +136,7 @@ export default function CreateAccommodation() {
 
   const handleSubmit = async () => {
     setErrorMessage('');
+    console.log('Form:', form);
     if (!form.title || !form.rooms || !form.beds || !form.pricePerMonth || !form.pricePerDay || !form.startDate || !form.endDate || !form.students || !buildFullAddress()) {
       showError('Por favor, completa todos los campos obligatorios.');
       return;

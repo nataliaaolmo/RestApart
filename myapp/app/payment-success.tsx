@@ -1,11 +1,10 @@
-// app/paypal-success.tsx
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { useEffect, useState } from 'react';
 import { View, Text, ActivityIndicator, Platform, StyleSheet, TouchableOpacity } from 'react-native';
 import api from './api';
+import { useSearchParams } from 'expo-router/build/hooks';
 
 export default function PaypalSuccessScreen() {
-  const { id, startDate, endDate } = useLocalSearchParams();
   const router = useRouter();
 
   const [statusMessage, setStatusMessage] = useState('');
@@ -31,36 +30,55 @@ export default function PaypalSuccessScreen() {
   };
 
   useEffect(() => {
-    const finalizeBooking = async () => {
-      try {
-        const token = localStorage.getItem('jwt');
-        const bookingData = {
-          stayRange: {
-            startDate,
-            endDate,
-          }
-        };
+  const search = window.location.search;
+  const params = new URLSearchParams(search);
+  const orderId = params.get('token'); // PayPal te manda esto como token
+  const id = params.get('id');
+  const startDate = params.get('startDate');
+  const endDate = params.get('endDate');
 
-        await api.post(`/bookings/${id}`, bookingData, {
-          headers: { Authorization: `Bearer ${token}` }
-        });
-
-        showSuccessMessage('Tu reserva ha sido completada correctamente.');
-        setStatusMessage('Reserva completada correctamente. Redirigiendo...');
-        setTimeout(() => router.replace(`/accommodation-details?id=${id}`), 2500);
-      } catch (error) {
-        console.error('Error al confirmar la reserva:', error);
-        showFilterError('No se pudo confirmar la reserva. Contacta con soporte.');
-        setTimeout(() => router.replace('/'), 3000);
-      } finally {
-        setLoading(false);
-      }
-    };
-
+  if (!orderId) {
+    showFilterError('No se recibió el token del pago.');
+    setLoading(false);
+    return;
+  }
+  console.log(id, startDate, endDate);
     if (id && startDate && endDate) {
-      finalizeBooking();
+      finalizeBooking(orderId, id, startDate, endDate);
     }
-  }, [id, startDate, endDate]);
+  }, []);
+
+const finalizeBooking = async (orderId: string, id: string, startDate: string, endDate: string) => {
+  try {
+    const jwt = localStorage.getItem('jwt');
+    console.log("Confirmando pago con", { orderId, id, startDate, endDate });
+
+    await api.post('/payments/paypal/confirm', null, {
+      params: {
+        orderId,
+        accommodationId: id,
+        startDate,
+        endDate,
+      },
+      headers: { Authorization: `Bearer ${jwt}` },
+    });
+
+    showSuccessMessage('Tu reserva ha sido completada correctamente.');
+    setStatusMessage('Reserva completada correctamente. Redirigiendo...');
+    setTimeout(() => router.replace(`/welcome-screen`), 2500);
+  } catch (error: any) {
+    console.error('Error al confirmar la reserva:', error);
+    if (error?.response) {
+      console.error('Status:', error.response.status);
+      console.error('Data:', error.response.data);
+    }
+    showFilterError('No se pudo confirmar la reserva. Contacta con soporte.');
+    setTimeout(() => router.replace('/'), 3000);
+  } finally {
+    setLoading(false);
+  }
+};
+
 
   return (
     <View style={styles.container}>

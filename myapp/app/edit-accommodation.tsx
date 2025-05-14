@@ -35,13 +35,12 @@ export default function EditAccommodation() {
 
   const [form, setForm] = useState({
     title: '', description: '', address: '', rooms: '', beds: '', pricePerDay: '',
-    pricePerMonth: '', students: '', wifi: false, isEasyParking: false,
+    pricePerMonth: '', students: '', wifi: false, isEasyParking: false,startDate: '', endDate: ''
   });
   const [latLng, setLatLng] = useState<{ lat: number; lon: number } | null>(null);
   const [errorMessage, setErrorMessage] = useState('');
   const [images, setImages] = useState<string[]>([]);
   const [newImages, setNewImages] = useState<ImagePicker.ImagePickerAsset[]>([]);
-  const [availability, setAvailability] = useState({startDate: '', endDate: ''});
   const [addressWarning, setAddressWarning] = useState('');
   const [suggestion, setSuggestion] = useState('');
   const [streetType, setStreetType] = useState('');
@@ -122,10 +121,6 @@ const maybeSuggestAddress = (input: string): string => {
           headers: { Authorization: `Bearer ${token}` },
         });
         const data = res.data;
-        setAvailability({
-          startDate: formatToSpanish(data.availability.startDate),
-          endDate: formatToSpanish(data.availability.endDate)
-        });
         setForm({
           title: data.advertisement.title,
           description: data.description,
@@ -137,7 +132,10 @@ const maybeSuggestAddress = (input: string): string => {
           students: String(data.students),
           wifi: data.wifi,
           isEasyParking: data.isEasyParking,
+          startDate: convertToBackendFormat(data.availability.startDate),
+          endDate: convertToBackendFormat(data.availability.endDate),
         });
+
         setImages(data.images);
         const coords = { lat: data.latitud, lon: data.longitud };
         setLatLng(coords);
@@ -173,10 +171,12 @@ const maybeSuggestAddress = (input: string): string => {
   const handleSave = async () => {
     setErrorMessage('');
     setAddressWarning('');
-    if (!form.title || !form.rooms || !form.beds || !form.pricePerMonth || !form.pricePerDay || !availability.startDate || !availability.endDate || !form.students || !buildFullAddress) {
-      showError('Por favor, completa todos los campos obligatorios.');
-      return;
-    }
+
+if (!form.title || !form.rooms || !form.beds || !form.pricePerDay || !form.pricePerMonth || !form.students || !form.startDate || !form.endDate || !streetType || !streetName || !city || !country) {
+  showError('Por favor, completa todos los campos obligatorios.');
+  return;
+}
+
 
     if (isNaN(Number(form.rooms)) || isNaN(Number(form.beds)) || isNaN(Number(form.pricePerDay)) || isNaN(Number(form.pricePerMonth)) || isNaN(Number(form.students))){
       showError('Asegúrate de que los campos númericos son válidos.');
@@ -193,13 +193,13 @@ const maybeSuggestAddress = (input: string): string => {
       return;
     }
 
-    if (availability.startDate.length !== 10 || availability.endDate.length !== 10) {
+    if (form.startDate.length !== 10 || form.endDate.length !== 10) {
       showError('Las fechas deben tener el formato DD-MM-YYYY.');
       return;
     }
 
-    const [startDay, startMonth, startYear] = availability.startDate.split('-').map(Number);
-    const [endDay, endMonth, endYear] = availability.endDate.split('-').map(Number);
+    const [startDay, startMonth, startYear] = form.startDate.split('-').map(Number);
+    const [endDay, endMonth, endYear] = form.endDate.split('-').map(Number);
 
     const startDate = new Date(startYear, startMonth - 1, startDay);
     const endDate = new Date(endYear, endMonth - 1, endDay);
@@ -214,10 +214,6 @@ const maybeSuggestAddress = (input: string): string => {
       return;
     }
 
-    if (!isValidAddress(buildFullAddress())) {
-      setAddressWarning('⚠️ Introduce la dirección con calle, número, ciudad y país. Ej: "Calle Real 5, Madrid, España"');
-      return;
-    }
     if (!latLng) {
       showError('Debes obtener la ubicación exacta antes de crear el alojamiento.');
       return;
@@ -247,23 +243,27 @@ const maybeSuggestAddress = (input: string): string => {
         imageUrls = [...images, ...newImageUrls]; 
       }
 
-      await api.put(`/accommodations/${id}`, {
+        const accommodationData = {
         rooms: parseInt(form.rooms),
         beds: parseInt(form.beds),
         pricePerDay: parseFloat(form.pricePerDay),
         pricePerMonth: parseFloat(form.pricePerMonth),
         description: form.description,
-        latitud: coords.lat,
-        longitud: coords.lon,
+        latitud: latLng.lat,
+        longitud: latLng.lon,
         availability: {
-          startDate: convertToBackendFormat(availability.startDate),
-          endDate: convertToBackendFormat(availability.endDate),
+          startDate: convertToBackendFormat(form.startDate),
+          endDate: convertToBackendFormat(form.endDate)
         },        
         students: parseInt(form.students),
         wifi: form.wifi,
         isEasyParking: form.isEasyParking,
         images: imageUrls,
-      }, {
+      };
+
+      console.log('Datos del alojamiento:', accommodationData);
+
+      await api.put(`/accommodations/${id}`, accommodationData,{
         headers: { Authorization: `Bearer ${token}` },
       });
       
@@ -337,19 +337,6 @@ const maybeSuggestAddress = (input: string): string => {
   <Text style={styles.buttonText}>Obtener ubicación exacta</Text>
 </TouchableOpacity>
 
-{addressWarning !== '' && (
-  <View style={{ marginTop: 5 }}>
-    <Text style={styles.errorText}>{addressWarning}</Text>
-    {suggestion && (
-      <TouchableOpacity onPress={() => handleChange('address', suggestion)}>
-        <Text style={styles.warningText}>
-          👉 Usar sugerencia: <Text style={{ fontWeight: 'bold' }}>{suggestion}</Text>
-        </Text>
-      </TouchableOpacity>
-    )}
-  </View>
-)}
-
 {latLng && (
   <Text style={{ color: '#90EE90', marginTop: 10 }}>
     📍 Ubicación encontrada: {latLng.lat.toFixed(5)}, {latLng.lon.toFixed(5)}
@@ -363,6 +350,22 @@ const maybeSuggestAddress = (input: string): string => {
       <CustomInput label="Precio por día (€)" value={form.pricePerDay} onChangeText={val => handleChange('pricePerDay', val)} icon="cash-outline" keyboardType="numeric" />
       <CustomInput label="Precio por mes (€)" value={form.pricePerMonth} onChangeText={val => handleChange('pricePerMonth', val)} icon="card-outline" keyboardType="numeric" />
       <CustomInput label="Plazas para estudiantes" value={form.students} onChangeText={val => handleChange('students', val)} icon="people-outline" keyboardType="numeric" />
+
+        <Text style={styles.section}>Disponibilidad</Text>
+<CustomInput
+  label="Fecha inicio (DD-MM-YYYY) *"
+  value={form.startDate}
+  onChangeText={(val) => handleChange('startDate', val)}
+  icon="calendar-outline"
+  helpText="Día en que estará disponible el alojamiento. Usa el formato DD-MM-YYYY."
+/>
+<CustomInput
+  label="Fecha fin (DD-MM-YYYY) *"
+  value={form.endDate}
+  onChangeText={(val) => handleChange('endDate', val)}
+  icon="calendar-outline"
+  helpText="Último día disponible para reservar el alojamiento. Usa el formato DD-MM-YYYY."
+/>
 
       <View style={styles.switchRow}>
         <Text style={styles.label}>Wifi</Text>

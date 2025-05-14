@@ -94,7 +94,7 @@ public class BookingController {
     public ResponseEntity<Booking> bookAccommodation(@RequestBody @Valid Booking booking, 
                                                 @AuthenticationPrincipal User currentUser, 
                                                 @PathVariable Integer accommodationId) {
-        Student currentStudent = studentRepository.findById(currentUser.getId())
+        Student currentStudent = studentRepository.findByUserUsername(currentUser.getUsername())
         .orElseThrow(() -> new RuntimeException("Estudiante no encontrado"));
         Accommodation accommodation = accommodationRepository.findById(accommodationId)
         .orElseThrow(() -> new RuntimeException("Alojamiento no encontrado"));
@@ -115,6 +115,7 @@ public class BookingController {
         newBooking.setStudent(currentStudent);
         newBooking.setBookingDate(LocalDate.now());
         newBooking.setStayRange(booking.getStayRange());
+        newBooking.setIsVerified(false);
         
         long daysBetween = java.time.temporal.ChronoUnit.DAYS.between(startDate, endDate);
         long monthsBetween = java.time.temporal.ChronoUnit.MONTHS.between(startDate, endDate);

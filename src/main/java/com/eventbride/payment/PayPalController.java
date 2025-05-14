@@ -34,9 +34,9 @@ public class PayPalController {
     public ResponseEntity<?> createPayment(
             @RequestParam Double amount,
             @RequestParam String currency,
-            @RequestParam String description) {
+            @RequestParam String description,
+            @RequestParam String returnUrl) {
 
-        String returnUrl = "http://localhost:8081/payment-success";
         String cancelUrl = "http://localhost:8081/payment-cancel";
 
         try {
