@@ -188,40 +188,6 @@
         <groupId>org.codehaus.mojo</groupId>
         <artifactId>exec-maven-plugin</artifactId>
         <version>3.1.0</version>
-        <executions>
-          <!-- Instalar dependencias de React antes de compilar el backend -->
-          <execution>
-            <id>install-frontend</id>
-            <phase>generate-resources</phase>
-            <goals>
-              <goal>exec</goal>
-            </goals>
-            <configuration>
-              <workingDirectory>frontend</workingDirectory>
-              <executable>npm</executable>
-              <arguments>
-                <argument>install</argument>
-              </arguments>
-            </configuration>
-          </execution>
-
-          <!-- Construir el frontend React antes de empaquetar Spring Boot -->
-          <execution>
-            <id>build-frontend</id>
-            <phase>generate-resources</phase>
-            <goals>
-              <goal>exec</goal>
-            </goals>
-            <configuration>
-              <workingDirectory>frontend</workingDirectory>
-              <executable>npm</executable>
-              <arguments>
-                  <argument>run</argument>
-                  <argument>build</argument>
-              </arguments>
-            </configuration>
-          </execution>
-        </executions>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
@@ -359,50 +325,6 @@
       <id>css</id>
       <build>
         <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-dependency-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>unpack</id>
-                <goals>
-                  <goal>unpack</goal>
-                </goals>
-                <?m2e execute onConfiguration,onIncremental?>
-                <phase>generate-resources</phase>
-                <configuration>
-                  <artifactItems>
-                    <artifactItem>
-                      <groupId>org.webjars.npm</groupId>
-                      <artifactId>bootstrap</artifactId>
-                      <version>${webjars-bootstrap.version}</version>
-                    </artifactItem>
-                  </artifactItems>
-                  <outputDirectory>${project.build.directory}/webjars</outputDirectory>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-
-          <plugin>
-            <groupId>com.gitlab.haynes</groupId>
-            <artifactId>libsass-maven-plugin</artifactId>
-            <version>${libsass.version}</version>
-            <configuration>
-              <inputPath>${basedir}/src/main/scss/</inputPath>
-              <outputPath>${basedir}/src/main/resources/static/resources/css/</outputPath>
-              <includePath>${project.build.directory}/webjars/META-INF/resources/webjars/bootstrap/${webjars-bootstrap.version}/scss/</includePath>
-            </configuration>
-            <executions>
-              <execution>
-                <?m2e execute onConfiguration,onIncremental?>
-                <goals>
-                  <goal>compile</goal>
-                </goals>
-                <phase>generate-resources</phase>
-              </execution>
-            </executions>
-          </plugin>
         </plugins>
       </build>
     </profile>
