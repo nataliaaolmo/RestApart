@@ -49,5 +49,5 @@ _site/
 
 #MariaDB password
 src/main/resources/application-mysql.properties
-src/main/resources/application.properties
-src/main/resources/application-postgres.properties
+src/main/resources/application-local.properties
+src/main/resources/application-postgres-local.properties
