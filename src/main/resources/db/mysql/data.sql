@@ -21,7 +21,7 @@ INSERT INTO owners (user_id, experience_years) VALUES
 
 INSERT INTO system_status (id, locked) VALUES (1, false);
 
-INSERT IGNORE INTO advertisements (id, is_visible, title) VALUES
+INSERT INTO advertisements (id, is_visible, title) VALUES
 (1, true, 'Piso cerca de Reina Mercedes'),
 (2, false, 'Habitación junto a ETSII'),
 (3, true, 'Apartamento en Viapol'),
@@ -33,7 +33,7 @@ INSERT IGNORE INTO advertisements (id, is_visible, title) VALUES
 (9, true, 'Ático con vistas cerca del Rectorado'),
 (10, true, 'Chalet para estudiantes en Felipe II');
 
-INSERT IGNORE INTO accommodations (id, rooms, beds, price_per_day, price_per_month, description, latitud, longitud, start_date, end_date, students, wifi, is_easy_parking, advertisement_id, owner_id, is_verified, verifications) 
+INSERT INTO accommodations (id, rooms, beds, price_per_day, price_per_month, description, latitud, longitud, start_date, end_date, students, wifi, is_easy_parking, advertisement_id, owner_id, is_verified, verifications) 
 VALUES 
 (1, 3, 4, 50.00, 1200.00, 'Piso amplio ideal para estudiantes a 5 minutos de Reina Mercedes', 37.3577, -5.9869, '2025-03-01', '2025-12-31', 1, true, false, 1, 1, true, 2),
 (2, 2, 3, 35.00, 900.00, 'Habitación en piso compartido justo al lado de la ETSII', 37.3586, -5.9850, '2025-04-01', '2025-11-30', 1, true, true, 2, 2, false, 1),
@@ -95,7 +95,7 @@ INSERT INTO bookings (student_id, booking_date, price, accommodation_id, start_d
 (4, '2025-05-03', 475.0, 4, '2025-04-01', '2025-05-01', true),
 (5, '2025-06-03', 1200.0, 5, '2025-08-01', '2025-10-28', true);
 
-INSERT IGNORE INTO comments (id, comment_date, text, rating, accommodation_id, author_id, student_id) VALUES
+INSERT INTO comments (id, comment_date, text, rating, accommodation_id, author_id, student_id) VALUES
 (1, '2024-07-14', 'No me gustó la experiencia, esperaba más.', 5, 1, NULL, 9),
 (2, '2024-08-22', 'Muy cómodo y bien ubicado.', 2, 1, NULL, 9),
 (3, '2024-10-05', 'El proceso de reserva con ella fue fácil y rápido.', 4, NULL, 8, 9),
