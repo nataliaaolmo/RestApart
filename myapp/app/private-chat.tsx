@@ -65,7 +65,7 @@ export default function PrivateChat() {
   };
 
   const setupWebSocket = () => {
-    const socket = () => new SockJS("http://localhost:8080/ws");
+    const socket = () => new SockJS("https://restapart.onrender.com/ws");
     stompClient.current = new Client({
       webSocketFactory: socket,
       connectHeaders: { Authorization: `Bearer ${jwt}` },
@@ -136,7 +136,7 @@ export default function PrivateChat() {
           <Ionicons name="arrow-back" size={24} color="#E0E1DD" />
         </TouchableOpacity>
         <Image
-          source={{ uri: `http://localhost:8080/images/${otherUser.profilePicture}` }}
+          source={{ uri: `https://restapart.onrender.com/images/${otherUser.profilePicture}` }}
           style={styles.avatar}
         />
         <Text style={styles.headerText}>{otherUser.username}</Text>

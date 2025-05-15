@@ -11,7 +11,7 @@ global.localStorage = {
   key: jest.fn((index: number) => null),
 };
 
-process.env.EXPO_PUBLIC_API_URL = 'http://localhost:8080/api';
+process.env.EXPO_PUBLIC_API_URL = 'https://restapart.onrender.com/api';
 
 jest.mock('expo-router', () => ({
   useLocalSearchParams: () => ({

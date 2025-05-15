@@ -164,13 +164,13 @@ export default function StudentsInMyAccommodations() {
 
     return (
       <View style={styles.card}>
-        <Image source={{ uri: `http://localhost:8080/images/${images[0]}` }} style={styles.image} />
+        <Image source={{ uri: `https://restapart.onrender.com/images/${images[0]}` }} style={styles.image} />
         <Text style={styles.title}>{title}</Text>
         {students.length > 0 ? (
           students.map((student, idx) => (
             <View key={idx} style={styles.studentRow}>
               <Image
-                source={{ uri: `http://localhost:8080/images/${student.photo || 'default.jpg'}` }}
+                source={{ uri: `https://restapart.onrender.com/images/${student.photo || 'default.jpg'}` }}
                 style={styles.avatar}
               />
               <View style={{ flex: 1 }}>

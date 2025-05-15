@@ -233,7 +233,7 @@ if (!form.title || !form.rooms || !form.beds || !form.pricePerDay || !form.price
           const file = new File([blob], img.fileName || `image-${i}.jpg`, { type: img.mimeType || 'image/jpeg' });
           formData.append('files', file);
         }
-        const uploadRes = await fetch('http://localhost:8080/api/images/upload', {
+        const uploadRes = await fetch('https://restapart.onrender.com/api/images/upload', {
           method: 'POST',
           headers: { Authorization: `Bearer ${token}` },
           body: formData,
@@ -381,7 +381,7 @@ if (!form.title || !form.rooms || !form.beds || !form.pricePerDay || !form.price
       {images.map((img, index) => (
   <View key={index} style={{ position: 'relative', marginRight: 10 }}>
     <Image
-      source={{ uri: `http://localhost:8080/images/${img}` }}
+      source={{ uri: `https://restapart.onrender.com/images/${img}` }}
       style={{ width: 80, height: 80, borderRadius: 10 }}
     />
     <TouchableOpacity

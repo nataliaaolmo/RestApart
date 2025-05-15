@@ -240,7 +240,7 @@ export default function CreateAccommodation() {
       
       console.log(formData.getAll('files'));
       
-      const uploadRes = await axios.post('http://localhost:8080/api/images/upload', formData, {
+      const uploadRes = await axios.post('https://restapart.onrender.com/api/images/upload', formData, {
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'multipart/form-data',

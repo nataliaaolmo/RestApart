@@ -54,7 +54,7 @@ export default function FavoritesScreen() {
       >
         <View style={styles.card}>
           <Image
-            source={{ uri: `http://localhost:8080/images/${images[0]}` }}
+            source={{ uri: `https://restapart.onrender.com/images/${images[0]}` }}
             style={styles.image}
           />
           <View style={{ marginTop: 10 }}>

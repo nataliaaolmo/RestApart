@@ -395,7 +395,7 @@ function formatDateToISO(dateString: string | null): string | null {
             horizontal
             keyExtractor={(img, index) => index.toString()}
             renderItem={({ item }) => (
-              <Image source={{ uri: `http://localhost:8080/images/${item}` }} style={styles.cardImage} />
+              <Image source={{ uri: `https://restapart.onrender.com/images/${item}` }} style={styles.cardImage} />
             )}
             showsHorizontalScrollIndicator={false}
               />
@@ -481,7 +481,7 @@ function formatDateToISO(dateString: string | null): string | null {
       <View style={styles.headerLeft}>
       <View style={{ position: 'relative' }}>
         <Image
-          source={{ uri: `http://localhost:8080/images/${userData?.profilePicture}` }}
+          source={{ uri: `https://restapart.onrender.com/images/${userData?.profilePicture}` }}
           style={styles.avatar}
           onLoadEnd={() => setImageLoading(false)}
         />

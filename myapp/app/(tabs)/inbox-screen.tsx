@@ -24,7 +24,7 @@ export default function InboxScreen() {
 
   const renderItem = ({ item }: { item: any }) => (
     <TouchableOpacity style={styles.item} onPress={() => openChat(item.id)}>
-      <Image source={{ uri: `http://localhost:8080/images/${item.photo}` }} style={styles.avatar} />
+      <Image source={{ uri: `https://restapart.onrender.com/images/${item.photo}` }} style={styles.avatar} />
       <View>
         <Text style={styles.name}>{item.firstName} {item.lastName}</Text>
         <Text style={styles.username}>@{item.username}</Text>

@@ -255,7 +255,7 @@ const checkAlreadyLiving = async () => {
       setDescription(response.data.description);
       setImages(response.data.images || []);
       if (response.data.images && response.data.images.length > 0) {
-        setSelectedImage(`http://localhost:8080/images/${response.data.images[0]}`);
+        setSelectedImage(`https://restapart.onrender.com/images/${response.data.images[0]}`);
       }      
       setLatitude(response.data.latitud);
       setLongitude(response.data.longitud);
@@ -412,12 +412,12 @@ const fetchPastTenants = async () => {
 
     <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.thumbnailRow}>
       {images.map((img, index) => (
-        <TouchableOpacity key={index} onPress={() => setSelectedImage(`http://localhost:8080/images/${img}`)}>
+        <TouchableOpacity key={index} onPress={() => setSelectedImage(`https://restapart.onrender.com/images/${img}`)}>
           <Image
-            source={{ uri: `http://localhost:8080/images/${img}` }}
+            source={{ uri: `https://restapart.onrender.com/images/${img}` }}
             style={[
               styles.thumbnail,
-              selectedImage === `http://localhost:8080/images/${img}` && styles.thumbnailSelected,
+              selectedImage === `https://restapart.onrender.com/images/${img}` && styles.thumbnailSelected,
             ]}
           />
         </TouchableOpacity>
@@ -437,7 +437,7 @@ const fetchPastTenants = async () => {
             <View style={styles.ownerSection}>
               <TouchableOpacity onPress={() => handleUserPress(owner.user.id, owner.user.username)}>
                 <Image
-                  source={{ uri: `http://localhost:8080/images/${owner.user.photo || 'default.jpg'}` }}
+                  source={{ uri: `https://restapart.onrender.com/images/${owner.user.photo || 'default.jpg'}` }}
                   style={styles.ownerImage}
                   resizeMode="cover"
                 />
@@ -566,7 +566,7 @@ const fetchPastTenants = async () => {
             onPress={() => handleUserPress(tenant.id, tenant.username ?? null)}
           >
             <Image
-              source={{ uri: `http://localhost:8080/images/${tenant.photo}` }}
+              source={{ uri: `https://restapart.onrender.com/images/${tenant.photo}` }}
               style={styles.tenantPhoto}
             />
           </TouchableOpacity>
@@ -587,7 +587,7 @@ const fetchPastTenants = async () => {
             onPress={() => handleUserPress(tenant.id, tenant.username ?? null)}
           >
             <Image
-              source={{ uri: `http://localhost:8080/images/${tenant.photo}` }}
+              source={{ uri: `https://restapart.onrender.com/images/${tenant.photo}` }}
               style={styles.tenantPhoto}
             />
           </TouchableOpacity>

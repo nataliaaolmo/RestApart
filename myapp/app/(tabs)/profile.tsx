@@ -317,7 +317,7 @@ export default function ProfileScreen() {
       try {
         const token = localStorage.getItem('jwt');
   
-        const uploadResponse = await fetch('http://localhost:8080/api/users/upload-photo', {
+        const uploadResponse = await fetch('https://restapart.onrender.com/api/users/upload-photo', {
           method: 'POST',
           headers: {
             'Authorization': `Bearer ${token}`,
@@ -462,7 +462,7 @@ export default function ProfileScreen() {
       <Image
         source={{ uri: userData.profilePicture?.startsWith('http') 
           ? userData.profilePicture 
-          : `http://localhost:8080/images/${userData.profilePicture || 'default.jpg'}` 
+          : `https://restapart.onrender.com/images/${userData.profilePicture || 'default.jpg'}` 
         }}
         style={styles.profileImage}
       />
@@ -651,7 +651,7 @@ export default function ProfileScreen() {
         <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 5 }}>
           {comment.student?.user?.profilePicture && (
             <Image
-              source={{ uri: `http://localhost:8080/images/${comment.student.user.profilePicture}` }}
+              source={{ uri: `https://restapart.onrender.com/images/${comment.student.user.profilePicture}` }}
               style={{ width: 30, height: 30, borderRadius: 15, marginRight: 8 }}
             />
           )}
