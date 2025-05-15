@@ -19,6 +19,7 @@ import com.eventbride.accommodation.Accommodation;
 import com.eventbride.accommodation.AccommodationRepository;
 import com.eventbride.accommodation.DateRange;
 import com.eventbride.config.jwt.JWTUtils;
+import com.eventbride.student.Student;
 import com.eventbride.student.StudentRepository;
 import com.eventbride.user.User;
 import com.eventbride.user.UserRepository;
@@ -57,18 +58,20 @@ public class BookingIntegrationTest {
         String token = jwtUtil.generateToken(userDetails);
         User user = userRepository.findByUsername("charlie789").orElseThrow(); 
         Booking booking = new Booking();
-        booking.setStudent(studentRepository.findByUserUsername(user.getUsername()).orElseThrow());
-        booking.setAccommodation(accommodationRepository.findAll().get(0));
+        Student student = studentRepository.findByUserUsername(user.getUsername()).orElseThrow();
+        booking.setStudent(student);
+        booking.setAccommodation(accommodationRepository.findAll().get(2));
         booking.setBookingDate(LocalDate.now());
         booking.setStayRange(new DateRange(LocalDate.now().plusDays(1), LocalDate.now().plusDays(5)));
         booking.setPrice(200.0);
+        booking.setIsVerified(false);
         bookingService.save(booking);
 
-        mockMvc.perform(get("/api/bookings/" + user.getId())
+        mockMvc.perform(get("/api/bookings/" + student.getId())
             .header("Authorization", "Bearer " + token))
         .andExpect(status().isOk())
         .andExpect(jsonPath("$").isArray())
-        .andExpect(jsonPath("$.length()").value(2));
+        .andExpect(jsonPath("$.length()").value(3));
     }
 
     @Test
@@ -81,7 +84,7 @@ public class BookingIntegrationTest {
         String token = jwtUtil.generateToken(userDetails);
 
         Accommodation acc = accommodationRepository.findAll().stream()
-            .filter(a -> a.getStudents() > 0)
+            .filter(a -> a.getStudents() > 1)
             .findFirst()
             .orElseThrow();
 

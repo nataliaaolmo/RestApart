@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -21,10 +22,13 @@ import org.mockito.MockitoAnnotations;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import com.eventbride.config.SystemStatus;
+import com.eventbride.config.SystemStatusRepository;
 import com.eventbride.config.jwt.JWTUtils;
 import com.eventbride.config.jwt.services.UserDetailsServiceImpl;
 import com.eventbride.config.jwt.services.UserManagementService;
@@ -58,6 +62,9 @@ public class UserServiceTest {
 
     @InjectMocks
     private UserDetailsServiceImpl userDetailsServiceImpl;
+
+    @Mock
+    private SystemStatusRepository systemStatusRepository;
     
     @BeforeEach
     void setup() {
@@ -241,28 +248,36 @@ public class UserServiceTest {
 
     @Test
     void testLogin_validCredentials_shouldReturnToken() {
+        // Arrange
         ReqRes login = new ReqRes();
         login.setUsername("validUser");
         login.setPassword("pass");
 
         User user = new User();
         user.setUsername("validUser");
+        user.setPassword("encodedPass");
         user.setRole("STUDENT");
 
         when(userRepository.findByUsername("validUser")).thenReturn(Optional.of(user));
+        when(systemStatusRepository.findById(1L)).thenReturn(Optional.of(new SystemStatus())); 
+        when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
+            .thenReturn(mock(Authentication.class));
         when(jwtUtils.generateToken(user)).thenReturn("jwt-token");
         when(jwtUtils.generateRefreshToken(any(), eq(user))).thenReturn("refresh-token");
 
+        // Act
         ReqRes result = userManagementService.login(login);
 
+        // Assert
         assertEquals(200, result.getStatusCode());
         assertEquals("jwt-token", result.getToken());
         assertEquals("refresh-token", result.getRefreshToken());
         assertEquals("Inicio de sesión exitoso", result.getMessage());
     }
 
+
     @Test
-    void testLogin_authenticationFails_shouldReturn500() {
+    void testLogin_authenticationFails_shouldReturn401() {
         ReqRes login = new ReqRes();
         login.setUsername("fail");
         login.setPassword("wrong");
@@ -272,8 +287,8 @@ public class UserServiceTest {
 
         ReqRes result = userManagementService.login(login);
 
-        assertEquals(500, result.getStatusCode());
-        assertTrue(result.getMessage().contains("Error en inicio de sesión"));
+        assertEquals(401, result.getStatusCode());
+        assertTrue(result.getMessage().contains("Credenciales incorrectas"));
     }
 
     @Test

@@ -218,7 +218,7 @@ public class AccommodationUnitaryTest {
             accommodationService.update(999, updated)
         );
 
-        assertEquals("No se ha encontrado ningún apartamento con esa Id", ex.getMessage());
+        assertEquals("No encontrado", ex.getMessage());
         verify(accommodationRepository, never()).save(any());
     }
 
