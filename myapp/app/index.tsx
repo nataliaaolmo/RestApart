@@ -3,6 +3,7 @@ import { View, Text, Image, StyleSheet, TouchableOpacity, Animated, Pressable } 
 import { useRouter } from 'expo-router';
 import * as Localization from 'expo-localization';
 import { I18n } from 'i18n-js';
+import storage from '../utils/storage';
 
 const i18n = new I18n({
   en: {
@@ -39,12 +40,16 @@ export default function HomeScreen() {
   const [userName, setUserName] = useState('');
 
   useEffect(() => {
-    const token = localStorage.getItem('jwt');
-    const name = localStorage.getItem('name');
-    if (token && name) {
-      setIsLoggedIn(true);
-      setUserName(name);
-    }
+    const checkLogin = async () => {
+      const token = await storage.getItem('jwt');
+      const name = await storage.getItem('name');
+      if (token && name) {
+        setIsLoggedIn(true);
+        setUserName(name);
+      }
+    };
+    
+    checkLogin();
   }, []);
 
   useEffect(() => {
