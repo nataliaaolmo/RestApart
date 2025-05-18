@@ -1,55 +1,51 @@
 # RestApart
 
+<p align="center">
+    <img src="myapp/assets/images/logo-restapart.png" width="225" height="225">
+</p>
+
+## Introducción
+RestApart es una plataforma que permite el alquiler de pisos compartidos de estudiantes. Destaca por poder conocer quiénes son las personas con las que vas a convivir en el piso antes de comenzar el curso. Tienes la oportunidad de ver su perfil y poder comunicarte con ellos a través de la aplicación. También te permite una búsqueda por afinidad con los posibles inquilinos a través de un filtrado basándose en el estilo de vida de los estudiantes.
+
+## Guía de instalación y arranque del sistema
+
+### Pasos previos
+
 Como configurar el proyecto.
 
-1. Instalar MariaDB (https://mariadb.org/).
-2. Instalar Java 17. Configurar variable de entorno (JAVA_HOME) con la ruta donde esté el jdk17.
-3. Abrir MYSQL Client y configurar la contraseña que se desee.
-4. Poner los siguientes comandos:
-```
-    create database eventbride; (para crear la database)
-    use eventbride; (para meterte en la database)
-    show tables; (para ver si se han creado. De primeras saldrá vacio)
-```
+1. Instalar [PostgreSQL](https://www.postgresql.org/).
+2. Instalar [Java 17](https://www.oracle.com/es/java/technologies/downloads/#java17).
+3. Configurar variable de entorno (JAVA_HOME) con la ruta donde esté el jdk17.
+4. Configurar PostgreSQL, se recomienda DBeaver como herramienta de gestión de bases de datos
+5. En el proyecto buscar el archivo *application.properties* y *application-postgres.properties*, ambos en la (ruta: src/main/resources/)
+6. Cambiar en ese archivo las variables de configuración
+7. Realizar los siguientes comandos:
 
-5. En el proyecto buscar el archivo *application-mysql.properties.example* (ruta: src\main\resources\application-mysql.properties.example).
+### Arranque del sistema
 
-6. Duplicar ese archivo y renombrar la copia a *application-mysql.properties*
-
-7. Cambiar en el nuevo *application-mysql.properties* el usuario y la contraseña que pusieras en la instalación de MariaDB. El username habitual suele ser *root*:
-```
-    spring.datasource.username=${MYSQL_USER:TUUSUARIO}
-    spring.datasource.password=${MYSQL_PASS:TUCONTRASEÑA}
-```
-IMPORTANTE, no pongas el user y contraseña entre comillas, sigue la estructura literal, por ejemplo:
-```
-    spring.datasource.username=${MYSQL_USER:RyanGosling}
-    spring.datasource.password=${MYSQL_PASS:lalaland}
-```
-
-8. Realizar los siguientes comandos:
-
-*Backend*
+#### ***Backend***
 ```
     ./mvnw clean install
     ./mvnw spring-boot:run
 ```
-*Frontend*
+#### ***Frontend***
 ```
-    cd frontend
+    cd myapp
     npm install
-    npm run dev
+    npx expo start
 ```
-Con todo activo te debería salir una pantalla tal que así (o similar dependiendo de la versión que exista en ese momento):
 
-![image](https://github.com/user-attachments/assets/24b833aa-99ee-4176-a1f0-557f567a8c50)
-
-9. User y pass para probar en el navegador:
+Con las siguientes credenciales deberías poder acceder al sistema correctamente:
+#### ***Propietario***
+```
     - user: alice123
     - pass: 1234
+```
 
-10. Con todo esto hecho, con el comando ```show tables;``` en el CMD de MySQL debería aparecer todo correctamente.
+#### ***Estudiante***
+```
+    - user: charlie789
+    - pass: 1234
+```
 
-Una vez con todo hecho, deberías ver algo así, pero con todas las entidades existentes en ese momento:
-
-![image](https://github.com/user-attachments/assets/b9c11486-8b60-4856-b040-c45649d071f0)
+¡Ya puedes empezar a realizar cambios!
