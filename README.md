@@ -14,20 +14,21 @@ RestApart es una plataforma que permite el alquiler de pisos compartidos de estu
 Como configurar el proyecto.
 
 1. Instalar [PostgreSQL](https://www.postgresql.org/).
-2. Instalar [Java 17](https://www.oracle.com/es/java/technologies/downloads/#java17).
-3. Configurar variable de entorno (JAVA_HOME) con la ruta donde esté el jdk17.
-4. Configurar PostgreSQL, se recomienda DBeaver como herramienta de gestión de bases de datos
-5. En el proyecto buscar el archivo *application.properties* y *application-postgres.properties*, ambos en la (ruta: src/main/resources/)
-6. Cambiar en ese archivo las variables de configuración
-7. Realizar los siguientes comandos:
+2. Instalar [Maven 3.8+](https://maven.apache.org/install.html).
+3. Instalar [Java 17](https://www.oracle.com/es/java/technologies/downloads/#java17).
+4. Configurar variable de entorno (JAVA_HOME) con la ruta donde esté el jdk17.
+5. Configurar PostgreSQL, se recomienda DBeaver como herramienta de gestión de bases de datos
+6. En el proyecto buscar el archivo *application.properties* y *application-postgres.properties*, ambos en la (ruta: src/main/resources/)
+7. Cambiar en ese archivo las variables de entorno
 
 ### Arranque del sistema
 
 #### ***Backend***
 ```
-    ./mvnw clean install
-    ./mvnw spring-boot:run
+    mvn clean package
 ```
+Luego, dirigirse al archivo EventbrideApplication.java y pulsar sobre Run o Debug.
+
 #### ***Frontend***
 ```
     cd myapp
