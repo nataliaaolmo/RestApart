@@ -144,10 +144,10 @@ export default function PrivateChat() {
           <Ionicons name="arrow-back" size={24} color="#E0E1DD" />
         </TouchableOpacity>
         <TouchableOpacity onPress={() => router.push({ pathname: '/(tabs)/profile', params: { id } })}>
-          <Image
-            source={{ uri: `https://restapart.onrender.com/images/${otherUser.profilePicture}` }}
-            style={styles.avatar}
-          />
+        <Image
+          source={{ uri: `https://restapart.onrender.com/images/${otherUser.profilePicture}` }}
+          style={styles.avatar}
+        />
         </TouchableOpacity>
         <Text style={styles.headerText}>{otherUser.username}</Text>
       </View>
@@ -295,5 +295,5 @@ const styles = StyleSheet.create({
   },
   emojiToggle: {
     fontSize: 20,
-  },
+  },  
 });

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, Image, ScrollView, TextInput, TouchableOpacity, Alert, Modal, Platform } from 'react-native';
+import { View, Text, StyleSheet, Image, ScrollView, TextInput, TouchableOpacity, Alert, Modal, Platform, ActivityIndicator } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import api from '../../app/api';
 import { RouteProp, useRoute, useNavigation } from '@react-navigation/native';
@@ -55,6 +55,9 @@ export default function ProfileScreen() {
   const [bookings, setBookings] = useState<any[]>([]);
   const[isVerified, setIsVerified] = useState(false);
   const[studentId, setStudentId] = useState<number | null>(null);
+  const [currentUserRole, setCurrentUserRole] = useState<string>('');
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const bannedWords = ['puta', 'gilipollas', 'cabron', 'mierda', 'idiota', 'estúpido', 'tonto']; 
 
@@ -74,12 +77,24 @@ export default function ProfileScreen() {
   }
   
   const fetchProfile = async () => {
+    setIsLoading(true);
+    setError(null);
     try {
       const token = await storage.getItem('jwt');
+      if (!token) {
+        router.replace('/login');
+        return;
+      }
+
       const url = userId ? `/users/${userId}` : '/users/auth/current-user';
       const response = await api.get(url, {
         headers: { Authorization: `Bearer ${token}` },
       });
+
+      if (!response.data?.user && !userId) {
+        throw new Error("No se pudieron cargar los datos del usuario");
+      }
+
       const user = userId ? response.data : response.data.user;
       user.dateOfBirth = formatToSpanish(user.dateOfBirth);
       setUserData(user);
@@ -87,8 +102,16 @@ export default function ProfileScreen() {
       setOriginalEmail(user.email);
       setOriginalTelephone(user.telephone);
       setIsVerified(user.isVerified);
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error al obtener el perfil:', error);
+      if (error.response?.status === 401) {
+        await storage.removeItem('jwt');
+        router.replace('/login');
+      } else {
+        setError('No se pudieron cargar los datos del perfil. Por favor, intenta de nuevo.');
+      }
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -156,6 +179,7 @@ export default function ProfileScreen() {
         headers: { Authorization: `Bearer ${token}` },
       });
       setCurrentUserId(response.data.user.id);
+      setCurrentUserRole(response.data.user.role);
     };
   
     fetchCurrentUserId();
@@ -451,6 +475,26 @@ export default function ProfileScreen() {
     }
   };
 
+  if (isLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#415A77" />
+        <Text style={styles.loadingText}>Cargando perfil...</Text>
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorText}>{error}</Text>
+        <TouchableOpacity style={styles.retryButton} onPress={fetchProfile}>
+          <Text style={styles.retryButtonText}>Reintentar</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
   if (!userData) return <Text style={styles.loadingText}>Cargando perfil...</Text>;
 
   const isStudent = userData.role === 'STUDENT';
@@ -681,14 +725,14 @@ export default function ProfileScreen() {
   )}
 </View>
 
-      {userId && (
-              <TouchableOpacity
-              style={styles.addCommentButton}
-              onPress={() => setCommentModalVisible(true)}
-            >
-              <Text style={styles.addCommentButtonText}>Añadir Comentario</Text>
-            </TouchableOpacity>
-          )}
+      {currentUserRole === 'STUDENT' && !isViewingOwnProfile && (
+        <TouchableOpacity
+          style={styles.addCommentButton}
+          onPress={() => setCommentModalVisible(true)}
+        >
+          <Text style={styles.addCommentButtonText}>Añadir comentario</Text>
+        </TouchableOpacity>
+      )}
 
        {currentUserId === userData.id && userData.role === 'STUDENT' && ( 
         <View style={styles.card}>
@@ -863,7 +907,12 @@ const styles = StyleSheet.create({
   commentBox: { backgroundColor: '#E0E1DD', padding: 15, borderRadius: 10, marginTop: 20 },
   commentRating: { fontWeight: 'bold', fontSize: 16 },
   commentText: { marginTop: 5, color: '#000' },
-  loadingText: { color: '#E0E1DD', textAlign: 'center', marginTop: 50 },
+  loadingText: { 
+    color: '#E0E1DD', 
+    textAlign: 'center', 
+    marginTop: 10,
+    fontSize: 16 
+  },
   input: { backgroundColor: '#E0E1DD', color: '#000', marginBottom: 10, padding: 10, borderRadius: 10 },
   saveButton: { backgroundColor: '#E0E1DD', padding: 15, borderRadius: 10, marginTop: 20 },
   saveButtonText: { color: '#0D1B2A', fontWeight: 'bold', textAlign: 'center' },
@@ -999,7 +1048,7 @@ const styles = StyleSheet.create({
     marginTop: 10,
     textAlign: 'center',
   },   
-    button: {
+  button: {
     backgroundColor: '#E0E1DD',
     paddingVertical: 12,
     borderRadius: 20,
@@ -1012,19 +1061,48 @@ const styles = StyleSheet.create({
     color: '#0D1B2A',
   }, 
   verifiedBadge: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  backgroundColor: '#1B263B',
-  borderRadius: 12,
-  paddingHorizontal: 8,
-  paddingVertical: 4,
-  marginLeft: 10,
-  marginTop: 6,
-},
-verifiedText: {
-  color: '#A8DADC',
-  fontWeight: 'bold',
-  marginLeft: 4,
-  fontSize: 12,
-},
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1B263B',
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    marginLeft: 10,
+    marginTop: 6,
+  },
+  verifiedText: {
+    color: '#A8DADC',
+    fontWeight: 'bold',
+    marginLeft: 4,
+    fontSize: 12,
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#0D1B2A',
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#0D1B2A',
+    padding: 20,
+  },
+  errorText: {
+    color: '#E0E1DD',
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  retryButton: {
+    backgroundColor: '#415A77',
+    paddingVertical: 10,
+    paddingHorizontal: 20,
+    borderRadius: 5,
+  },
+  retryButtonText: {
+    color: '#E0E1DD',
+    fontSize: 16,
+  },
 });

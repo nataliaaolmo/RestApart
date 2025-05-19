@@ -106,7 +106,7 @@ export default function HomeScreen() {
       <Pressable onPressIn={handlePressIn} onPressOut={handlePressOut} onPress={handleStart}>
         <Animated.View style={[styles.button, { transform: [{ scale: buttonScale }] }]}>
           <Text style={styles.buttonText}>
-            {isLoggedIn ? i18n.t('continueAs', { name: userName }) : i18n.t('start')}
+            {isLoggedIn ? `Continuar como ${userName}` : i18n.t('start')}
           </Text>
         </Animated.View>
       </Pressable>

@@ -1,34 +1,64 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image } from 'react-native';
-import { useRouter } from 'expo-router';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, AppState } from 'react-native';
+import { useRouter, useFocusEffect } from 'expo-router';
 import api from './api';
 import storage from '../utils/storage';
 
 export default function FavoritesScreen() {
   const router = useRouter();
   const [favorites, setFavorites] = useState<number[]>([]);
-  const [accommodations, setAccommodations] = useState<any[]>([]);
+  const [favoriteAccommodations, setFavoriteAccommodations] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
+  const loadFavorites = async () => {
+    const storedFavorites = await storage.getItem('favorites');
+    if (storedFavorites) {
+      const favoriteIds = JSON.parse(storedFavorites);
+      setFavorites(favoriteIds);
+      fetchFavoriteAccommodations(favoriteIds);
+    } else {
+      setFavoriteAccommodations([]);
+      setIsLoading(false);
+    }
+  };
+
+  // Se ejecuta cada vez que la pantalla obtiene el foco
+  useFocusEffect(
+    React.useCallback(() => {
+      loadFavorites();
+    }, [])
+  );
+
+  // Listener para cambios en el estado de la app
   useEffect(() => {
-    const loadFavorites = async () => {
-      const storedFavorites = await storage.getItem('favorites');
-      if (storedFavorites) {
-        setFavorites(JSON.parse(storedFavorites));
+    const subscription = AppState.addEventListener('change', nextAppState => {
+      if (nextAppState === 'active') {
+        loadFavorites();
       }
+    });
+
+    return () => {
+      subscription.remove();
     };
-    loadFavorites();
-    fetchAccommodations();
   }, []);
 
-  const fetchAccommodations = async () => {
+  const fetchFavoriteAccommodations = async (favoriteIds: number[]) => {
     try {
       const token = await storage.getItem('jwt');
       const response = await api.get('/accommodations', {
         headers: { Authorization: `Bearer ${token}` },
       });
-      setAccommodations(response.data);
+      
+      // Filtrar solo los alojamientos que están en favoritos
+      const filteredAccommodations = response.data.filter((acc: any) => 
+        favoriteIds.includes(acc.id)
+      );
+      
+      setFavoriteAccommodations(filteredAccommodations);
     } catch (error) {
-      console.error('Error al obtener alojamientos:', error);
+      console.error('Error al obtener alojamientos favoritos:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -66,14 +96,26 @@ export default function FavoritesScreen() {
     );
   };
 
+  if (isLoading) {
+    return (
+      <View style={styles.container}>
+        <Text style={styles.header}>Cargando favoritos...</Text>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <Text style={styles.header}>Tus favoritos</Text>
       <FlatList
-        data={accommodations}
+        data={favoriteAccommodations}
         keyExtractor={(item) => item.id.toString()}
         renderItem={renderFavorite}
-        ListEmptyComponent={<Text style={styles.emptyText}>No tienes alojamientos guardados.</Text>}
+        ListEmptyComponent={
+          <Text style={styles.emptyText}>
+            No tienes alojamientos guardados. Marca con ❤️ los que te gusten en la pantalla principal.
+          </Text>
+        }
         contentContainerStyle={{ padding: 20 }}
       />
     </View>

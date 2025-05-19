@@ -56,12 +56,12 @@ export default function PaypalSuccessScreen() {
     const urlParams = getParams();
     const { token: orderId, id, startDate, endDate } = urlParams;
 
-    if (!orderId) {
-      showFilterError('No se recibió el token del pago.');
-      setLoading(false);
-      return;
-    }
-    console.log(id, startDate, endDate);
+  if (!orderId) {
+    showFilterError('No se recibió el token del pago.');
+    setLoading(false);
+    return;
+  }
+  console.log(id, startDate, endDate);
     if (id && startDate && endDate) {
       finalizeBooking(orderId as string, id as string, startDate as string, endDate as string);
     } else {
@@ -70,34 +70,34 @@ export default function PaypalSuccessScreen() {
     }
   }, []);
 
-  const finalizeBooking = async (orderId: string, id: string, startDate: string, endDate: string) => {
-    try {
-      console.log("Confirmando pago con", { orderId, id, startDate, endDate });
+const finalizeBooking = async (orderId: string, id: string, startDate: string, endDate: string) => {
+  try {
+    console.log("Confirmando pago con", { orderId, id, startDate, endDate });
 
-      await api.post('/payments/paypal/confirm', null, {
-        params: {
-          orderId,
-          accommodationId: id,
-          startDate,
-          endDate,
+    await api.post('/payments/paypal/confirm', null, {
+      params: {
+        orderId,
+        accommodationId: id,
+        startDate,
+        endDate,
         }
-      });
+    });
 
-      showSuccessMessage('Tu reserva ha sido completada correctamente.');
-      setStatusMessage('Reserva completada correctamente. Redirigiendo...');
+    showSuccessMessage('Tu reserva ha sido completada correctamente.');
+    setStatusMessage('Reserva completada correctamente. Redirigiendo...');
       setTimeout(() => router.replace('/(tabs)/welcome-screen'), 2500);
-    } catch (error: any) {
-      console.error('Error al confirmar la reserva:', error);
-      if (error?.response) {
-        console.error('Status:', error.response.status);
-        console.error('Data:', error.response.data);
-      }
-      showFilterError('No se pudo confirmar la reserva. Contacta con soporte.');
-      setTimeout(() => router.replace('/'), 3000);
-    } finally {
-      setLoading(false);
+  } catch (error: any) {
+    console.error('Error al confirmar la reserva:', error);
+    if (error?.response) {
+      console.error('Status:', error.response.status);
+      console.error('Data:', error.response.data);
     }
-  };
+    showFilterError('No se pudo confirmar la reserva. Contacta con soporte.');
+    setTimeout(() => router.replace('/'), 3000);
+  } finally {
+    setLoading(false);
+  }
+};
 
   return (
     <View style={styles.container}>
@@ -108,7 +108,7 @@ export default function PaypalSuccessScreen() {
         </>
       )}
 
-      {filterError !== '' && (
+    {filterError !== '' && (
         <>
           <Text style={styles.errorText}>{filterError}</Text>
           <TouchableOpacity style={styles.backButton} onPress={() => router.replace('/')}>

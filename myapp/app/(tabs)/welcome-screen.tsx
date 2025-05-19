@@ -53,6 +53,9 @@ export default function WelcomeScreen() {
   const [averageRatings, setAverageRatings] = useState<{ [key: number]: number }>({});
   const [systemLocked, setSystemLocked] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSmokerDisabled, setIsSmokerDisabled] = useState(false);
+  const [academicCareerDisabled, setAcademicCareerDisabled] = useState(false);
+  const [hobbiesDisabled, setHobbiesDisabled] = useState(false);
 
   useEffect(() => {
     fetchProfile();
@@ -61,9 +64,9 @@ export default function WelcomeScreen() {
   useEffect(() => {
     const loadFavorites = async () => {
       const storedFavorites = await storage.getItem('favorites');
-      if (storedFavorites) {
-        setFavorites(JSON.parse(storedFavorites));
-      }
+    if (storedFavorites) {
+      setFavorites(JSON.parse(storedFavorites));
+    }
     };
     loadFavorites();
   }, []);
@@ -72,44 +75,52 @@ export default function WelcomeScreen() {
     if (role === 'STUDENT' || role === 'OWNER') {
       const loadFilters = async () => {
         const savedFilters = await storage.getItem('accommodationFilters');
-        if (savedFilters) {
-          const f = JSON.parse(savedFilters);
-          setMaxPrice(f.maxPrice);
-          setStartDate(f.startDate);
-          setEndDate(f.endDate);
-          setStudents(f.students);
-          setWifi(f.wifi);
-          setIsEasyParking(f.isEasyParking);
-          setAcademicCareerAffinity(f.academicCareerAffinity);
-          setHobbiesAffinity(f.hobbiesAffinity);
-          setAllowSmoking(f.allowSmoking);
-          setLatitude(f.latitude);
-          setLongitude(f.longitude);
-          setRadius(f.radius);
-          setZoneQuery(f.zoneQuery);
-          setLocationConfirmed(f.locationConfirmed);
-          getFilteredAccommodations();
-        }
+    if (savedFilters) {
+      const f = JSON.parse(savedFilters);
+      setMaxPrice(f.maxPrice);
+      setStartDate(f.startDate);
+      setEndDate(f.endDate);
+      setStudents(f.students);
+      setWifi(f.wifi);
+      setIsEasyParking(f.isEasyParking);
+      setAcademicCareerAffinity(f.academicCareerAffinity);
+      setHobbiesAffinity(f.hobbiesAffinity);
+      setAllowSmoking(f.allowSmoking);
+      setLatitude(f.latitude);
+      setLongitude(f.longitude);
+      setRadius(f.radius);
+      setZoneQuery(f.zoneQuery);
+      setLocationConfirmed(f.locationConfirmed);
+      getFilteredAccommodations();
+    }
       };
       loadFilters();
-    }
+      }
   }, [role]);
-
+  
   useEffect(() => {
     if (role === 'STUDENT') {
       const loadData = async () => {
         const savedFilters = await storage.getItem('accommodationFilters');
-        if (savedFilters) {
-          getFilteredAccommodations();
-        } else {
-          findAllAccommodations();
-        }
+      if (savedFilters) {
+        getFilteredAccommodations();
+      } else {
+        findAllAccommodations();
+      }
       };
       loadData();
     } else if (role === 'OWNER') {
       findAccommodationsByOwner();
     }
   }, [role]);
+
+  useEffect(() => {
+    if (userData && userData.role === 'STUDENT') {
+      setIsSmokerDisabled(userData.isSmoker === null);
+      setAcademicCareerDisabled(!userData.academicCareer);
+      setHobbiesDisabled(!userData.hobbies);
+    }
+  }, [userData]);
 
   const fetchProfile = async () => {
     setIsLoading(true);
@@ -120,11 +131,7 @@ export default function WelcomeScreen() {
       
       if (!token) {
         console.log("No hay token disponible, redirigiendo a login");
-        if (Platform.OS === 'web') {
-          setTimeout(() => router.replace('/login'), 100);
-        } else {
-          router.replace('/login');
-        }
+        router.replace('/login');
         return;
       }
       
@@ -136,7 +143,6 @@ export default function WelcomeScreen() {
       });
       
       if (!response.data?.user) {
-        console.error("La respuesta no contiene datos de usuario", response.data);
         throw new Error("No se pudieron cargar los datos del usuario");
       }
       
@@ -154,17 +160,28 @@ export default function WelcomeScreen() {
       }
 
       if (response.data.user.role === 'ADMIN') {
-        fetchSystemStatus();
+        await fetchSystemStatus();
       }
+
+      // Cargar datos específicos según el rol
+      if (response.data.user.role === 'STUDENT') {
+        const savedFilters = await storage.getItem('accommodationFilters');
+        if (savedFilters) {
+          await getFilteredAccommodations();
+        } else {
+          await findAllAccommodations();
+        }
+      } else if (response.data.user.role === 'OWNER') {
+        await findAccommodationsByOwner();
+      }
+
     } catch (error: any) {
       console.error('Error al obtener el perfil:', error);
-      if (error.response && error.response.status === 401) {
+      if (error.response?.status === 401) {
         await storage.removeItem('jwt');
-        if (Platform.OS === 'web') {
-          setTimeout(() => router.replace('/login'), 100);
-        } else {
-          router.replace('/login');
-        }
+        router.replace('/login');
+      } else {
+        Alert.alert('Error', 'No se pudieron cargar los datos. Por favor, intenta de nuevo.');
       }
     } finally {
       setIsLoading(false);
@@ -172,44 +189,44 @@ export default function WelcomeScreen() {
   };
 
   const fetchSystemStatus = async () => {
-    try {
+  try {
       const token = await storage.getItem('jwt');
-      const response = await api.get('admin/system/status', {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setSystemLocked(response.data.locked);
-    } catch (error) {
-      console.error('Error al obtener el estado del sistema:', error);
-    }
+    const response = await api.get('admin/system/status', {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    setSystemLocked(response.data.locked);
+  } catch (error) {
+    console.error('Error al obtener el estado del sistema:', error);
+  }
   };
 
   const lockSystem = async () => {
-    try {
+  try {
       const token = await storage.getItem('jwt');
-      await api.put('/admin/lock', null, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setSystemLocked(true);
+    await api.put('/admin/lock', null, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    setSystemLocked(true);
       Alert.alert('Sistema bloqueado correctamente.');
-    } catch (error) {
-      console.error('Error bloqueando el sistema:', error);
+  } catch (error) {
+    console.error('Error bloqueando el sistema:', error);
       Alert.alert('Error al bloquear el sistema.');
-    }
-  };
+  }
+};
 
-  const unlockSystem = async () => {
-    try {
+const unlockSystem = async () => {
+  try {
       const token = await storage.getItem('jwt');
-      await api.put('/admin/unlock', null, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      setSystemLocked(false);
+    await api.put('/admin/unlock', null, {
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    setSystemLocked(false);
       Alert.alert('Sistema desbloqueado correctamente.');
-    } catch (error) {
-      console.error('Error desbloqueando el sistema:', error);
+  } catch (error) {
+    console.error('Error desbloqueando el sistema:', error);
       Alert.alert('Error al desbloquear el sistema.');
-    }
-  };
+  }
+};
 
   const showFilterError = (msg: string) => {
     if (Platform.OS === 'web') {
@@ -520,8 +537,9 @@ function formatDateToISO(dateString: string | null): string | null {
 
   if (isLoading) {
     return (
-      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+      <View style={styles.loadingContainer}>
         <ActivityIndicator size="large" color="#415A77" />
+        <Text style={styles.loadingText}>Cargando...</Text>
       </View>
     );
   }
@@ -650,11 +668,62 @@ function formatDateToISO(dateString: string | null): string | null {
               <View style={styles.switchRow}><Text style={styles.label}>Wifi</Text><Switch value={wifi} onValueChange={setWifi} /></View>
               <View style={styles.switchRow}><Text style={styles.label}>Fácil aparcar</Text><Switch value={isEasyParking} onValueChange={setIsEasyParking} /></View>
               </View>
-              <View style={styles.filterBlock}>
-              <Text style={styles.sectionTitle}>🧑‍🤝‍🧑 Afinidades</Text>
-              <View style={styles.switchRow}><Text style={styles.label}>Afinidad carrera</Text><Switch value={academicCareerAffinity} onValueChange={setAcademicCareerAffinity} /></View>
-              <View style={styles.switchRow}><Text style={styles.label}>Afinidad aficiones</Text><Switch value={hobbiesAffinity} onValueChange={setHobbiesAffinity} /></View>
-              <View style={styles.switchRow}><Text style={styles.label}>No me importa que mis compañeros fumen</Text><Switch value={allowSmoking} onValueChange={setAllowSmoking} /></View>
+              <View style={styles.filterSection}>
+                <Text style={styles.filterTitle}>Filtros de afinidad</Text>
+                
+                <View style={[styles.filterRow, isSmokerDisabled && styles.disabledFilter]}>
+                  <Text style={[styles.filterLabel, isSmokerDisabled && styles.disabledText]}>
+                    Permitir fumadores
+                  </Text>
+                  <Switch
+                    value={allowSmoking}
+                    onValueChange={setAllowSmoking}
+                    disabled={isSmokerDisabled}
+                    trackColor={{ false: '#767577', true: '#81b0ff' }}
+                    thumbColor={allowSmoking ? '#f5dd4b' : '#f4f3f4'}
+                  />
+                  {isSmokerDisabled && (
+                    <Text style={styles.disabledMessage}>
+                      Actualiza tu perfil para indicar si eres fumador
+                    </Text>
+                  )}
+                </View>
+
+                <View style={[styles.filterRow, academicCareerDisabled && styles.disabledFilter]}>
+                  <Text style={[styles.filterLabel, academicCareerDisabled && styles.disabledText]}>
+                    Afinidad por carrera
+                  </Text>
+                  <Switch
+                    value={academicCareerAffinity}
+                    onValueChange={setAcademicCareerAffinity}
+                    disabled={academicCareerDisabled}
+                    trackColor={{ false: '#767577', true: '#81b0ff' }}
+                    thumbColor={academicCareerAffinity ? '#f5dd4b' : '#f4f3f4'}
+                  />
+                  {academicCareerDisabled && (
+                    <Text style={styles.disabledMessage}>
+                      Añade tu carrera en tu perfil para buscar por afinidad
+                    </Text>
+                  )}
+                </View>
+
+                <View style={[styles.filterRow, hobbiesDisabled && styles.disabledFilter]}>
+                  <Text style={[styles.filterLabel, hobbiesDisabled && styles.disabledText]}>
+                    Afinidad por hobbies
+                  </Text>
+                  <Switch
+                    value={hobbiesAffinity}
+                    onValueChange={setHobbiesAffinity}
+                    disabled={hobbiesDisabled}
+                    trackColor={{ false: '#767577', true: '#81b0ff' }}
+                    thumbColor={hobbiesAffinity ? '#f5dd4b' : '#f4f3f4'}
+                  />
+                  {hobbiesDisabled && (
+                    <Text style={styles.disabledMessage}>
+                      Añade tus hobbies en tu perfil para buscar por afinidad
+                    </Text>
+                  )}
+                </View>
               </View>
 
               <TouchableOpacity
@@ -738,7 +807,7 @@ function formatDateToISO(dateString: string | null): string | null {
 
       {role === 'ADMIN' && (
         <View>
-          <Text style={styles.resultsTitle}>Panel de administración</Text>
+          <Text style={styles.resultsTitle}>Panel de bloqueo del sistema</Text>
 
           <Text style={{ color: '#E0E1DD', fontSize: 16, marginBottom: 15, textAlign: 'center' }}>
             Estado actual del sistema:{' '}
@@ -1068,5 +1137,51 @@ verifiedChipText: {
   fontSize: 13,
   fontWeight: 'bold',
   textTransform: 'uppercase',
+},
+disabledFilter: {
+  opacity: 0.5,
+},
+disabledText: {
+  color: '#AFC1D6',
+},
+disabledMessage: {
+  color: '#AFC1D6',
+  fontSize: 12,
+  fontStyle: 'italic',
+  marginTop: 4,
+},
+filterSection: {
+  backgroundColor: '#1B263B',
+  padding: 15,
+  borderRadius: 10,
+  marginVertical: 10,
+},
+filterTitle: {
+  color: '#E0E1DD',
+  fontSize: 16,
+  fontWeight: 'bold',
+  marginBottom: 10,
+},
+filterRow: {
+  flexDirection: 'row',
+  alignItems: 'center',
+  justifyContent: 'space-between',
+  marginVertical: 8,
+  paddingVertical: 4,
+},
+filterLabel: {
+  color: '#E0E1DD',
+  fontSize: 14,
+},
+loadingContainer: {
+  flex: 1,
+  justifyContent: 'center',
+  alignItems: 'center',
+  backgroundColor: '#0D1B2A',
+},
+loadingText: {
+  color: '#E0E1DD',
+  marginTop: 10,
+  fontSize: 16,
 },
 });

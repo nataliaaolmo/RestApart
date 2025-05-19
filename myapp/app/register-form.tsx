@@ -253,11 +253,11 @@ export default function RegisterFormScreen() {
       }
 
       try {
-        const loginResponse = await api.post('/users/auth/login', {
-          username: form.username,
-          password: form.password
-        });
-        
+      const loginResponse = await api.post('/users/auth/login', {
+        username: form.username,
+        password: form.password
+      });
+      
         const jwt = loginResponse.data.token || loginResponse.data.jwt;
         const userData = {
           name: form.firstName,
@@ -299,26 +299,26 @@ export default function RegisterFormScreen() {
           setErrorMessage('Acceso prohibido. El servidor rechazó la solicitud. Verifica que todos los campos sean válidos.');
           console.error('Error 403: Acceso prohibido', error.response.data);
         } else {
-          const errorData = error.response?.data;
-      
-          if (typeof errorData === 'string') {
-            if (errorData.includes('username')) {
-              setErrorMessage('El nombre de usuario ya está en uso.');
-            } else if (errorData.includes('correo') || errorData.includes('email')) {
-              setErrorMessage('El correo electrónico ya está registrado.');
-            } else if (errorData.includes('teléfono')) {
-              setErrorMessage('El teléfono ya está en uso.');
-            } else {
-              setErrorMessage(errorData); 
-            }
-          } else if (Array.isArray(errorData?.errors)) {
-            const formattedErrors = errorData.errors.map((err: any) => `• ${err}`).join('\n');
-            setErrorMessage(formattedErrors);
-          } else if (typeof errorData?.error === 'string') {
-            setErrorMessage(errorData.error);
+        const errorData = error.response?.data;
+    
+        if (typeof errorData === 'string') {
+          if (errorData.includes('username')) {
+            setErrorMessage('El nombre de usuario ya está en uso.');
+          } else if (errorData.includes('correo') || errorData.includes('email')) {
+            setErrorMessage('El correo electrónico ya está registrado.');
+          } else if (errorData.includes('teléfono')) {
+            setErrorMessage('El teléfono ya está en uso.');
           } else {
-            setErrorMessage('Error desconocido del servidor.');
+            setErrorMessage(errorData); 
           }
+          } else if (Array.isArray(errorData?.errors)) {
+          const formattedErrors = errorData.errors.map((err: any) => `• ${err}`).join('\n');
+          setErrorMessage(formattedErrors);
+          } else if (typeof errorData?.error === 'string') {
+          setErrorMessage(errorData.error);
+        } else {
+          setErrorMessage('Error desconocido del servidor.');
+        }
         }
       } else {
         setErrorMessage('Error al conectar con el servidor.');
