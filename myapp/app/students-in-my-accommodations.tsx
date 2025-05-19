@@ -16,6 +16,7 @@ import api from '../app/api';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
+import storage from '../utils/storage';
 
 export default function StudentsInMyAccommodations() {
   const [accommodations, setAccommodations] = useState<any[]>([]);
@@ -43,7 +44,7 @@ export default function StudentsInMyAccommodations() {
 
   const fetchAccommodations = async () => {
     try {
-      const token = localStorage.getItem('jwt');
+      const token = await storage.getItem('jwt');
       const res = await api.get('/accommodations/owner-accomodations', {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -56,7 +57,7 @@ export default function StudentsInMyAccommodations() {
 
   const fetchStudents = async (accommodation: any) => {
     try {
-      const token = localStorage.getItem('jwt');
+      const token = await storage.getItem('jwt');
       const today = new Date().toLocaleDateString('es-ES').split('/').reverse().join('-');
       const start = startDate ? convertToBackendFormat(startDate) : today;
       const end = endDate ? convertToBackendFormat(endDate) : '2100-01-01';
@@ -99,7 +100,7 @@ export default function StudentsInMyAccommodations() {
     }
   
     try {
-      const token = localStorage.getItem('jwt');
+      const token = await storage.getItem('jwt');
   
       const registerResponse = await api.post(
         '/users/auth/register-without-account',

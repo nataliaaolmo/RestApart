@@ -19,6 +19,7 @@ import api from '../../app/api';
 import { Feather } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import Icon from 'react-native-vector-icons/FontAwesome';
+import storage from '../../utils/storage';
 
 export default function WelcomeScreen() {
   const router = useRouter();
@@ -51,122 +52,165 @@ export default function WelcomeScreen() {
   const [locationConfirmed, setLocationConfirmed] = useState(false);
   const [averageRatings, setAverageRatings] = useState<{ [key: number]: number }>({});
   const [systemLocked, setSystemLocked] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     fetchProfile();
   }, []);
 
   useEffect(() => {
-    const storedFavorites = localStorage.getItem('favorites');
-    if (storedFavorites) {
-      setFavorites(JSON.parse(storedFavorites));
-    }
+    const loadFavorites = async () => {
+      const storedFavorites = await storage.getItem('favorites');
+      if (storedFavorites) {
+        setFavorites(JSON.parse(storedFavorites));
+      }
+    };
+    loadFavorites();
   }, []);
 
   useEffect(() => {
-    if(role === 'STUDENT' || role === 'OWNER') {
-    const savedFilters = localStorage.getItem('accommodationFilters');
-    if (savedFilters) {
-      const f = JSON.parse(savedFilters);
-      setMaxPrice(f.maxPrice);
-      setStartDate(f.startDate);
-      setEndDate(f.endDate);
-      setStudents(f.students);
-      setWifi(f.wifi);
-      setIsEasyParking(f.isEasyParking);
-      setAcademicCareerAffinity(f.academicCareerAffinity);
-      setHobbiesAffinity(f.hobbiesAffinity);
-      setAllowSmoking(f.allowSmoking);
-      setLatitude(f.latitude);
-      setLongitude(f.longitude);
-      setRadius(f.radius);
-      setZoneQuery(f.zoneQuery);
-      setLocationConfirmed(f.locationConfirmed);
-      getFilteredAccommodations();
+    if (role === 'STUDENT' || role === 'OWNER') {
+      const loadFilters = async () => {
+        const savedFilters = await storage.getItem('accommodationFilters');
+        if (savedFilters) {
+          const f = JSON.parse(savedFilters);
+          setMaxPrice(f.maxPrice);
+          setStartDate(f.startDate);
+          setEndDate(f.endDate);
+          setStudents(f.students);
+          setWifi(f.wifi);
+          setIsEasyParking(f.isEasyParking);
+          setAcademicCareerAffinity(f.academicCareerAffinity);
+          setHobbiesAffinity(f.hobbiesAffinity);
+          setAllowSmoking(f.allowSmoking);
+          setLatitude(f.latitude);
+          setLongitude(f.longitude);
+          setRadius(f.radius);
+          setZoneQuery(f.zoneQuery);
+          setLocationConfirmed(f.locationConfirmed);
+          getFilteredAccommodations();
+        }
+      };
+      loadFilters();
     }
-    if (role === 'STUDENT') {
-      const savedFilters = localStorage.getItem('accommodationFilters');
-      if (savedFilters) {
-        getFilteredAccommodations();
-      } else {
-        findAllAccommodations();
-      }
-    } else if (role === 'OWNER') {
-      findAccommodationsByOwner();
-    }
-  }
-  }, []);  
-  
+  }, [role]);
+
   useEffect(() => {
     if (role === 'STUDENT') {
-      const savedFilters = localStorage.getItem('accommodationFilters');
-      if (savedFilters) {
-        getFilteredAccommodations();
-      } else {
-        findAllAccommodations();
-      }
+      const loadData = async () => {
+        const savedFilters = await storage.getItem('accommodationFilters');
+        if (savedFilters) {
+          getFilteredAccommodations();
+        } else {
+          findAllAccommodations();
+        }
+      };
+      loadData();
     } else if (role === 'OWNER') {
       findAccommodationsByOwner();
     }
   }, [role]);
 
   const fetchProfile = async () => {
+    setIsLoading(true);
     try {
-      const token = localStorage.getItem('jwt');
+      const token = await storage.getItem('jwt');
+      const storedRole = await storage.getItem('role');
+      const storedName = await storage.getItem('name');
+      
+      if (!token) {
+        console.log("No hay token disponible, redirigiendo a login");
+        if (Platform.OS === 'web') {
+          setTimeout(() => router.replace('/login'), 100);
+        } else {
+          router.replace('/login');
+        }
+        return;
+      }
+      
+      if (storedName) setName(storedName);
+      if (storedRole) setRole(storedRole);
+      
       const response = await api.get('/users/auth/current-user', {
         headers: { Authorization: `Bearer ${token}` },
       });
+      
+      if (!response.data?.user) {
+        console.error("La respuesta no contiene datos de usuario", response.data);
+        throw new Error("No se pudieron cargar los datos del usuario");
+      }
+      
       setUserData(response.data.user);
-      setRole(response.data.user.role);
-      setName(response.data.user.username);
+      
+      if (response.data.user.role) {
+        setRole(response.data.user.role);
+        await storage.setItem('role', response.data.user.role);
+      }
+      
+      if (response.data.user.firstName || response.data.user.username) {
+        const userName = response.data.user.firstName || response.data.user.username;
+        setName(userName);
+        await storage.setItem('name', userName);
+      }
 
-    if (response.data.user.role === 'ADMIN') {
-      fetchSystemStatus();
-    }
-    } catch (error) {
+      if (response.data.user.role === 'ADMIN') {
+        fetchSystemStatus();
+      }
+    } catch (error: any) {
       console.error('Error al obtener el perfil:', error);
+      if (error.response && error.response.status === 401) {
+        await storage.removeItem('jwt');
+        if (Platform.OS === 'web') {
+          setTimeout(() => router.replace('/login'), 100);
+        } else {
+          router.replace('/login');
+        }
+      }
+    } finally {
+      setIsLoading(false);
     }
   };
 
   const fetchSystemStatus = async () => {
-  try {
-    const token = localStorage.getItem('jwt');
-    const response = await api.get('admin/system/status', {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    setSystemLocked(response.data.locked);
-  } catch (error) {
-    console.error('Error al obtener el estado del sistema:', error);
-  }
+    try {
+      const token = await storage.getItem('jwt');
+      const response = await api.get('admin/system/status', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setSystemLocked(response.data.locked);
+    } catch (error) {
+      console.error('Error al obtener el estado del sistema:', error);
+    }
   };
 
   const lockSystem = async () => {
-  try {
-    const token = localStorage.getItem('jwt');
-    await api.put('/admin/lock', null, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    setSystemLocked(true);
-    alert('Sistema bloqueado correctamente.');
-  } catch (error) {
-    console.error('Error bloqueando el sistema:', error);
-    alert('Error al bloquear el sistema.');
-  }
-};
+    try {
+      const token = await storage.getItem('jwt');
+      await api.put('/admin/lock', null, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setSystemLocked(true);
+      Alert.alert('Sistema bloqueado correctamente.');
+    } catch (error) {
+      console.error('Error bloqueando el sistema:', error);
+      Alert.alert('Error al bloquear el sistema.');
+    }
+  };
 
-const unlockSystem = async () => {
-  try {
-    const token = localStorage.getItem('jwt');
-    await api.put('/admin/unlock', null, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    setSystemLocked(false);
-    alert('Sistema desbloqueado correctamente.');
-  } catch (error) {
-    console.error('Error desbloqueando el sistema:', error);
-    alert('Error al desbloquear el sistema.');
-  }
-};
+  const unlockSystem = async () => {
+    try {
+      const token = await storage.getItem('jwt');
+      await api.put('/admin/unlock', null, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setSystemLocked(false);
+      Alert.alert('Sistema desbloqueado correctamente.');
+    } catch (error) {
+      console.error('Error desbloqueando el sistema:', error);
+      Alert.alert('Error al desbloquear el sistema.');
+    }
+  };
+
   const showFilterError = (msg: string) => {
     if (Platform.OS === 'web') {
       setFilterError(msg);
@@ -175,20 +219,22 @@ const unlockSystem = async () => {
     }
   };
 
-  const toggleFavorite = (id: number) => {
+  const toggleFavorite = async (id: number) => {
     setFavorites((prev) => {
       const updated = prev.includes(id)
         ? prev.filter((f) => f !== id)
         : [...prev, id];
   
-      localStorage.setItem('favorites', JSON.stringify(updated));
+      storage.setItem('favorites', JSON.stringify(updated));
       return updated;
     });
   };
   
   const findAllAccommodations = async () => {
     try {
-      const token = localStorage.getItem('jwt');
+      const token = await storage.getItem('jwt');
+      if (!token) return;
+      
       const response = await api.get('/accommodations', {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -198,7 +244,7 @@ const unlockSystem = async () => {
       setPage(1);
       fetchAverageRatings(data);
     } catch (error) {
-      console.error('Error fetching data:', error);
+      console.error('Error al obtener alojamientos:', error);
     }
   };
 
@@ -211,7 +257,7 @@ const unlockSystem = async () => {
   
   const findAccommodationsByOwner = async () => {
     try {
-      const token = localStorage.getItem('jwt');
+      const token = await storage.getItem('jwt');
       const response = await api.get('/accommodations/owner-accomodations', {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -223,7 +269,7 @@ const unlockSystem = async () => {
 
   const fetchAverageRatings = async (accommodationsList: any[]) => {
     try {
-      const token = localStorage.getItem('jwt');
+      const token = await storage.getItem('jwt');
       const ratings: { [key: number]: number } = {};
   
       await Promise.all(accommodationsList.map(async (acc) => {
@@ -286,7 +332,7 @@ const applyFilters = () => {
     academicCareerAffinity, hobbiesAffinity, allowSmoking,
     latitude, longitude, radius, zoneQuery, locationConfirmed
   };
-  localStorage.setItem('accommodationFilters', JSON.stringify(filters));
+  storage.setItem('accommodationFilters', JSON.stringify(filters));
   getFilteredAccommodations();
   setModalVisible(false);
 };
@@ -299,7 +345,7 @@ function formatDateToISO(dateString: string | null): string | null {
 
   const getFilteredAccommodations = async () => {
     try {
-      const token = localStorage.getItem('jwt');
+      const token = await storage.getItem('jwt');
       const params: any = {
         maxPrice: maxPrice ? Number(maxPrice) : null,
         startDate: formatDateToISO(startDate) || null,
@@ -351,7 +397,7 @@ function formatDateToISO(dateString: string | null): string | null {
   };
 
   const handleLogout = () => {
-    localStorage.clear();
+    storage.clear();
     router.replace('/');
   };
 
@@ -467,10 +513,18 @@ function formatDateToISO(dateString: string | null): string | null {
     setIsEasyParking(false);
     setAcademicCareerAffinity(false);
     setHobbiesAffinity(false);
-    localStorage.removeItem('accommodationFilters');
+    storage.removeItem('accommodationFilters');
     findAllAccommodations();
   };
   
+
+  if (isLoading) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color="#415A77" />
+      </View>
+    );
+  }
 
   return (
     <View style={{ flex: 1, backgroundColor: '#0D1B2A' }}>

@@ -1,35 +1,34 @@
 import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image } from 'react-native';
 import { useRouter } from 'expo-router';
-import api from "../app/api"; 
+import api from './api';
+import storage from '../utils/storage';
 
 export default function FavoritesScreen() {
   const router = useRouter();
-  const [favoriteIds, setFavoriteIds] = useState<number[]>([]);
-  const [favoritesData, setFavoritesData] = useState<any[]>([]);
+  const [favorites, setFavorites] = useState<number[]>([]);
+  const [accommodations, setAccommodations] = useState<any[]>([]);
 
   useEffect(() => {
-    const storedFavorites = localStorage.getItem('favorites');
-    if (storedFavorites) {
-      const ids = JSON.parse(storedFavorites);
-      setFavoriteIds(ids);
-      fetchFavoriteDetails(ids);
-    }
+    const loadFavorites = async () => {
+      const storedFavorites = await storage.getItem('favorites');
+      if (storedFavorites) {
+        setFavorites(JSON.parse(storedFavorites));
+      }
+    };
+    loadFavorites();
+    fetchAccommodations();
   }, []);
 
-  const fetchFavoriteDetails = async (ids: number[]) => {
+  const fetchAccommodations = async () => {
     try {
-      const token = localStorage.getItem('jwt');
-      const responses = await Promise.all(
-        ids.map((id) =>
-          api.get(`/accommodations/${id}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          })
-        )
-      );
-      setFavoritesData(responses.map((res) => res.data));
-    } catch (err) {
-      console.error('Error cargando favoritos:', err);
+      const token = await storage.getItem('jwt');
+      const response = await api.get('/accommodations', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      setAccommodations(response.data);
+    } catch (error) {
+      console.error('Error al obtener alojamientos:', error);
     }
   };
 
@@ -71,7 +70,7 @@ export default function FavoritesScreen() {
     <View style={styles.container}>
       <Text style={styles.header}>Tus favoritos</Text>
       <FlatList
-        data={favoritesData}
+        data={accommodations}
         keyExtractor={(item) => item.id.toString()}
         renderItem={renderFavorite}
         ListEmptyComponent={<Text style={styles.emptyText}>No tienes alojamientos guardados.</Text>}

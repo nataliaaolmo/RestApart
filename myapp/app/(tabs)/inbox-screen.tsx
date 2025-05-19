@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, FlatList, TouchableOpacity, Image, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
 import api from '../../app/api';
+import storage from '../../utils/storage';
 
 export default function InboxScreen() {
   const [conversations, setConversations] = useState<any[]>([]);
@@ -9,7 +10,7 @@ export default function InboxScreen() {
 
   useEffect(() => {
     const fetchConversations = async () => {
-      const token = localStorage.getItem('jwt');
+      const token = await storage.getItem('jwt');
       const res = await api.get('/chat/inbox', {
         headers: { Authorization: `Bearer ${token}` }
       });

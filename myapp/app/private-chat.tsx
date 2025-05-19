@@ -7,6 +7,7 @@ import api from "../app/api";
 import EmojiSelector from "react-native-emoji-selector";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import storage from '../utils/storage';
 
 
 if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental) {
@@ -15,7 +16,7 @@ if (Platform.OS === "android" && UIManager.setLayoutAnimationEnabledExperimental
 
 export default function PrivateChat() {
   const [currentUser, setCurrentUser] = useState<{ username: string } | null>(null);
-  const jwt = localStorage.getItem("jwt");
+  const [jwt, setJwt] = useState<string | null>(null);
   const route = useRoute();
   const { id } = route.params as { id: string };
 
@@ -30,10 +31,18 @@ export default function PrivateChat() {
   const router = useRouter();
 
   useEffect(() => {
-    loadMessages();
-    loadReceiver();
-    setupWebSocket();
-    fetchCurrentUser();
+    const loadToken = async () => {
+      const token = await storage.getItem("jwt");
+      setJwt(token);
+      if (token) {
+        loadMessages(token);
+        loadReceiver(token);
+        setupWebSocket(token);
+        fetchCurrentUser(token);
+      }
+    };
+
+    loadToken();
 
     return () => {
       if (stompClient.current?.active) {
@@ -42,10 +51,10 @@ export default function PrivateChat() {
     };
   }, []);
 
-  const loadMessages = async () => {
+  const loadMessages = async (token: string) => {
     try {
       const res = await api.get(`/chat/${id}`, {
-        headers: { Authorization: `Bearer ${jwt}` },
+        headers: { Authorization: `Bearer ${token}` },
       });
       setMessages(res.data);
     } catch (err) {
@@ -53,10 +62,10 @@ export default function PrivateChat() {
     }
   };
 
-  const loadReceiver = async () => {
+  const loadReceiver = async (token: string) => {
     try {
       const res = await api.get(`/users/${id}`, {
-        headers: { Authorization: `Bearer ${jwt}` },
+        headers: { Authorization: `Bearer ${token}` },
       });
       setOtherUser(res.data);
     } catch (err) {
@@ -64,11 +73,11 @@ export default function PrivateChat() {
     }
   };
 
-  const setupWebSocket = () => {
+  const setupWebSocket = (token: string) => {
     const socket = () => new SockJS("https://restapart.onrender.com/ws");
     stompClient.current = new Client({
       webSocketFactory: socket,
-      connectHeaders: { Authorization: `Bearer ${jwt}` },
+      connectHeaders: { Authorization: `Bearer ${token}` },
       debug: console.log,
       onConnect: () => {
         setConnected(true);
@@ -114,9 +123,8 @@ export default function PrivateChat() {
   };
   
 
-  const fetchCurrentUser = async () => {
+  const fetchCurrentUser = async (token: string) => {
     try {
-      const token = localStorage.getItem('jwt');
       const response = await api.get('/users/auth/current-user', {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -135,10 +143,12 @@ export default function PrivateChat() {
         <TouchableOpacity onPress={() => router.push({ pathname: "/(tabs)/inbox-screen" })} style={styles.backButton}>
           <Ionicons name="arrow-back" size={24} color="#E0E1DD" />
         </TouchableOpacity>
-        <Image
-          source={{ uri: `https://restapart.onrender.com/images/${otherUser.profilePicture}` }}
-          style={styles.avatar}
-        />
+        <TouchableOpacity onPress={() => router.push({ pathname: '/(tabs)/profile', params: { id } })}>
+          <Image
+            source={{ uri: `https://restapart.onrender.com/images/${otherUser.profilePicture}` }}
+            style={styles.avatar}
+          />
+        </TouchableOpacity>
         <Text style={styles.headerText}>{otherUser.username}</Text>
       </View>
       )}
@@ -201,79 +211,89 @@ export default function PrivateChat() {
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: "#0D1B2A" },
+  container: {
+    flex: 1,
+    backgroundColor: "#0D1B2A",
+  },
   header: {
     flexDirection: "row",
     alignItems: "center",
-    padding: 15,
-    borderBottomWidth: 1,
-    borderColor: "#E0E1DD",
-    backgroundColor: "#102437",
+    backgroundColor: "#1B263B",
+    paddingHorizontal: 20,
+    paddingVertical: 15,
   },
-  avatar: { width: 40, height: 40, borderRadius: 20, marginRight: 10 },
-  headerText: { fontSize: 18, color: "#E0E1DD", fontWeight: "bold" },
-  chatBox: { flex: 1, paddingHorizontal: 15, paddingVertical: 10 },
-  messageContainer: {
-    flexDirection: "row",
-    marginBottom: 10,
-    maxWidth: "80%",
-  },
-  messageLeft: { justifyContent: "flex-start", alignSelf: "flex-start" },
-  messageRight: { justifyContent: "flex-end", alignSelf: "flex-end" },
-  bubble: {
-    padding: 10,
-    borderRadius: 15,
-  },
-  bubbleLeft: {
-    backgroundColor: "#FFFFFF",
-    borderTopLeftRadius: 0,
-  },
-  bubbleRight: {
-    backgroundColor: "#A8DADC",
-    borderTopRightRadius: 0,
-  },
-  messageText: {
+  headerText: {
+    color: "#FFFFFF",
+    fontWeight: "bold",
     fontSize: 16,
-    color: "#1D3557",
+    marginLeft: 10,
+  },
+  avatar: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+  },
+  backButton: {
+    marginRight: 15,
+  },
+  chatBox: {
+    flex: 1,
+    paddingHorizontal: 10,
+    backgroundColor: "#0D1B2A",
   },
   inputRow: {
     flexDirection: "row",
     alignItems: "center",
+    backgroundColor: "#1B263B",
     padding: 10,
-    backgroundColor: "#102437",
+    paddingHorizontal: 15,
   },
   input: {
     flex: 1,
-    backgroundColor: "#fff",
+    backgroundColor: "#2C394B",
+    padding: 10,
     borderRadius: 20,
-    paddingHorizontal: 15,
-    paddingVertical: 10,
-    marginRight: 10,
+    color: "#E0E1DD",
+    marginHorizontal: 10,
   },
   sendButton: {
-    backgroundColor: "#A8DADC",
-    paddingVertical: 10,
-    paddingHorizontal: 15,
-    borderRadius: 20,
-    color: "#1D3557",
+    color: "#E0E1DD",
     fontWeight: "bold",
   },
-  typingIndicator: {
-    fontSize: 12,
-    color: "#AFC1D6",
-    marginTop: 2,
+  messageContainer: {
+    marginVertical: 5,
+    marginHorizontal: 10,
+    maxWidth: "80%",
+  },
+  messageLeft: {
+    alignSelf: "flex-start",
+  },
+  messageRight: {
+    alignSelf: "flex-end",
+  },
+  bubble: {
+    padding: 10,
+    borderRadius: 18,
+    position: "relative",
+  },
+  bubbleLeft: {
+    backgroundColor: "#1B263B",
+    borderBottomLeftRadius: 4,
+  },
+  bubbleRight: {
+    backgroundColor: "#415A77",
+    borderBottomRightRadius: 4,
+  },
+  messageText: {
+    color: "#E0E1DD",
   },
   sentTick: {
-    fontSize: 12,
-    color: "#1D3557",
-    marginTop: 5,
-    alignSelf: 'flex-end',
+    color: "#E0E1DD",
+    fontSize: 10,
+    alignSelf: "flex-end",
+    marginLeft: 5,
   },
   emojiToggle: {
-    fontSize: 22,
-    marginRight: 10,
+    fontSize: 20,
   },
-  backButton: {
-    marginRight: 10,
-  },  
 });

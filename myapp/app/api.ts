@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { Platform } from 'react-native';
+import storage from '../utils/storage';
 
 // URL del backend desplegado en Render
 const PROD_API_URL = "https://restapart.onrender.com/api";
@@ -26,5 +27,46 @@ const api = axios.create({
     "Content-Type": "application/json",
   },
 });
+
+// Añadir interceptor para manejar automáticamente el token de autenticación
+api.interceptors.request.use(
+  async (config) => {
+    // Si la petición no incluye ya un token de autorización, intentamos añadirlo
+    if (!config.headers.Authorization) {
+      try {
+        const token = await storage.getItem('jwt');
+        if (token) {
+          config.headers.Authorization = `Bearer ${token}`;
+        }
+      } catch (error) {
+        console.error('Error al recuperar el token:', error);
+      }
+    }
+    return config;
+  },
+  (error) => {
+    return Promise.reject(error);
+  }
+);
+
+// Interceptor para manejar errores comunes
+api.interceptors.response.use(
+  (response) => response,
+  (error) => {
+    // Manejamos errores comunes aquí
+    if (error.response) {
+      if (error.response.status === 401) {
+        // Error de autenticación, podríamos redirigir a login
+        console.log('Error de autenticación');
+      }
+      console.error('Error de respuesta:', error.response.data);
+    } else if (error.request) {
+      console.error('Error de solicitud (no se recibió respuesta):', error.request);
+    } else {
+      console.error('Error:', error.message);
+    }
+    return Promise.reject(error);
+  }
+);
 
 export default api;

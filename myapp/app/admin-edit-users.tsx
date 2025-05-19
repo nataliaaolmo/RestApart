@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, Platform, Switch } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import api from '../app/api';
+import storage from '../utils/storage';
 
 export default function AdminEditUser() {
   const { id } = useLocalSearchParams();
@@ -38,7 +39,7 @@ export default function AdminEditUser() {
 
   const fetchUser = async () => {
     try {
-      const token = localStorage.getItem('jwt');
+      const token = await storage.getItem('jwt');
       const response = await api.get(`/users/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -146,7 +147,7 @@ export default function AdminEditUser() {
 
     const userToSave = { ...user, dateOfBirth: convertToBackendFormat(user.dateOfBirth) };
     try {
-      const token = localStorage.getItem('jwt');
+      const token = await storage.getItem('jwt');
       await api.put(`/users/${id}`, userToSave, {
         headers: { Authorization: `Bearer ${token}` },
       });

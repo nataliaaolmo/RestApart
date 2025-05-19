@@ -8,6 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import api from './api';
 import { useRouter } from 'expo-router';
 import axios from 'axios';
+import storage from '../utils/storage';
 
 const CustomInput = ({ label, value, onChangeText, icon, helpText, ...props }) => {
   const [showHelp, setShowHelp] = useState(false);
@@ -192,7 +193,7 @@ export default function CreateAccommodation() {
     }
 
     try {
-      const token = localStorage.getItem('jwt');
+      const token = await storage.getItem('jwt');
       if (!token) return showError('No se encontró el token.');
 
       const formData = new FormData();

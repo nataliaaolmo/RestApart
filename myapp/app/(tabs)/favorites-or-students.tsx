@@ -1,40 +1,49 @@
 import React, { useEffect, useState } from 'react';
-import FavoritesScreen from '../favorites'; 
-import AdminUsers from '../admin-data';
-import StudentsInMyProperties from '../students-in-my-accommodations'; 
+import { View, Text, StyleSheet } from 'react-native';
+import { useRouter } from 'expo-router';
+import Favorites from '../favorites';
 import api from '../api';
+import StudentsInMyAccommodations from '../students-in-my-accommodations';
+import storage from '../../utils/storage';
 
-export default function SharedTab() {
+export default function FavoritesOrStudents() {
   const [role, setRole] = useState<string | null>(null);
-  const [loading, setLoading] = useState(true);
-
+  
   useEffect(() => {
-    const fetchRole = async () => {
+    const fetchProfile = async () => {
       try {
-        const token = localStorage.getItem('jwt');
-        const res = await api.get('/users/auth/current-user', {
+        const token = await storage.getItem('jwt');
+        const response = await api.get('/users/auth/current-user', {
           headers: { Authorization: `Bearer ${token}` },
         });
-        setRole(res.data.user.role);
-      } catch (err) {
-        console.error('Error al obtener rol:', err);
-      } finally {
-        setLoading(false);
+        setRole(response.data.user.role);
+      } catch (error) {
+        console.error('Error al obtener el perfil:', error);
       }
     };
-
-    fetchRole();
+    
+    fetchProfile();
   }, []);
 
-  if (loading) {
-    return null; 
-  }
-
-  if (role === 'OWNER') {
-    return <StudentsInMyProperties />;
-  } else if(role === 'STUDENT') {
-    return <FavoritesScreen />;
-  }else{
-    return <AdminUsers/>; 
-  }
+  return (
+    <View style={styles.container}>
+      {role === 'STUDENT' && <Favorites />}
+      {role === 'OWNER' && <StudentsInMyAccommodations />}
+      {role !== 'STUDENT' && role !== 'OWNER' && (
+        <Text style={styles.loadingText}>Cargando...</Text>
+      )}
+    </View>
+  );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+  },
+  loadingText: {
+    fontSize: 16,
+    textAlign: 'center',
+    marginTop: 20,
+  }
+});

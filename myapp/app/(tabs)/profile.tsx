@@ -9,6 +9,7 @@ import Icon from 'react-native-vector-icons/Feather';
 import StarRating from '@/components/StarRating';
 import { RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
 import { auth } from '@/components/firebaseConfig';
+import storage from '../../utils/storage';
 
 
 export default function ProfileScreen() {
@@ -74,7 +75,7 @@ export default function ProfileScreen() {
   
   const fetchProfile = async () => {
     try {
-      const token = localStorage.getItem('jwt');
+      const token = await storage.getItem('jwt');
       const url = userId ? `/users/${userId}` : '/users/auth/current-user';
       const response = await api.get(url, {
         headers: { Authorization: `Bearer ${token}` },
@@ -109,7 +110,7 @@ export default function ProfileScreen() {
     }
     const fetchAverage = async (id: number) => {
       try {
-        const token = localStorage.getItem('jwt');
+        const token = await storage.getItem('jwt');
         const response = await api.get(`/comments/users/${id}/average`, {
           headers: { Authorization: `Bearer ${token}` }
         });
@@ -125,7 +126,7 @@ export default function ProfileScreen() {
 
     const fetchStudent = async (id: number) => {
       try {
-        const token = localStorage.getItem('jwt');
+        const token = await storage.getItem('jwt');
         const response = await api.get(`/users/${id}/get-student`, {
           headers: { Authorization: `Bearer ${token}` }
         });
@@ -150,7 +151,7 @@ export default function ProfileScreen() {
 
   useEffect(() => {
     const fetchCurrentUserId = async () => {
-      const token = localStorage.getItem('jwt');
+      const token = await storage.getItem('jwt');
       const response = await api.get('/users/auth/current-user', {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -170,7 +171,7 @@ export default function ProfileScreen() {
 
   const findComments = async (id: number) => {
     try { 
-      const token = localStorage.getItem('jwt');
+      const token = await storage.getItem('jwt');
       const response = await api.get(`/comments/users/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -183,7 +184,7 @@ export default function ProfileScreen() {
 
   const fetchBookings = async (id: number) => {
     try {
-      const token = localStorage.getItem('jwt');
+      const token = await storage.getItem('jwt');
       const res = await api.get(`/bookings/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -204,7 +205,7 @@ export default function ProfileScreen() {
 
     const verifyAccommodationUser = async (accommodationId: number) => {
       try {
-        const token = localStorage.getItem('jwt');
+        const token = await storage.getItem('jwt');
         await api.patch(`/accommodations/${accommodationId}/${currentUserId}/verify-accommodation`, {}, {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -221,7 +222,7 @@ export default function ProfileScreen() {
 
     const checkIfAccommodationCanBeVerified = async (accommodationId: number) => {
         try {
-          const token = localStorage.getItem('jwt');
+          const token = await storage.getItem('jwt');
           await api.patch(`/accommodations/${accommodationId}/verify-accommodation`, {}, {
             headers: { Authorization: `Bearer ${token}` },
           });
@@ -256,7 +257,7 @@ export default function ProfileScreen() {
   
     const makeComment = async () => {
       try {
-        const token = localStorage.getItem('jwt');
+        const token = await storage.getItem('jwt');
         const formData = new FormData();
   
         const commentData = {
@@ -315,7 +316,7 @@ export default function ProfileScreen() {
       }
   
       try {
-        const token = localStorage.getItem('jwt');
+        const token = await storage.getItem('jwt');
   
         const uploadResponse = await fetch('https://restapart.onrender.com/api/users/upload-photo', {
           method: 'POST',
@@ -345,7 +346,7 @@ export default function ProfileScreen() {
   
   const checkIfExists = async (field: 'username' | 'email' | 'telephone', value: string) => {
     try {
-      const token = localStorage.getItem('jwt');
+      const token = await storage.getItem('jwt');
       const response = await api.get(`/users/check?field=${field}&value=${value}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -415,7 +416,7 @@ export default function ProfileScreen() {
     }
   
     try {
-      const token = localStorage.getItem('jwt');
+      const token = await storage.getItem('jwt');
       const updatedUser = {
         username: sanitizeInput(userData.username),
         password: userData.password || 'Temp1234*',
@@ -455,6 +456,11 @@ export default function ProfileScreen() {
   const isStudent = userData.role === 'STUDENT';
   const fullName = `${userData.firstName} ${userData.lastName}`;
   const screenTitle = userId ? `Perfil de ${fullName}` : 'Tu perfil';
+
+  const handleLogout = async () => {
+    await storage.clear();
+    router.replace('/');
+  };
 
   return (
     <ScrollView style={styles.container}>
@@ -790,7 +796,7 @@ export default function ProfileScreen() {
             }
 
             try {
-              const token = localStorage.getItem('jwt');
+              const token = await storage.getItem('jwt');
               const sanitizedText = text.trim().replace(/[<>$%&]/g, '');
 
               const commentData = {

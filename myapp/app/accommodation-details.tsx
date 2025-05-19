@@ -12,6 +12,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import StarRating from '@/components/StarRating';
 import Icon from 'react-native-vector-icons/FontAwesome';
+import storage from '../utils/storage';
 
 export default function AccommodationDetailsScreen() {
   const { id, title, beds, bedrooms, price, startDate, endDate, isVerified } = useLocalSearchParams();
@@ -51,6 +52,7 @@ export default function AccommodationDetailsScreen() {
     id: number;
     username?: string;
     photo?: string;
+    userId: number;
   }
   const [pastTenants, setPastTenants] = useState<StudentProfileDTO[]>([]);
 
@@ -81,7 +83,7 @@ export default function AccommodationDetailsScreen() {
   
 const checkAlreadyLiving = async () => {
   try {
-    const token = localStorage.getItem('jwt');
+    const token = await storage.getItem('jwt');
     const res = await api.get(`/accommodations/${id}/students`, {
       params: {
         startDate: toBackendFormatIfNeeded(stayRange.startDate!),
@@ -112,7 +114,7 @@ const checkAlreadyLiving = async () => {
 
   useEffect(() => {
     const fetchCurrentUser = async () => {
-      const token = localStorage.getItem('jwt');
+      const token = await storage.getItem('jwt');
       const res = await api.get('/users/auth/current-user', {
         headers: { Authorization: `Bearer ${token}` }
       });
@@ -126,7 +128,7 @@ const checkAlreadyLiving = async () => {
 
   const findComments = async () => {
     try { 
-      const token = localStorage.getItem('jwt');
+      const token = await storage.getItem('jwt');
       const response = await api.get(`/comments/accomodations/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -184,7 +186,7 @@ const checkAlreadyLiving = async () => {
 
   const fetchAverageRating = async () => {
     try {
-      const token = localStorage.getItem('jwt');
+      const token = await storage.getItem('jwt');
       const response = await api.get(`/comments/accomodations/${id}/average`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -222,7 +224,7 @@ const checkAlreadyLiving = async () => {
   }
     
     try {
-      const token = localStorage.getItem('jwt');
+      const token = await storage.getItem('jwt');
 
       const sanitizedText = text.trim().replace(/[<>$%&]/g, '');
 
@@ -247,7 +249,7 @@ const checkAlreadyLiving = async () => {
 
   const findAccommodation = async () => {
     try {
-      const token = localStorage.getItem('jwt');
+      const token = await storage.getItem('jwt');
       const response = await api.get(`/accommodations/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -285,11 +287,12 @@ const checkAlreadyLiving = async () => {
 
 const fetchPastTenants = async () => {
   try {
-    const token = localStorage.getItem('jwt');
+    const token = await storage.getItem('jwt');
     const response = await api.get(`/bookings/${id}/get-accommodation-bookings`, {
       headers: { Authorization: `Bearer ${token}` },
     });
     setPastTenants(response.data);
+    console.log('Past tenants:', response.data);
   } catch (error) {
     console.error('Error al cargar el historial de inquilinos', error);
   }
@@ -300,7 +303,7 @@ const fetchPastTenants = async () => {
       return; 
     }
     try {
-      const token = localStorage.getItem('jwt');
+      const token = await storage.getItem('jwt');
       const response = await api.get(`/accommodations/${id}/students`, {
         params: {
           startDate: toBackendFormatIfNeeded(stayRange.startDate!),
@@ -316,7 +319,7 @@ const fetchPastTenants = async () => {
   };
 
   const initiatePaypalPaymentWithRange = async (range: { startDate: string; endDate: string }) => {
-    const token = localStorage.getItem('jwt');
+    const token = await storage.getItem('jwt');
     try {
       const isAvailable = await api.get(`/accommodations/${id}/check-availability`, {
         params: {
@@ -348,17 +351,28 @@ const fetchPastTenants = async () => {
       }
   
       const totalPrice = Math.round(basePrice * 1.02 * 100) / 100;
-      sessionStorage.setItem("acc_id", id as string);
-      sessionStorage.setItem("startDate", toBackendFormatIfNeeded(range.startDate));
-      sessionStorage.setItem("endDate", toBackendFormatIfNeeded(range.endDate));
 
-  
+      // Guardamos información relevante para recuperarla después del pago con PayPal
+      await storage.session.setItem("acc_id", id as string);
+      await storage.session.setItem("startDate", toBackendFormatIfNeeded(range.startDate));
+      await storage.session.setItem("endDate", toBackendFormatIfNeeded(range.endDate));
+
+      // Crear el returnUrl teniendo en cuenta si es web o nativo
+      let returnUrl = '';
+      if (Platform.OS === 'web') {
+        const baseUrl = window.location.origin || 'http://localhost:8081';
+        returnUrl = `${baseUrl}/payment-success?id=${id}&startDate=${toBackendFormatIfNeeded(range.startDate)}&endDate=${toBackendFormatIfNeeded(range.endDate)}`;
+      } else {
+        // En nativo usamos un esquema URI personalizado
+        returnUrl = `exp://payment-success?id=${id}&startDate=${toBackendFormatIfNeeded(range.startDate)}&endDate=${toBackendFormatIfNeeded(range.endDate)}`;
+      }
+
       const response = await api.post('/payments/paypal/create', null, {
         params: {
           amount: totalPrice,
           currency: 'EUR',
           description: `Reserva alojamiento ID ${id} del ${formatToSpanish(range.startDate)} al ${formatToSpanish(range.endDate)}`,
-          returnUrl: `http://localhost:8081/payment-success?id=${id}&startDate=${toBackendFormatIfNeeded(range.startDate)}&endDate=${toBackendFormatIfNeeded(range.endDate)}`
+          returnUrl
         },
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -369,6 +383,7 @@ const fetchPastTenants = async () => {
         Alert.alert('Error', 'No se pudo obtener el enlace de pago.');
       }
     } catch (error) {
+      console.error('Error al iniciar el pago:', error);
       Alert.alert('Error', 'No se pudo iniciar el pago.');
     }
   };
@@ -380,6 +395,19 @@ const fetchPastTenants = async () => {
     setSelectedUsername(username);
     setActionModalVisible(true);
     setFilterError('');
+  };
+
+  const handleUserPressOldTenants = async (userId: number) => {
+    try {
+      console.log('User ID:', userId);
+      // Asumimos que todos los pasados inquilinos tienen cuenta de usuario
+      setSelectedUserId(userId);
+      setSelectedUsername('tenant'); // Establecemos un valor no nulo para indicar que tiene cuenta
+      setActionModalVisible(true);
+      setFilterError('');
+    } catch (error) {
+      console.error('Error al manejar el clic en usuario:', error);
+    }
   };
 
   return (
@@ -458,7 +486,7 @@ const fetchPastTenants = async () => {
       style={[styles.addCommentButton, { backgroundColor: '#E63946' }]}
       onPress={async () => {
         try {
-          const token = localStorage.getItem('jwt');
+          const token = await storage.getItem('jwt');
           await api.delete(`/accommodations/${id}`, {
             headers: { Authorization: `Bearer ${token}` }
           });
@@ -582,9 +610,10 @@ const fetchPastTenants = async () => {
           </Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             {pastTenants.map((tenant, index) => (
+              console.log(tenant),
           <TouchableOpacity
             key={index}
-            onPress={() => handleUserPress(tenant.id, tenant.username ?? null)}
+            onPress={() => handleUserPressOldTenants(tenant.userId?? null)}
           >
             <Image
               source={{ uri: `https://restapart.onrender.com/images/${tenant.photo}` }}

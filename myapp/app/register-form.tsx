@@ -7,10 +7,17 @@ import Icon from 'react-native-vector-icons/FontAwesome';
 import { Picker } from '@react-native-picker/picker';
 import { RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
 import { auth } from '../components/firebaseConfig'; 
+import storage from '../utils/storage';
 
 export default function RegisterFormScreen() {
   const { role } = useLocalSearchParams();
   const router = useRouter();
+  
+  // Depuración del parámetro role
+  console.log('Tipo de role:', typeof role);
+  console.log('Valor de role:', role);
+  console.log('Es array?', Array.isArray(role));
+  
   const [form, setForm] = useState({
     username: '',
     password: '',
@@ -33,8 +40,31 @@ export default function RegisterFormScreen() {
   const [isPhoneVerified, setIsPhoneVerified] = useState(false);
 
   function convertToBackendFormat(dateStr: string): string {
-    const [dd, mm, yyyy] = dateStr.split('-');
-    return `${yyyy}-${mm.toString().padStart(2, '0')}-${dd.toString().padStart(2, '0')}`;
+    try {
+      const parts = dateStr.split('-');
+      if (parts.length !== 3) {
+        console.error('Formato de fecha incorrecto:', dateStr);
+        return '';
+      }
+      
+      const [dd, mm, yyyy] = parts;
+      
+      // Comprobamos que sean números válidos
+      const day = parseInt(dd, 10);
+      const month = parseInt(mm, 10);
+      const year = parseInt(yyyy, 10);
+      
+      if (isNaN(day) || isNaN(month) || isNaN(year)) {
+        console.error('Valores numéricos inválidos en la fecha:', dateStr);
+        return '';
+      }
+      
+      // Formateamos correctamente con ceros a la izquierda si es necesario
+      return `${yyyy}-${month.toString().padStart(2, '0')}-${day.toString().padStart(2, '0')}`;
+    } catch (error) {
+      console.error('Error al procesar fecha:', dateStr, error);
+      return '';
+    }
   }  
 
   const showMessage = (title: string, message: string) => {
@@ -74,6 +104,13 @@ export default function RegisterFormScreen() {
     setErrorMessage(''); 
     if (!form.username || !form.password || !form.firstName || !form.lastName || !form.email || !form.telephone || !form.dateOfBirth) {
       showMessage('Error', 'Todos los campos obligatorios deben estar completos.');
+      return;
+    }
+
+    // Validar que el formato de la fecha es correcto
+    const formattedDate = convertToBackendFormat(form.dateOfBirth);
+    if (!formattedDate) {
+      showMessage('Error', 'El formato de la fecha de nacimiento es incorrecto. Usa DD-MM-YYYY.');
       return;
     }
 
@@ -167,15 +204,15 @@ export default function RegisterFormScreen() {
     const requestData: any = {
       username: form.username,
       password: form.password,
-      role: role,
+      role: typeof role === 'string' ? role : (Array.isArray(role) ? role[0] : 'STUDENT'),
       firstName: form.firstName,
       lastName: form.lastName,
       email: form.email,
       telephone: form.telephone,
-      gender: form.gender,
-      dateOfBirth: convertToBackendFormat(form.dateOfBirth),
-      description: form.description,
-      profilePicture: form.profilePicture,
+      gender: form.gender || "OTHER",  // Valor por defecto
+      dateOfBirth: formattedDate,
+      description: form.description || "",
+      profilePicture: form.profilePicture || "",
       isVerified: isPhoneVerified,
     };
 
@@ -190,10 +227,22 @@ export default function RegisterFormScreen() {
     console.log('Request Data:', requestData);
 
     try {
-      const response = await api.post('/users/auth/register', requestData);
-      console.log('Response:', response.data);
+      // Verificamos que el role sea válido
+      if (!role || typeof role !== 'string' || (role !== 'STUDENT' && role !== 'OWNER')) {
+        showMessage('Error', `Rol inválido: ${role}. Debe ser STUDENT o OWNER`);
+        console.error('Rol inválido en el formulario:', role);
+        return;
+      }
+
+      console.log('Enviando solicitud de registro con rol:', role);
+      const response = await api.post('/users/auth/register', requestData, {
+        headers: {
+          'Content-Type': 'application/json',
+        }
+      });
+      console.log('Respuesta del servidor:', response.data);
       if (response.data.error && response.data.error !== '') {
-        showMessage('Error',response.data.error);
+        showMessage('Error', response.data.error);
         return;
       }
 
@@ -203,45 +252,76 @@ export default function RegisterFormScreen() {
         showMessage('Registro exitoso', 'Usuario registrado correctamente');
       }
 
-      const loginResponse = await api.post('/users/auth/login', {
-        username: form.username,
-        password: form.password
-      });
-      
-      const jwt = loginResponse.data.token;
-      localStorage.setItem('jwt', jwt);
-
-      router.push({
-        pathname: '/(tabs)/welcome-screen',
-        params: {
+      try {
+        const loginResponse = await api.post('/users/auth/login', {
+          username: form.username,
+          password: form.password
+        });
+        
+        const jwt = loginResponse.data.token || loginResponse.data.jwt;
+        const userData = {
           name: form.firstName,
           role: role,
-        },
-      });
-
-    } catch (error: any) {
-      if (axios.isAxiosError(error)) {
-        const errorData = error.response?.data;
-    
-        if (typeof errorData === 'string') {
-          if (errorData.includes('username')) {
-            setErrorMessage('El nombre de usuario ya está en uso.');
-          } else if (errorData.includes('correo') || errorData.includes('email')) {
-            setErrorMessage('El correo electrónico ya está registrado.');
-          } else if (errorData.includes('teléfono')) {
-            setErrorMessage('El teléfono ya está en uso.');
-          } else {
-            setErrorMessage(errorData); 
-          }
-    
-        } else if (Array.isArray(errorData.errors)) {
-          const formattedErrors = errorData.errors.map((err: any) => `• ${err}`).join('\n');
-          setErrorMessage(formattedErrors);
-        } else if (typeof errorData.error === 'string') {
-          setErrorMessage(errorData.error);
-        } else {
-          setErrorMessage('Error desconocido del servidor.');
+        };
+        
+        if (!jwt) {
+          console.error("No se recibió un token válido:", loginResponse.data);
+          showMessage('Error', 'Registro exitoso pero error al iniciar sesión. Inténtalo manualmente.');
+          setTimeout(() => router.push('/login'), 1500);
+          return;
         }
+
+        await storage.setItem('jwt', jwt);
+        await storage.setItem('name', form.firstName);
+        await storage.setItem('role', role as string);
+
+        await storage.removeItem("accommodationFilters");
+
+        if (Platform.OS === 'web') {
+          setTimeout(() => {
+            router.push('/(tabs)/welcome-screen');
+          }, 100);
+        } else {
+          router.push('/(tabs)/welcome-screen');
+        }
+      } catch (loginError) {
+        console.error('Error al iniciar sesión automáticamente:', loginError);
+        showMessage('Info', 'Registro exitoso. Por favor, inicia sesión manualmente.');
+        setTimeout(() => router.push('/login'), 1500);
+      }
+    } catch (error: any) {
+      console.error('Error al registrar:', error);
+      console.error('Código de error:', error.response?.status);
+      console.error('Respuesta del servidor:', error.response?.data);
+      
+      if (axios.isAxiosError(error)) {
+        if (error.response?.status === 403) {
+          setErrorMessage('Acceso prohibido. El servidor rechazó la solicitud. Verifica que todos los campos sean válidos.');
+          console.error('Error 403: Acceso prohibido', error.response.data);
+        } else {
+          const errorData = error.response?.data;
+      
+          if (typeof errorData === 'string') {
+            if (errorData.includes('username')) {
+              setErrorMessage('El nombre de usuario ya está en uso.');
+            } else if (errorData.includes('correo') || errorData.includes('email')) {
+              setErrorMessage('El correo electrónico ya está registrado.');
+            } else if (errorData.includes('teléfono')) {
+              setErrorMessage('El teléfono ya está en uso.');
+            } else {
+              setErrorMessage(errorData); 
+            }
+          } else if (Array.isArray(errorData?.errors)) {
+            const formattedErrors = errorData.errors.map((err: any) => `• ${err}`).join('\n');
+            setErrorMessage(formattedErrors);
+          } else if (typeof errorData?.error === 'string') {
+            setErrorMessage(errorData.error);
+          } else {
+            setErrorMessage('Error desconocido del servidor.');
+          }
+        }
+      } else {
+        setErrorMessage('Error al conectar con el servidor.');
       }
     }
     

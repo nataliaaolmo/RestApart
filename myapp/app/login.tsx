@@ -1,50 +1,98 @@
 import React, { useState } from "react";
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Alert, ActivityIndicator, Platform } from "react-native";
 import { useRouter } from "expo-router";
+import { Feather } from "@expo/vector-icons";
+import * as Localization from "expo-localization";
+import { I18n } from "i18n-js";
 import api from "../app/api";
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import storage from "../utils/storage";
+
+const i18n = new I18n({
+  en: {
+    login: "Login",
+    username: "Username",
+    password: "Password",
+    loginButton: "Login",
+    createAccount: "Create an account",
+    invalidCredentials: "Invalid username or password",
+    systemLocked: "The system is temporarily locked. Only admins can access."
+  },
+  es: {
+    login: "Iniciar sesión",
+    username: "Nombre de usuario",
+    password: "Contraseña",
+    loginButton: "Iniciar sesión",
+    createAccount: "Crear una cuenta",
+    invalidCredentials: "Usuario o contraseña incorrectos",
+    systemLocked: "El sistema está bloqueado temporalmente. Solo los administradores pueden acceder."
+  }
+});
+
+i18n.locale = Localization.locale;
+i18n.enableFallback = true;
 
 export default function LoginScreen() {
   const [form, setForm] = useState({ username: "", password: "" });
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   const handleChange = (name: string, value: string) => {
     setForm({ ...form, [name]: value });
   };
 
-  const handleSubmit = async () => {
+  const handleLogin = async () => {
     if (!form.username || !form.password) {
       setError("Por favor, completa todos los campos.");
       return;
     }
 
     try {
+      setLoading(true);
       const response = await api.post("/users/auth/login", form);
-      const token = response.data.token;
-      const userName = response.data.user?.firstName || form.username; 
-      const role = response.data.role; 
-
-      if (!token) {
-        throw new Error("No se recibió un token del backend");
+      
+      // El backend puede devolver el token en diferentes formatos
+      const jwt = response.data.token || response.data.jwt;
+      const name = response.data.name || form.username;
+      const role = response.data.role || '';
+      
+      if (!jwt) {
+        console.error("No se recibió un token válido:", response.data);
+        setError("Error al iniciar sesión. No se recibió un token válido.");
+        setLoading(false);
+        return;
       }
 
-      await AsyncStorage.setItem("jwt", token);
-      await AsyncStorage.setItem("userName", userName); 
+      // Guardar los datos necesarios
+      await storage.setItem("jwt", jwt);
+      await storage.setItem("name", name);
+      if (role) {
+        await storage.setItem("role", role);
+      }
 
-      Alert.alert("Inicio de sesión exitoso", `Bienvenido de nuevo, ${userName}!`);
+      // Importante: limpiar cualquier filtro guardado para evitar problemas
+      await storage.removeItem("accommodationFilters");
 
-      router.push({
-        pathname: "/(tabs)/welcome-screen",
-        params: { name: userName, role: role}
-      });
-
-    } catch (err) {
-      if ((err as any).response?.status === 401) {
-    setError("Nombre de usuario o contraseña incorrectos.");
+      // Redireccionar al usuario
+      if (Platform.OS === 'web') {
+        // En web, usamos un pequeño delay para asegurar que los datos se guarden
+        setTimeout(() => {
+          router.replace("/(tabs)/welcome-screen");
+        }, 100);
+      } else {
+        router.replace("/(tabs)/welcome-screen");
+      }
+    } catch (error: any) {
+      console.error("Error en login:", error);
+      
+      // Manejar diferentes tipos de errores
+      if (error.response && error.response.status === 401) {
+        setError(i18n.t("invalidCredentials"));
   } else {
-    setError("El sistema está bloqueado temporalmente. Solo los administradores pueden acceder.");
+        setError("Error al conectar con el servidor. Inténtalo más tarde.");
   }
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -69,8 +117,16 @@ export default function LoginScreen() {
         onChangeText={(value) => handleChange("password", value)}
       />
 
-      <TouchableOpacity style={styles.button} onPress={handleSubmit}>
+      <TouchableOpacity 
+        style={styles.button} 
+        onPress={handleLogin}
+        disabled={loading}
+      >
+        {loading ? (
+          <ActivityIndicator color="#0D1B2A" />
+        ) : (
         <Text style={styles.buttonText}>Iniciar sesión</Text>
+        )}
       </TouchableOpacity>
 
       <Text style={styles.registerText}>

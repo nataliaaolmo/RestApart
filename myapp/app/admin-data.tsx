@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, FlatList, TouchableOpacity, Alert, ScrollView }
 import { useRouter } from 'expo-router';
 import Icon from 'react-native-vector-icons/Feather';
 import api from './api';
+import storage from '../utils/storage';
 
 interface User {
   id: number;
@@ -26,7 +27,7 @@ export default function AdminUsers() {
 
   const fetchUsers = async () => {
     try {
-      const token = localStorage.getItem('jwt');
+      const token = await storage.getItem('jwt');
       const response = await api.get('/admin/users-with-details', {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -38,7 +39,7 @@ export default function AdminUsers() {
 
   const fetchCounts = async () => {
     try {
-      const token = localStorage.getItem('jwt');
+      const token = await storage.getItem('jwt');
       const response = await api.get('/admin/user-counts', {
         headers: { Authorization: `Bearer ${token}` },
       });

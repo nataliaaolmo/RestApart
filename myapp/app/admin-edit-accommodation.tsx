@@ -3,6 +3,7 @@ import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, ActivityInd
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import api from '../app/api';
 import { ScrollView } from 'react-native';
+import storage from '../utils/storage';
 
 export default function AdminEditAccommodation() {
   const { id } = useLocalSearchParams();
@@ -39,7 +40,7 @@ export default function AdminEditAccommodation() {
 
   const fetchAccommodation = async () => {
     try {
-      const token = localStorage.getItem('jwt');
+      const token = await storage.getItem('jwt');
       const response = await api.get(`/accommodations/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -135,7 +136,7 @@ export default function AdminEditAccommodation() {
     };
 
     try {
-      const token = localStorage.getItem('jwt');
+      const token = await storage.getItem('jwt');
       await api.put(`/accommodations/admin/${id}`, accommodationToSave, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -155,7 +156,7 @@ export default function AdminEditAccommodation() {
 
   const handleDelete = async () => {
   try {
-    const token = localStorage.getItem('jwt');
+    const token = await storage.getItem('jwt');
     await api.delete(`/accommodations/${id}`, {
       headers: { Authorization: `Bearer ${token}` },
     });

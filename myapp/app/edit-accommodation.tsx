@@ -6,6 +6,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import api from './api';
+import storage from '../utils/storage';
 
 interface CustomInputProps {
   label: string;
@@ -116,7 +117,7 @@ const maybeSuggestAddress = (input: string): string => {
   useEffect(() => {
     const loadData = async () => {
       try {
-        const token = localStorage.getItem('jwt');
+        const token = await storage.getItem('jwt');
         const res = await api.get(`/accommodations/${id}`, {
           headers: { Authorization: `Bearer ${token}` },
         });
@@ -222,7 +223,7 @@ if (!form.title || !form.rooms || !form.beds || !form.pricePerDay || !form.price
       const coords = await fetchLatLng(buildFullAddress());
       if (!coords) return;
 
-      const token = localStorage.getItem('jwt');
+      const token = await storage.getItem('jwt');
       let imageUrls = images;
 
       if (newImages.length > 0) {

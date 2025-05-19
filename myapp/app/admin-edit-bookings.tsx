@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, Switch, Platform } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import api from '../app/api';
+import storage from '../utils/storage';
 
 export default function AdminEditBooking() {
   const { id } = useLocalSearchParams();
@@ -36,7 +37,7 @@ export default function AdminEditBooking() {
 
   const fetchBooking = async () => {
     try {
-      const token = localStorage.getItem('jwt');
+      const token = await storage.getItem('jwt');
       const response = await api.get(`/bookings/${id}/get-booking`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -105,7 +106,7 @@ export default function AdminEditBooking() {
     };
 
     try {
-      const token = localStorage.getItem('jwt');
+      const token = await storage.getItem('jwt');
       await api.put(`/bookings/${id}`, bookingToSave, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -121,7 +122,7 @@ export default function AdminEditBooking() {
 
   const handleDelete = async () => {
   try {
-    const token = localStorage.getItem('jwt');
+    const token = await storage.getItem('jwt');
     await api.delete(`/bookings/${id}`, {
       headers: { Authorization: `Bearer ${token}` },
     });
