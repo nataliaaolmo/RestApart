@@ -31,7 +31,7 @@ public class SecurityConfig {
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
-            .csrf(csrf -> csrf.disable()).cors(Customizer.withDefaults()) // Desactiva CSRF para facilitar pruebas
+            .csrf(csrf -> csrf.disable()).cors(Customizer.withDefaults()) 
             .authorizeHttpRequests(auth -> auth
                 .requestMatchers(
                     "/api/auth/**",

@@ -27,12 +27,11 @@ public class PayPalService {
         try {
             String accessToken = getAccessToken();
     
-            // Construcción manual del JSON con Jackson
             ObjectMapper objectMapper = new ObjectMapper();
     
             Map<String, Object> amountMap = Map.of(
                 "currency_code", currency,
-                "value", String.format(Locale.US, "%.2f", amount) // <-- forzar punto decimal
+                "value", String.format(Locale.US, "%.2f", amount) 
             );            
     
             Map<String, Object> purchaseUnit = new HashMap<>();

@@ -2,7 +2,6 @@ package com.eventbride.comment;
 
 import java.time.LocalDate;
 import java.util.List;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -25,7 +24,6 @@ import com.eventbride.accommodation.AccommodationService;
 
 import jakarta.validation.Valid;
 
-@CrossOrigin(origins = {"http://localhost:5173", "http://192.168.1.132:8081", "http://10.0.2.2:8081"})
 @RestController
 @RequestMapping("/api/comments")
 public class CommentController {

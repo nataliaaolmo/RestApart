@@ -34,12 +34,12 @@ import java.util.List;
  		if (!sender.isPresent() || !reciver.isPresent()) {
  			return ResponseEntity.notFound().build();
  		}
- 		List<ChatMessage> messages = chatRepository.findMessagesBetweenUsers2(sender.get(), reciver.get());
+ 		List<ChatMessage> messages = chatRepository.findMessagesBetweenUsers(sender.get(), reciver.get());
 		if(messages.isEmpty()) {
 			return ResponseEntity.ok(new ArrayList<ChatMessage>());
  	}
 	 return ResponseEntity.ok(messages);
-}
+	}
 
 	 @GetMapping("/inbox")
 	 public ResponseEntity<?> getConversations() {

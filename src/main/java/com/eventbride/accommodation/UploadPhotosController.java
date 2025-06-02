@@ -14,9 +14,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
-@CrossOrigin(origins = {
-    "http://localhost:5173", "http://192.168.1.132:8081", "http://10.0.2.2:8081"
-})
 @RestController
 @RequestMapping("/api/images")
 public class UploadPhotosController {

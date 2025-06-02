@@ -1,6 +1,5 @@
 package com.eventbride.config.jwt.services;
 
-import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Optional;
 
@@ -193,8 +192,6 @@ public class UserManagementService {
                 new UsernamePasswordAuthenticationToken(loginRequest.getUsername(), loginRequest.getPassword())
             );
 
-            // Resetear contador tras login exitoso
-            //user.setFailedAttempts(0);
             userRepo.save(user);
 
             var jwt = jwtUtils.generateToken(user);
@@ -208,20 +205,11 @@ public class UserManagementService {
             response.setMessage("Inicio de sesión exitoso");
 
         } catch (Exception e) {
-            // ⚠️ Fallo de autenticación
             Optional<User> optionalUser = userRepo.findByUsername(loginRequest.getUsername());
             if (optionalUser.isPresent() && !optionalUser.get().getRole().equals("ADMIN")) {
                 User user = optionalUser.get();
-                //int fails = user.getFailedAttempts() + 1;
-                //user.setFailedAttempts(fails);
-                //user.setLastFailedLogin(LocalDateTime.now());
                 userRepo.save(user);
 
-                //if (fails >= 5) {
-                    //SystemStatus status = systemStatusRepository.findById(1L).orElse(new SystemStatus());
-                    //status.setLocked(true);
-                    //systemStatusRepository.save(status);
-                //}
             }
 
             response.setStatusCode(401);

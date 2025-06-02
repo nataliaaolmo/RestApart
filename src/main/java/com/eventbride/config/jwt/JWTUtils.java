@@ -4,6 +4,8 @@ import java.nio.charset.StandardCharsets;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
+
 import java.util.Date;
 import java.util.HashMap;
 import java.util.function.Function;
@@ -16,13 +18,14 @@ public class JWTUtils {
 
     private SecretKey Key;
 
-    private static final long EXPIRATION_TIME = 86400000L; // 1 día (en milisegundos)
+    @Value("${jwt.secret}")
+    private String secretString;
+
+    private static final long EXPIRATION_TIME = 86400000L; 
 
     public JWTUtils() {
-        // Usa una clave válida
-        String secretString = "843567893696976453275974432697R634976R738467TR678T34865R6834R8763T478378637664538745673865783678548735687R3";
         byte[] keyBytes = secretString.getBytes(StandardCharsets.UTF_8);
-        this.Key = Keys.hmacShaKeyFor(keyBytes); // Usa una clave HmacSHA256 válida
+        this.Key = Keys.hmacShaKeyFor(keyBytes); 
     }
 
     public String generateToken(UserDetails userDetails) {
@@ -32,8 +35,6 @@ public class JWTUtils {
                 .expiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME))
                 .signWith(Key)
                 .compact();
-
-        System.out.println("Generated JWT: " + jwt); // IMPRIMIR TOKEN PARA DEPURACIÓN
         return jwt;
     }
 
@@ -42,11 +43,11 @@ public class JWTUtils {
                 .claims(claims)
                 .subject(userDetails.getUsername())
                 .issuedAt(new Date(System.currentTimeMillis()))
-                .expiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME * 7)) // 7 días
+                .expiration(new Date(System.currentTimeMillis() + EXPIRATION_TIME * 7)) 
                 .signWith(Key)
                 .compact();
 
-        System.out.println("Generated Refresh Token: " + refreshToken); // IMPRIMIR TOKEN
+        System.out.println("Generated Refresh Token: " + refreshToken); 
         return refreshToken;
     }
 

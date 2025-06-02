@@ -22,9 +22,9 @@ package com.eventbride.config;
  
  	@Override
  	public void configureMessageBroker(MessageBrokerRegistry config) {
- 		config.enableSimpleBroker("/queue"); // Para enviar mensajes al frontend
- 		config.setApplicationDestinationPrefixes("/app"); // Para recibir mensajes del frontend
- 		config.setUserDestinationPrefix("/user"); // para usar convertAndSendToUser
+ 		config.enableSimpleBroker("/queue"); 
+ 		config.setApplicationDestinationPrefixes("/app"); 
+ 		config.setUserDestinationPrefix("/user"); 
  	}
  
  	@Override
