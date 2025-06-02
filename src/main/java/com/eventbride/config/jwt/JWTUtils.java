@@ -18,12 +18,15 @@ public class JWTUtils {
 
     private SecretKey Key;
 
-    @Value("${jwt.secret}")
+    @Value("${jwt.secret-key}")
     private String secretString;
 
     private static final long EXPIRATION_TIME = 86400000L; 
 
     public JWTUtils() {
+        if (secretString == null) {
+            throw new IllegalStateException("JWT secret key is not configured");
+        }
         byte[] keyBytes = secretString.getBytes(StandardCharsets.UTF_8);
         this.Key = Keys.hmacShaKeyFor(keyBytes); 
     }
