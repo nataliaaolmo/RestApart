@@ -5,17 +5,17 @@ import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Component;
+import jakarta.annotation.PostConstruct;
 
 import java.util.Date;
 import java.util.HashMap;
 import java.util.function.Function;
 import javax.crypto.SecretKey;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.stereotype.Component;
 
 @Component
 public class JWTUtils {
-
     private SecretKey Key;
 
     @Value("${jwt.secret-key}")
@@ -23,12 +23,12 @@ public class JWTUtils {
 
     private static final long EXPIRATION_TIME = 86400000L; 
 
-    public JWTUtils() {
-        if (secretString == null) {
-            throw new IllegalStateException("JWT secret key is not configured");
-        }
+    @PostConstruct
+    public void init() {
+
         byte[] keyBytes = secretString.getBytes(StandardCharsets.UTF_8);
-        this.Key = Keys.hmacShaKeyFor(keyBytes); 
+        this.Key = Keys.hmacShaKeyFor(keyBytes);
+
     }
 
     public String generateToken(UserDetails userDetails) {
