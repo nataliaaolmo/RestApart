@@ -9,6 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -17,6 +18,9 @@ import org.springframework.web.multipart.MultipartFile;
 @RestController
 @RequestMapping("/api/images")
 public class UploadPhotosController {
+
+    @Value("${app.base-url:https://restapart.onrender.com}")
+    private String baseUrl;
 
     private static final String UPLOAD_DIR = "src/main/resources/static/images/";
 
@@ -36,7 +40,7 @@ public class UploadPhotosController {
                 String fileName = UUID.randomUUID().toString() + "_" + file.getOriginalFilename();
                 Path filePath = Paths.get(UPLOAD_DIR + fileName);
                 Files.write(filePath, file.getBytes());
-                uploadedFileNames.add(fileName);
+                uploadedFileNames.add(baseUrl + "/images/" + fileName);
             }
 
             return ResponseEntity.ok(uploadedFileNames);

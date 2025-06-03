@@ -179,10 +179,6 @@ export default function CreateAccommodation() {
       return;
     }
 
-    if (selectedImages.length === 0) {
-      showError('Debes seleccionar al menos una imagen.');
-      return;
-    }
     if (!isValidAddress(buildFullAddress())) {
       setAddressWarning('⚠️ Introduce la dirección con calle, número, ciudad y país. Ej: "Calle Real 5, Madrid, España"');
       return;
@@ -196,59 +192,63 @@ export default function CreateAccommodation() {
       const token = await storage.getItem('jwt');
       if (!token) return showError('No se encontró el token.');
 
-      const formData = new FormData();
+      let imageUrls = [];
+      
+      if (selectedImages.length > 0) {
+        const formData = new FormData();
 
-      for (let i = 0; i < selectedImages.length; i++) {
-        const img = selectedImages[i];
-        let file = img.file;
-        console.log('img', img);
-  
-        if (!file && img.uri.startsWith('data:image/')) {
-          console.warn(`⚠️ Imagen base64 descartada: ${img.fileName || `imagen-${i + 1}`}`);
-          continue;
-        }
-  
-        if (!file) {
-          try {
-            file = new File([img], img.fileName || `image-${i}.jpg`, {
-              type: img.mimeType || 'image/jpeg',
-            });
-          } catch (e) {
-            console.warn(`❌ No se pudo construir File para la imagen #${i}`, e);
+        for (let i = 0; i < selectedImages.length; i++) {
+          const img = selectedImages[i];
+          let file = img.file;
+          console.log('img', img);
+    
+          if (!file && img.uri.startsWith('data:image/')) {
+            console.warn(`⚠️ Imagen base64 descartada: ${img.fileName || `imagen-${i + 1}`}`);
             continue;
           }
-        }
-  
-        if (!file.type.startsWith('image/')) {
-          console.warn(`❌ Archivo no permitido (no es imagen): ${file.name}`);
-          continue;
-        }
-  
-        if (file.size > 1024 * 1024) {
-          showError(`❌ La imagen "${file.name}" supera 1 MB. Reduce su tamaño e inténtalo de nuevo.`);
-          return;
-        }
-          file = file ?? new File([img], img.fileName || `image-${i}.jpg`, {
-            type: img.mimeType || 'image/jpeg'
-          });
+    
+          if (!file) {
+            try {
+              file = new File([img], img.fileName || `image-${i}.jpg`, {
+                type: img.mimeType || 'image/jpeg',
+              });
+            } catch (e) {
+              console.warn(`❌ No se pudo construir File para la imagen #${i}`, e);
+              continue;
+            }
+          }
+    
+          if (!file.type.startsWith('image/')) {
+            console.warn(`❌ Archivo no permitido (no es imagen): ${file.name}`);
+            continue;
+          }
+    
+          if (file.size > 1024 * 1024) {
+            showError(`❌ La imagen "${file.name}" supera 1 MB. Reduce su tamaño e inténtalo de nuevo.`);
+            return;
+          }
+            file = file ?? new File([img], img.fileName || `image-${i}.jpg`, {
+              type: img.mimeType || 'image/jpeg'
+            });
 
-        formData.append('files', file);
+          formData.append('files', file);
+        }
+    
+        if (formData.getAll('files').length === 0) {
+          return showError('❌ No se ha podido subir ninguna imagen válida.');
+        }
+        
+        console.log(formData.getAll('files'));
+        
+        const uploadRes = await axios.post('https://restapart.onrender.com/api/images/upload', formData, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data',
+          },
+        });
+        
+        imageUrls = uploadRes.data;
       }
-  
-      if (formData.getAll('files').length === 0) {
-        return showError('❌ No se ha podido subir ninguna imagen válida.');
-      }
-      
-      console.log(formData.getAll('files'));
-      
-      const uploadRes = await axios.post('https://restapart.onrender.com/api/images/upload', formData, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-      
-      const imageUrls = uploadRes.data;
 
       const accommodationData = {
         rooms: parseInt(form.rooms),

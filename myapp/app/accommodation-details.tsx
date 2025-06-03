@@ -56,7 +56,9 @@ export default function AccommodationDetailsScreen() {
   }
   const [pastTenants, setPastTenants] = useState<StudentProfileDTO[]>([]);
 
-  const bannedWords = ['puta', 'gilipollas', 'cabron', 'mierda', 'idiota', 'estúpido', 'tonto']; // añade más si quieres
+  const bannedWords = ['puta', 'gilipollas', 'cabron', 'mierda', 'idiota', 
+    'estúpido', 'tonto', 'coño', 'hijo de puta', 'pendejo', 
+    'imbécil', 'maldito', 'puto', 'zorra', 'maricón', 'putita', 'putón']; 
 
   const containsBannedWord = (text: string): boolean => {
     return bannedWords.some(word => text.toLowerCase().includes(word));
@@ -264,7 +266,7 @@ const checkAlreadyLiving = async () => {
       setDescription(response.data.description);
       setImages(response.data.images || []);
       if (response.data.images && response.data.images.length > 0) {
-        setSelectedImage(`https://restapart.onrender.com/images/${response.data.images[0]}`);
+        setSelectedImage(response.data.images[0]);
       }      
       setLatitude(response.data.latitud);
       setLongitude(response.data.longitud);
@@ -437,23 +439,22 @@ const fetchPastTenants = async () => {
       <ScrollView>
       {selectedImage && (
   <>
-<TouchableOpacity onPress={() => setImageZoomVisible(true)}>
-  <Image
-    source={{ uri: selectedImage || '' }}
-    style={styles.mainImage}
-    resizeMode="cover"
-  />
-</TouchableOpacity>
-
+    <TouchableOpacity onPress={() => setImageZoomVisible(true)}>
+      <Image
+        source={{ uri: selectedImage }}
+        style={styles.mainImage}
+        resizeMode="cover"
+      />
+    </TouchableOpacity>
 
     <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.thumbnailRow}>
       {images.map((img, index) => (
-        <TouchableOpacity key={index} onPress={() => setSelectedImage(`https://restapart.onrender.com/images/${img}`)}>
+        <TouchableOpacity key={index} onPress={() => setSelectedImage(img)}>
           <Image
-            source={{ uri: `https://restapart.onrender.com/images/${img}` }}
+            source={{ uri: img }}
             style={[
               styles.thumbnail,
-              selectedImage === `https://restapart.onrender.com/images/${img}` && styles.thumbnailSelected,
+              selectedImage === img && styles.thumbnailSelected,
             ]}
           />
         </TouchableOpacity>
