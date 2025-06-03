@@ -16,7 +16,6 @@ public interface AccommodationRepository extends CrudRepository<Accommodation, I
 
     @Query("SELECT a FROM Accommodation a WHERE a.advertisement.isVisible = true")
     List<Accommodation> findVisibleAccommodations();
-
     @Query("""
         SELECT a FROM Accommodation a
         WHERE
@@ -29,8 +28,8 @@ public interface AccommodationRepository extends CrudRepository<Accommodation, I
                     a.students - (
                         SELECT COUNT(b) FROM Booking b
                         WHERE b.accommodation = a
-                        AND b.stayRange.startDate < COALESCE(:endDate, b.stayRange.startDate)
-                        AND b.stayRange.endDate > COALESCE(:startDate, b.stayRange.endDate)
+                        AND b.stayRange.startDate <= COALESCE(:endDate, b.stayRange.startDate)
+                        AND b.stayRange.endDate >= COALESCE(:startDate, b.stayRange.endDate)
                     )
                 ) >= :students
             )
@@ -43,7 +42,7 @@ public interface AccommodationRepository extends CrudRepository<Accommodation, I
         @Param("students") Integer students
     );
 
-   
+
 
     @Query("SELECT DISTINCT b.student FROM Booking b WHERE b.accommodation.id = :accommodationId " +
         "AND b.stayRange.startDate < :endDate " + 
