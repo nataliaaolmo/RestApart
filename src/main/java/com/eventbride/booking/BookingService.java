@@ -31,11 +31,6 @@ public class BookingService {
         return bookingRepository.findById(id);
     }
 
-    @Transactional(readOnly = true)
-    List<Booking> getBookingsByStudentId(Integer currentStudentId) {
-        return bookingRepository.findBookingsByStudent(currentStudentId);
-    }
-
     @Transactional
     public Booking save(Booking booking) throws DataAccessException {
         return bookingRepository.save(booking);

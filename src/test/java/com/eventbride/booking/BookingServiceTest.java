@@ -74,31 +74,6 @@ public class BookingServiceTest {
     }
 
     @Test
-    void testGetBookingsByStudentId_existingStudent_shouldReturnBookings() {
-        Booking b1 = new Booking();
-        b1.setId(1);
-        Booking b2 = new Booking();
-        b2.setId(2);
-
-        when(bookingRepository.findBookingsByStudent(10)).thenReturn(List.of(b1, b2));
-
-        List<Booking> result = bookingService.getBookingsByStudentId(10);
-
-        assertEquals(2, result.size());
-        verify(bookingRepository).findBookingsByStudent(10);
-    }
-
-    @Test
-    void testGetBookingsByStudentId_noBookings_shouldReturnEmptyList() {
-        when(bookingRepository.findBookingsByStudent(999)).thenReturn(List.of());
-
-        List<Booking> result = bookingService.getBookingsByStudentId(999);
-
-        assertTrue(result.isEmpty());
-        verify(bookingRepository).findBookingsByStudent(999);
-    }
-
-    @Test
     void testSave_validBooking_shouldReturnSavedBooking() {
         Booking booking = new Booking();
         booking.setId(10);
