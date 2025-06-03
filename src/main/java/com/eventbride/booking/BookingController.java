@@ -113,7 +113,16 @@ public class BookingController {
         newBooking.setStudent(currentStudent);
         newBooking.setBookingDate(LocalDate.now());
         newBooking.setStayRange(booking.getStayRange());
-        newBooking.setIsVerified(false);
+        List<Booking> bookings= bookingService.findAllByAccommodation(accommodation);
+        List<Student> students = bookings.stream()
+        .map(Booking::getStudent)
+        .distinct()
+        .collect(Collectors.toList());
+        for (Student student : students) {
+            if(student.getId() == currentStudent.getId()) {
+                newBooking.setIsVerified(true);
+            }
+        }
         
         long daysBetween = java.time.temporal.ChronoUnit.DAYS.between(startDate, endDate);
         long monthsBetween = java.time.temporal.ChronoUnit.MONTHS.between(startDate, endDate);

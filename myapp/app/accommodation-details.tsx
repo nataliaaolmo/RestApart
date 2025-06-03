@@ -74,9 +74,7 @@ export default function AccommodationDetailsScreen() {
   }
   
   function toBackendFormatIfNeeded(date: string): string {
-    // Si ya viene en formato yyyy-mm-dd, no cambia nada
     if (/^\d{4}-\d{2}-\d{2}$/.test(date)) return date;
-    // Si viene como dd-mm-yyyy, lo convertimos
     const [dd, mm, yyyy] = date.split('-');
     return `${yyyy}-${mm}-${dd}`;
   }  
@@ -110,7 +108,7 @@ const checkAlreadyLiving = async () => {
     if (latitude && longitude) {
       fetchZoneFromCoordinates(latitude, longitude);
     }
-  }, [latitude, longitude, stayRange]);
+  }, [latitude, longitude, stayRange, averageRating]);
 
   useEffect(() => {
     const fetchCurrentUser = async () => {
@@ -219,9 +217,9 @@ const checkAlreadyLiving = async () => {
     }
 
     if (containsBannedWord(text)) {
-    showFilterError('Tu comentario contiene palabras inapropiadas. Por favor, modifícalo.');
-    return;
-  }
+      showFilterError('Tu comentario contiene palabras inapropiadas. Por favor, modifícalo.');
+      return;
+    }
     
     try {
       const token = await storage.getItem('jwt');
@@ -236,7 +234,16 @@ const checkAlreadyLiving = async () => {
       const response = await api.post(`/comments/accomodations/${id}`, commentData, {
         headers: { Authorization: `Bearer ${token}` }
       });
-      setComments([...comments, response.data]);
+      
+      // Actualizar la lista de comentarios
+      const updatedComments = [...comments, response.data];
+      setComments(updatedComments);
+      
+      // Calcular la nueva media manualmente
+      const totalRating = updatedComments.reduce((sum, comment) => sum + comment.rating, 0);
+      const newAverage = totalRating / updatedComments.length;
+      setAverageRating(newAverage);
+
       setCommentModalVisible(false);
       setText('');
       setRating(0);
@@ -417,7 +424,9 @@ const fetchPastTenants = async () => {
         </TouchableOpacity>
         <Text style={styles.titleBar}>{title}</Text>
         {typeof averageRating === 'number' ? (
-          <Text style={styles.rating}>⭐ {averageRating.toFixed(1)} / 5</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Text style={styles.rating}>⭐ {averageRating.toFixed(1)} / 5</Text>
+          </View>
         ) : (
           <Text style={styles.rating}>⭐ Sin valoraciones</Text>
         )}

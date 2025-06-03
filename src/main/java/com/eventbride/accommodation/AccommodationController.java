@@ -1,7 +1,9 @@
 package com.eventbride.accommodation;
 
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -241,7 +243,8 @@ public class AccommodationController {
                     .orElseThrow(() -> new RuntimeException("Estudiante no encontrado"));
                 List<Booking> bookings = bookingService.findAllByStudent(student);
                 for (Booking booking : bookings) {
-                    if (booking.getAccommodation().getId() == accommodationId && existingAccommodationOptional.get().getVerifications() < existingAccommodationOptional.get().getStudents() + 1) {
+                    if (booking.getAccommodation().getId() == accommodationId && existingAccommodationOptional.get().getVerifications() 
+                    < existingAccommodationOptional.get().getStudents() + 1) {
                         existingAccommodationOptional.get().setVerifications(existingAccommodationOptional.get().getVerifications() + 1);
                         booking.setIsVerified(true);
                         bookingService.save(booking);
@@ -253,7 +256,8 @@ public class AccommodationController {
                     .orElseThrow(() -> new RuntimeException("Propietario no encontrado"));
                 List<Accommodation> accommodations = accommodationService.getAccommodationsByOwner(owner.getId());
                 for (Accommodation accommodation : accommodations) {
-                    if (accommodation.getId() == accommodationId && existingAccommodationOptional.get().getVerifications() < existingAccommodationOptional.get().getStudents() + 1) {
+                    if (accommodation.getId() == accommodationId && existingAccommodationOptional.get().getVerifications() 
+                    < existingAccommodationOptional.get().getStudents() + 1) {
                         existingAccommodationOptional.get().setVerifications(existingAccommodationOptional.get().getVerifications() + 1);
                         break;
                     }
@@ -275,9 +279,13 @@ public class AccommodationController {
             }
 
             Accommodation accommodation = existingAccommodationOptional.get();
-
+            List<Booking> bookings= bookingService.findAllByAccommodation(accommodation);
+            Set<Student> pastTenants= new HashSet<>();
+            for (Booking booking : bookings) {
+                pastTenants.add(booking.getStudent());
+            }
             if (!accommodation.getIsVerified() &&
-                accommodation.getVerifications() == accommodation.getStudents() + 1) {
+                accommodation.getVerifications() == pastTenants.size() + 1) {
                 accommodation.setIsVerified(true);
                 accommodationService.save(accommodation);
             }
