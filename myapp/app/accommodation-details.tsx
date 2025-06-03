@@ -400,7 +400,6 @@ const fetchPastTenants = async () => {
   const handleUserPressOldTenants = async (userId: number) => {
     try {
       console.log('User ID:', userId);
-      // Asumimos que todos los pasados inquilinos tienen cuenta de usuario
       setSelectedUserId(userId);
       setSelectedUsername('tenant'); // Establecemos un valor no nulo para indicar que tiene cuenta
       setActionModalVisible(true);
@@ -591,7 +590,7 @@ const fetchPastTenants = async () => {
         {tenants.map((tenant, index) => (
           <TouchableOpacity
             key={index}
-            onPress={() => handleUserPress(tenant.id, tenant.username ?? null)}
+            onPress={() => handleUserPress(tenant.userId, tenant.username)}
           >
             <Image
               source={{ uri: `https://restapart.onrender.com/images/${tenant.photo}` }}
@@ -848,7 +847,7 @@ const fetchPastTenants = async () => {
             <Text style={styles.modalTitle}>¿Qué deseas hacer?</Text>
 
             {/* Mensaje si no tiene cuenta */}
-            {!selectedUsername && (
+            {!selectedUserId && (
               <Text style={styles.informativeTag}>🔒 Este estudiante no tiene cuenta. Solo puedes ver su perfil.</Text>
             )}
 
@@ -866,7 +865,7 @@ const fetchPastTenants = async () => {
               <Text style={styles.modalButtonText}>Ver perfil</Text>
             </TouchableOpacity>
 
-            {selectedUsername && (
+            {selectedUserId && (
               <TouchableOpacity
                 style={styles.modalButton}
                 onPress={() => {
