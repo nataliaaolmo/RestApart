@@ -51,7 +51,6 @@ export default function LoginScreen() {
       setLoading(true);
       const response = await api.post("/users/auth/login", form);
       
-      // El backend puede devolver el token en diferentes formatos
       const jwt = response.data.token || response.data.jwt;
       const name = response.data.name || form.username;
       const role = response.data.role || '';
@@ -63,19 +62,15 @@ export default function LoginScreen() {
         return;
       }
 
-      // Guardar los datos necesarios
       await storage.setItem("jwt", jwt);
       await storage.setItem("name", name);
       if (role) {
         await storage.setItem("role", role);
       }
 
-      // Importante: limpiar cualquier filtro guardado para evitar problemas
       await storage.removeItem("accommodationFilters");
 
-      // Redireccionar al usuario
       if (Platform.OS === 'web') {
-        // En web, usamos un pequeño delay para asegurar que los datos se guarden
         setTimeout(() => {
           router.replace("/(tabs)/welcome-screen");
         }, 100);
@@ -85,7 +80,6 @@ export default function LoginScreen() {
     } catch (error: any) {
       console.error("Error en login:", error);
       
-      // Manejar diferentes tipos de errores
       if (error.response && error.response.status === 401) {
         setError(i18n.t("invalidCredentials"));
   } else {

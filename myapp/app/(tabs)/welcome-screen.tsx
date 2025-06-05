@@ -130,7 +130,6 @@ export default function WelcomeScreen() {
       const storedName = await storage.getItem('name');
       
       if (!token) {
-        console.log("No hay token disponible, redirigiendo a login");
         router.replace('/login');
         return;
       }
@@ -163,7 +162,6 @@ export default function WelcomeScreen() {
         await fetchSystemStatus();
       }
 
-      // Cargar datos específicos según el rol
       if (response.data.user.role === 'STUDENT') {
         const savedFilters = await storage.getItem('accommodationFilters');
         if (savedFilters) {
@@ -378,13 +376,10 @@ function formatDateToISO(dateString: string | null): string | null {
         radius: locationConfirmed ? parseFloat(radius.toString()) : null,              
       };
 
-      console.log('params', params);
-
       const response = await api.get('/accommodations/search', {
         params,
         headers: { Authorization: `Bearer ${token}` },
       });
-      console.log('accommodations filtered', response.data);
       setAccommodations(Array.isArray(response.data) ? response.data : []);
       fetchAverageRatings(response.data);
     } catch (error) {
@@ -617,13 +612,10 @@ function formatDateToISO(dateString: string | null): string | null {
           </TouchableOpacity>
           </View>
 
-          {/* Error de filtro */}
-
-          {/* Paso 2: filtros, solo si hay coordenadas */}
           {locationConfirmed && (
             <>
               <View style={styles.filterBlock}>
-              <Text style={styles.sectionTitle}>💰 Presupuesto</Text>
+              <Text style={styles.sectionTitle}> Presupuesto</Text>
               <Text style={styles.label}>Precio máximo por mes (€)</Text>
               <TextInput
                 style={styles.input}
@@ -634,7 +626,7 @@ function formatDateToISO(dateString: string | null): string | null {
               </View>
 
               <View style={styles.filterBlock}>
-              <Text style={styles.sectionTitle}>📆 Fechas</Text>
+              <Text style={styles.sectionTitle}> Fechas</Text>
               <Text style={styles.label}>Fechas de estancia</Text>
               <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
                 <TextInput
@@ -664,7 +656,7 @@ function formatDateToISO(dateString: string | null): string | null {
               </View>
 
               <View style={styles.filterBlock}>
-              <Text style={styles.sectionTitle}>🔧 Servicios y preferencias</Text>
+              <Text style={styles.sectionTitle}> Servicios y preferencias</Text>
               <View style={styles.switchRow}><Text style={styles.label}>Wifi</Text><Switch value={wifi} onValueChange={setWifi} /></View>
               <View style={styles.switchRow}><Text style={styles.label}>Fácil aparcar</Text><Switch value={isEasyParking} onValueChange={setIsEasyParking} /></View>
               </View>

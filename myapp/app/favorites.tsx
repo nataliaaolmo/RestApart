@@ -22,14 +22,12 @@ export default function FavoritesScreen() {
     }
   };
 
-  // Se ejecuta cada vez que la pantalla obtiene el foco
   useFocusEffect(
     React.useCallback(() => {
       loadFavorites();
     }, [])
   );
 
-  // Listener para cambios en el estado de la app
   useEffect(() => {
     const subscription = AppState.addEventListener('change', nextAppState => {
       if (nextAppState === 'active') {
@@ -49,7 +47,6 @@ export default function FavoritesScreen() {
         headers: { Authorization: `Bearer ${token}` },
       });
       
-      // Filtrar solo los alojamientos que están en favoritos
       const filteredAccommodations = response.data.filter((acc: any) => 
         favoriteIds.includes(acc.id)
       );

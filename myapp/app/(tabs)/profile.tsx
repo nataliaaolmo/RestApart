@@ -2,11 +2,10 @@ import React, { useEffect, useState } from 'react';
 import { View, Text, StyleSheet, Image, ScrollView, TextInput, TouchableOpacity, Alert, Modal, Platform, ActivityIndicator, Switch } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import api from '../../app/api';
-import { RouteProp, useRoute, useNavigation } from '@react-navigation/native';
+import { useRoute, useNavigation } from '@react-navigation/native';
 import { router } from 'expo-router';
 import { useLayoutEffect } from 'react';
 import Icon from 'react-native-vector-icons/Feather';
-import StarRating from '@/components/StarRating';
 import { RecaptchaVerifier, signInWithPhoneNumber } from 'firebase/auth';
 import { auth } from '@/components/firebaseConfig';
 import storage from '../../utils/storage';
@@ -35,7 +34,6 @@ export default function ProfileScreen() {
 
   const [userData, setUserData] = useState<UserData | null>(null);
   const [editing, setEditing] = useState(false);
-  type ProfileRouteProp = RouteProp<{ Profile: { id: string } }, 'Profile'>;
   const route = useRoute();
   const isViewingOwnProfile = !route?.params || !('id' in route.params);
   const userId = isViewingOwnProfile ? undefined : parseInt((route.params as any).id, 10);  
@@ -155,7 +153,6 @@ export default function ProfileScreen() {
         const response = await api.get(`/users/${id}/get-student`, {
           headers: { Authorization: `Bearer ${token}` }
         });
-        console.log('Student ID:', response.data);
         setStudentId(response.data.id ?? null);
       } catch (error) {
         console.error('Error al obtener el id del estudiante', error);
@@ -214,7 +211,6 @@ export default function ProfileScreen() {
       const res = await api.get(`/bookings/${id}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
-      console.log('Bookings:', res.data);
       setBookings(res.data);
     } catch (error) {
       console.error('Error al obtener las reservas:', error);
@@ -222,10 +218,9 @@ export default function ProfileScreen() {
   };
 
     const showFilterError = (msg: string) => {
+      setFilterError(msg);
       if (Platform.OS === 'web') {
-        setFilterError(msg);
-      } else {
-        Alert.alert('Error en los filtros', msg);
+        setTimeout(() => setFilterError(''), 4000);
       }
     };
 
@@ -252,10 +247,10 @@ export default function ProfileScreen() {
           await api.patch(`/accommodations/${accommodationId}/verify-accommodation`, {}, {
             headers: { Authorization: `Bearer ${token}` },
           });
-          showFilterError('✅ Alojamiento marcado como verificado');
+          showFilterError('Alojamiento marcado como verificado');
         } catch (err: any) {
           console.error('Verificación global fallida:', err);
-          showFilterError('❌ Aún faltan verificaciones de otros usuarios');
+          showFilterError('Aún faltan verificaciones de otros usuarios');
         }
       };
 
@@ -283,6 +278,21 @@ export default function ProfileScreen() {
   
     const makeComment = async () => {
       try {
+        if (!text.trim()) {
+          showFilterError('El comentario no puede estar vacío');
+          return;
+        }
+
+        if (rating === 0) {
+          showFilterError('Debes seleccionar una valoración');
+          return;
+        }
+
+        if (containsBannedWord(text)) {
+          showFilterError('El comentario contiene palabras no permitidas');
+          return;
+        }
+
         const token = await storage.getItem('jwt');
         const formData = new FormData();
   
@@ -298,10 +308,11 @@ export default function ProfileScreen() {
         setCommentModalVisible(false);
         setText('');
         setRating(0);
+        showFilterError('Comentario enviado correctamente');
   
       } catch (error) {
-        console.error('Error al crear alojamiento:', error);
-        Alert.alert('Error', 'No se pudo crear el alojamiento');
+        console.error('Error al crear comentario:', error);
+        showFilterError('No se pudo enviar el comentario');
       }
     }; 
   
@@ -316,24 +327,19 @@ export default function ProfileScreen() {
       base64: false,
     });
   
-    console.log('ImagePicker result:', result);
-  
     if (!result.canceled && result.assets.length > 0) {
       const imageAsset = result.assets[0];
   
       const formData = new FormData();
   
       if (imageAsset.file) {
-        console.log('Using imageAsset.file directly');
         formData.append('file', imageAsset.file);
       } else {
         const localUri = imageAsset.uri;
         const filename = localUri.split('/').pop();
         const match = /\.(\w+)$/.exec(filename || '');
         const type = match ? `image/${match[1]}` : `image`;
-  
-        console.log('Using imageAsset.uri:', localUri);
-  
+
         formData.append('file', {
           uri: localUri,
           name: filename,
@@ -400,6 +406,7 @@ export default function ProfileScreen() {
     if (!userData) return;
     if (saving) return;
     setSaving(true);
+    setFilterError('');
   
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const phoneRegex = /^[0-9]{7,15}$/;
@@ -409,6 +416,22 @@ export default function ProfileScreen() {
       setSaving(false);
       return;
     }
+
+    if (userData.role === 'OWNER') {
+      const age = calculateAge(userData.dateOfBirth);
+    
+      if (userData.experienceYears == null) {
+        showFilterError('Debes especificar los años de experiencia');
+        setSaving(false);
+        return;
+      }
+      if (userData.experienceYears > age) {
+        showFilterError('Los años de experiencia no pueden ser mayores que tu edad');
+        setSaving(false);
+        return;
+      }
+    }    
+
     if (!emailRegex.test(userData.email)) {
       showFilterError('Error. Email no válido');
       setSaving(false);
@@ -462,7 +485,6 @@ export default function ProfileScreen() {
         isSmoker: userData.role === 'STUDENT' ? userData.isSmoker : null,
 
       };
-      console.log('Updated user data:', updatedUser);
       const res = await api.put(`/users/${userData.id}`, updatedUser, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -470,10 +492,12 @@ export default function ProfileScreen() {
       setUserData(res.data);
       setEditing(false);
       fetchProfile();
-      Alert.alert('Perfil actualizado con éxito');
+      showFilterError('Perfil actualizado con éxito');
     } catch (error) {
       console.error('Error actualizando perfil:', error);
-      Alert.alert('Error al actualizar perfil');
+      showFilterError('Error al actualizar perfil');
+    } finally {
+      setSaving(false);
     }
   };
 
@@ -508,11 +532,6 @@ export default function ProfileScreen() {
   const fullName = `${userData.firstName} ${userData.lastName}`;
   const screenTitle = userId ? `Perfil de ${fullName}` : 'Tu perfil';
 
-  const handleLogout = async () => {
-    await storage.clear();
-    router.replace('/');
-  };
-
   return (
     <ScrollView style={styles.container}>
       <TouchableOpacity disabled={!editing} onPress={handleImagePick}>
@@ -525,14 +544,24 @@ export default function ProfileScreen() {
         />
       </TouchableOpacity>
 
+      {filterError !== '' && (
+        <View style={[styles.errorContainer, { 
+          backgroundColor: filterError.includes('éxito') ? 'rgba(144, 238, 144, 0.1)' : 'rgba(255, 0, 0, 0.1)',
+          borderColor: filterError.includes('éxito') ? '#90EE90' : '#E63946',
+          margin: 10,
+          padding: 10,
+          borderRadius: 8,
+          borderWidth: 1
+        }]}>
+          <Text style={[styles.errorText, { 
+            color: filterError.includes('éxito') ? '#90EE90' : '#E63946'
+          }]}>{filterError}</Text>
+        </View>
+      )}
+
       {!editing && (
         <>
           <Text style={styles.screenTitle}>{screenTitle}</Text>
-          {Platform.OS === 'web' && filterError !== '' && (
-            <Text style={{ color: 'red', textAlign: 'center', marginBottom: 10 }}>
-              {filterError}
-            </Text>
-          )}
         </>
       )}
 
@@ -903,7 +932,59 @@ export default function ProfileScreen() {
         animationType="slide"
         onRequestClose={() => setCommentModalVisible(false)}
       >
-        {/* ... código del modal ... */}
+        <View style={styles.modalBackground2}>
+          <View style={[styles.modalBox2, { backgroundColor: '#1B263B' }]}>
+            <Text style={[styles.modalTitle2, { color: '#E0E1DD' }]}>Añadir comentario</Text>
+            
+            <Text style={[styles.modalLabel, { color: '#E0E1DD' }]}>Valoración</Text>
+            <View style={{ flexDirection: 'row', justifyContent: 'center', marginBottom: 15 }}>
+              {[1, 2, 3, 4, 5].map((star) => (
+                <TouchableOpacity
+                  key={star}
+                  onPress={() => setRating(star)}
+                >
+                  <Text style={{ fontSize: 30, color: star <= rating ? '#FFD700' : '#ccc' }}>
+                    ★
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+
+            <Text style={[styles.modalLabel, { color: '#E0E1DD' }]}>Comentario</Text>
+            <TextInput
+              style={[styles.input2, { 
+                backgroundColor: '#162A40',
+                color: '#E0E1DD',
+                borderColor: '#415A77'
+              }]}
+              value={text}
+              onChangeText={setText}
+              placeholder="Escribe tu comentario..."
+              placeholderTextColor="#AFC1D6"
+              multiline
+              numberOfLines={4}
+            />
+
+            <View style={styles.modalButtons}>
+              <TouchableOpacity
+                style={[styles.modalButton2, { backgroundColor: '#1B9AAA' }]}
+                onPress={makeComment}
+              >
+                <Text style={styles.modalButtonText2}>Enviar</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalButtonCancel, { backgroundColor: '#E63946' }]}
+                onPress={() => {
+                  setCommentModalVisible(false);
+                  setText('');
+                  setRating(0);
+                }}
+              >
+                <Text style={styles.modalButtonText2}>Cancelar</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
       </Modal>
     </ScrollView>
   );

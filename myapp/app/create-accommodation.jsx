@@ -137,7 +137,6 @@ export default function CreateAccommodation() {
 
   const handleSubmit = async () => {
     setErrorMessage('');
-    console.log('Form:', form);
     if (!form.title || !form.rooms || !form.beds || !form.pricePerMonth || !form.pricePerDay || !form.startDate || !form.endDate || !form.students || !buildFullAddress()) {
       showError('Por favor, completa todos los campos obligatorios.');
       return;
@@ -200,10 +199,9 @@ export default function CreateAccommodation() {
         for (let i = 0; i < selectedImages.length; i++) {
           const img = selectedImages[i];
           let file = img.file;
-          console.log('img', img);
     
           if (!file && img.uri.startsWith('data:image/')) {
-            console.warn(`⚠️ Imagen base64 descartada: ${img.fileName || `imagen-${i + 1}`}`);
+            console.warn(` Imagen base64 descartada: ${img.fileName || `imagen-${i + 1}`}`);
             continue;
           }
     
@@ -213,18 +211,18 @@ export default function CreateAccommodation() {
                 type: img.mimeType || 'image/jpeg',
               });
             } catch (e) {
-              console.warn(`❌ No se pudo construir File para la imagen #${i}`, e);
+              console.warn(`No se pudo construir File para la imagen #${i}`, e);
               continue;
             }
           }
     
           if (!file.type.startsWith('image/')) {
-            console.warn(`❌ Archivo no permitido (no es imagen): ${file.name}`);
+            console.warn(`Archivo no permitido (no es imagen): ${file.name}`);
             continue;
           }
     
           if (file.size > 1024 * 1024) {
-            showError(`❌ La imagen "${file.name}" supera 1 MB. Reduce su tamaño e inténtalo de nuevo.`);
+            showError(`La imagen "${file.name}" supera 1 MB. Reduce su tamaño e inténtalo de nuevo.`);
             return;
           }
             file = file ?? new File([img], img.fileName || `image-${i}.jpg`, {
@@ -235,10 +233,9 @@ export default function CreateAccommodation() {
         }
     
         if (formData.getAll('files').length === 0) {
-          return showError('❌ No se ha podido subir ninguna imagen válida.');
+          return showError(' No se ha podido subir ninguna imagen válida.');
         }
         
-        console.log(formData.getAll('files'));
         
         const uploadRes = await axios.post('https://restapart.onrender.com/api/images/upload', formData, {
           headers: {
@@ -376,7 +373,7 @@ export default function CreateAccommodation() {
 
 {latLng && (
   <Text style={{ color: '#90EE90', marginTop: 10 }}>
-    📍 Ubicación encontrada: {latLng.lat.toFixed(5)}, {latLng.lon.toFixed(5)}
+     Ubicación encontrada: {latLng.lat.toFixed(5)}, {latLng.lon.toFixed(5)}
   </Text>
 )}
 <Text style={styles.section}>Detalles de alojamiento</Text>

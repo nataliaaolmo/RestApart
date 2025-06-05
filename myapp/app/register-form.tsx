@@ -107,16 +107,19 @@ export default function RegisterFormScreen() {
         showMessage('Error', 'El campo de años de experiencia es obligatorio.');
         return;
       }
-    }
 
-    // Validación de formato de fecha
+      const age = calculateAge(form.dateOfBirth);
+      if (parseInt(form.experienceYears) > age) {
+        showMessage('Error', 'Los años de experiencia no pueden ser mayores que tu edad.');
+        return;
+      }
+    }
     const formattedDate = convertToBackendFormat(form.dateOfBirth);
     if (!formattedDate) {
       showMessage('Error', 'El formato de la fecha de nacimiento es incorrecto. Usa DD-MM-YYYY.');
       return;
     }
 
-    // Validación de longitudes
     if (form.username.length > 20) {
       showMessage('Error',`El nombre de usuario no puede superar los 50 caracteres`)
       return
@@ -137,7 +140,6 @@ export default function RegisterFormScreen() {
       return
     }
   
-    // Validación de caracteres permitidos
     const isOnlyLetters = (value: string) => {
       return /^[A-Za-zÁÉÍÓÚáéíóúñÑ\s]+$/.test(value);
     };  
@@ -191,28 +193,25 @@ export default function RegisterFormScreen() {
       return;
     }
 
-    // Validación de email
+
     const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailPattern.test(form.email)) {
       showMessage('Error',"El correo electrónico no es válido")
       return
     }
 
-    // Validación de teléfono
     const telephonePattern = /^[0-9]{9}$/
     if (!telephonePattern.test(form.telephone)) {
       showMessage('Error',"El teléfono debe tener 9 numeros.")
       return
     }
 
-    // Validación de rol
     if (!role || typeof role !== 'string' || (role !== 'STUDENT' && role !== 'OWNER')) {
       showMessage('Error', `Rol inválido: ${role}. Debe ser STUDENT o OWNER`);
       console.error('Rol inválido en el formulario:', role);
       return;
     }
 
-    // Si todas las validaciones pasan, procedemos con el registro
     try {
       const requestData: any = {
         username: form.username,
@@ -268,16 +267,13 @@ export default function RegisterFormScreen() {
           return;
         }
 
-        // Guardar el token y datos del usuario
         await storage.setItem('jwt', jwt);
         await storage.setItem('name', form.firstName);
         await storage.setItem('role', role as string);
         await storage.removeItem("accommodationFilters");
 
-        // Configurar el token en las cabeceras de la API
         api.defaults.headers.common['Authorization'] = `Bearer ${jwt}`;
 
-        // Esperar un momento para asegurar que el token se ha guardado
         await new Promise(resolve => setTimeout(resolve, 500));
 
         if (Platform.OS === 'web') {
@@ -626,3 +622,17 @@ const styles = StyleSheet.create({
     ...(Platform.OS === 'web' ? { appearance: 'none' } : {}),
   },
 });
+
+function calculateAge(dateStr: string): number {
+  const [day, month, year] = dateStr.split('-').map(Number);
+  const birthDate = new Date(year, month - 1, day);
+  const today = new Date();
+  let age = today.getFullYear() - birthDate.getFullYear();
+  const hasHadBirthdayThisYear =
+    today.getMonth() > birthDate.getMonth() ||
+    (today.getMonth() === birthDate.getMonth() && today.getDate() >= birthDate.getDate());
+  if (!hasHadBirthdayThisYear) {
+    age--;
+  }
+  return age;
+}

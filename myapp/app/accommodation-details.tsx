@@ -1,4 +1,3 @@
-// AccommodationDetailsScreen.tsx
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, StyleSheet, Image, ScrollView, FlatList,
@@ -11,7 +10,6 @@ import api from './api';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import StarRating from '@/components/StarRating';
-import Icon from 'react-native-vector-icons/FontAwesome';
 import storage from '../utils/storage';
 
 export default function AccommodationDetailsScreen() {
@@ -207,13 +205,11 @@ const checkAlreadyLiving = async () => {
   const makeComment = async () => {
     setFilterError('');
     if (rating < 1 || rating > 5) {
-      console.log('Puntuación inválida:', rating);
       showFilterError('Puntuación inválida. Selecciona una puntuación entre 1 y 5 estrellas.');
       return;
     }
     
     if (text.trim().length < 5) {
-      console.log('Comentario demasiado corto:', text);
       showFilterError('Comentario demasiado corto. Por favor, escribe un comentario más detallado.');
       return;
     }
@@ -237,11 +233,9 @@ const checkAlreadyLiving = async () => {
         headers: { Authorization: `Bearer ${token}` }
       });
       
-      // Actualizar la lista de comentarios
       const updatedComments = [...comments, response.data];
       setComments(updatedComments);
       
-      // Calcular la nueva media manualmente
       const totalRating = updatedComments.reduce((sum, comment) => sum + comment.rating, 0);
       const newAverage = totalRating / updatedComments.length;
       setAverageRating(newAverage);
@@ -301,7 +295,6 @@ const fetchPastTenants = async () => {
       headers: { Authorization: `Bearer ${token}` },
     });
     setPastTenants(response.data);
-    console.log('Past tenants:', response.data);
   } catch (error) {
     console.error('Error al cargar el historial de inquilinos', error);
   }
@@ -320,7 +313,6 @@ const fetchPastTenants = async () => {
         },        
         headers: { Authorization: `Bearer ${token}` },
       });
-      console.log('Tenants:', response.data);
       setTenants(response.data);
     } catch (err) {
       console.error('Error cargando inquilinos', err);
@@ -361,18 +353,15 @@ const fetchPastTenants = async () => {
   
       const totalPrice = Math.round(basePrice * 1.02 * 100) / 100;
 
-      // Guardamos información relevante para recuperarla después del pago con PayPal
       await storage.session.setItem("acc_id", id as string);
       await storage.session.setItem("startDate", toBackendFormatIfNeeded(range.startDate));
       await storage.session.setItem("endDate", toBackendFormatIfNeeded(range.endDate));
 
-      // Crear el returnUrl teniendo en cuenta si es web o nativo
       let returnUrl = '';
       if (Platform.OS === 'web') {
         const baseUrl = window.location.origin || 'http://localhost:8081';
         returnUrl = `${baseUrl}/payment-success?id=${id}&startDate=${toBackendFormatIfNeeded(range.startDate)}&endDate=${toBackendFormatIfNeeded(range.endDate)}`;
       } else {
-        // En nativo usamos un esquema URI personalizado
         returnUrl = `exp://payment-success?id=${id}&startDate=${toBackendFormatIfNeeded(range.startDate)}&endDate=${toBackendFormatIfNeeded(range.endDate)}`;
       }
 
@@ -398,8 +387,6 @@ const fetchPastTenants = async () => {
   };
 
   const handleUserPress = (userId: number, username: string | null = null) => {
-    console.log('User ID:', userId);
-    console.log('Username:', username);
     setSelectedUserId(userId);
     setSelectedUsername(username);
     setActionModalVisible(true);
@@ -408,9 +395,8 @@ const fetchPastTenants = async () => {
 
   const handleUserPressOldTenants = async (userId: number) => {
     try {
-      console.log('User ID:', userId);
       setSelectedUserId(userId);
-      setSelectedUsername('tenant'); // Establecemos un valor no nulo para indicar que tiene cuenta
+      setSelectedUsername('tenant'); 
       setActionModalVisible(true);
       setFilterError('');
     } catch (error) {
@@ -441,7 +427,7 @@ const fetchPastTenants = async () => {
   <>
     <TouchableOpacity onPress={() => setImageZoomVisible(true)}>
       <Image
-        source={{ uri: selectedImage }}
+        source={{ uri: selectedImage ? `https://restapart.onrender.com/images/${selectedImage}` : '' }}
         style={styles.mainImage}
         resizeMode="cover"
       />
@@ -451,7 +437,7 @@ const fetchPastTenants = async () => {
       {images.map((img, index) => (
         <TouchableOpacity key={index} onPress={() => setSelectedImage(img)}>
           <Image
-            source={{ uri: img }}
+            source={{ uri: `https://restapart.onrender.com/images/${img}` }}
             style={[
               styles.thumbnail,
               selectedImage === img && styles.thumbnailSelected,
@@ -619,7 +605,6 @@ const fetchPastTenants = async () => {
           </Text>
           <ScrollView horizontal showsHorizontalScrollIndicator={false}>
             {pastTenants.map((tenant, index) => (
-              console.log(tenant),
           <TouchableOpacity
             key={index}
             onPress={() => handleUserPressOldTenants(tenant.userId?? null)}
@@ -837,7 +822,7 @@ const fetchPastTenants = async () => {
 >
   <View style={styles.zoomContainer}>
     <Image
-      source={{ uri: selectedImage || '' }}
+      source={{ uri: selectedImage ? `https://restapart.onrender.com/images/${selectedImage}` : '' }}
       style={styles.zoomedImage}
       resizeMode="contain"
     />
@@ -855,8 +840,6 @@ const fetchPastTenants = async () => {
         <View style={styles.modalBackground}>
           <View style={styles.modalBox}>
             <Text style={styles.modalTitle}>¿Qué deseas hacer?</Text>
-
-            {/* Mensaje si no tiene cuenta */}
             {!selectedUserId && (
               <Text style={styles.informativeTag}>🔒 Este estudiante no tiene cuenta. Solo puedes ver su perfil.</Text>
             )}

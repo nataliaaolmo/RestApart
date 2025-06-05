@@ -54,11 +54,6 @@ export default function EditAccommodation() {
     const [dd, mm, yyyy] = dateStr.split('-');
     return `${yyyy}-${mm.toString().padStart(2, '0')}-${dd.toString().padStart(2, '0')}`;
   }
-  
-  function formatToSpanish(dateStr: string): string {
-    const [yyyy, mm, dd] = dateStr.split('-');
-    return `${dd}-${mm}-${yyyy}`;
-  }  
 
   const handleChange = (name: string, value: string | boolean) => {
     setForm(prev => ({ ...prev, [name]: value }));
@@ -262,8 +257,6 @@ if (!form.title || !form.rooms || !form.beds || !form.pricePerDay || !form.price
         images: imageUrls,
       };
 
-      console.log('Datos del alojamiento:', accommodationData);
-
       await api.put(`/accommodations/${id}`, accommodationData,{
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -325,7 +318,7 @@ if (!form.title || !form.rooms || !form.beds || !form.pricePerDay || !form.price
   style={styles.button}
   onPress={async () => {
     if (!isValidAddress(buildFullAddress())) {
-      setAddressWarning('⚠️ Dirección inválida. Ej: "Calle Real 10, Sevilla, España"');
+      setAddressWarning('Dirección inválida. Ej: "Calle Real 10, Sevilla, España"');
       return;
     }
     const coords = await fetchLatLng(buildFullAddress());

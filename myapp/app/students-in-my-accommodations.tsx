@@ -63,7 +63,6 @@ export default function StudentsInMyAccommodations() {
 
       if (res.data && Array.isArray(res.data)) {
         setAccommodations(res.data);
-        // Esperar a que se complete la carga de estudiantes antes de continuar
         await Promise.all(res.data.map(acc => fetchStudents(acc)));
       } else {
         console.error('Formato de respuesta inválido:', res.data);
@@ -146,14 +145,12 @@ export default function StudentsInMyAccommodations() {
       } else {
         Alert.alert('Error', 'No se pudieron cargar los estudiantes. Por favor, inténtalo de nuevo.');
       }
-      // Inicializar con array vacío en caso de error
       setStudentMap(prev => ({ ...prev, [accommodation.id]: [] }));
       setBookingMap(prev => ({ ...prev, [accommodation.id]: {} }));
     }
   };
 
   const registerStudentWithoutAccount = async () => {
-    // Validaciones de campos requeridos
     if (!selectedAccommodationId || !startDate || !endDate || !firstName || !lastName) {
       if (Platform.OS === 'web') {
         setFilterError('Por favor, rellena todos los campos obligatorios.');
@@ -162,8 +159,6 @@ export default function StudentsInMyAccommodations() {
       }
       return;
     }
-
-    // Validar formato de fechas
     const dateRegex = /^\d{2}-\d{2}-\d{4}$/;
     if (!dateRegex.test(startDate) || !dateRegex.test(endDate)) {
       if (Platform.OS === 'web') {
@@ -174,7 +169,6 @@ export default function StudentsInMyAccommodations() {
       return;
     }
 
-    // Validar que la fecha de inicio no sea posterior a la fecha de fin
     const startDateObj = new Date(convertToBackendFormat(startDate));
     const endDateObj = new Date(convertToBackendFormat(endDate));
     if (startDateObj >= endDateObj) {
@@ -189,7 +183,6 @@ export default function StudentsInMyAccommodations() {
     try {
       const token = await storage.getItem('jwt');
 
-      // Verificar disponibilidad antes de proceder
       try {
         const checkAvailabilityResponse = await api.get(
           `/accommodations/${selectedAccommodationId}/check-availability`,
@@ -226,7 +219,6 @@ export default function StudentsInMyAccommodations() {
         return;
       }
 
-      // Registrar el estudiante
       const registerResponse = await api.post(
         '/users/auth/register-without-account',
         {
@@ -240,7 +232,6 @@ export default function StudentsInMyAccommodations() {
 
       const newStudentId = registerResponse.data.user.studentId;
 
-      // Crear la reserva
       await api.post(
         `/bookings/${selectedAccommodationId}/${newStudentId}/register-without-account`,
         {
@@ -259,7 +250,6 @@ export default function StudentsInMyAccommodations() {
       setFilterError('');
       fetchAccommodations();
 
-      // Limpiar el formulario
       setFirstName('');
       setLastName('');
       setPhoto('');
