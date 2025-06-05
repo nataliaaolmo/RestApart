@@ -3,13 +3,11 @@ import { View, Text, Image, StyleSheet, TouchableOpacity, Animated, Pressable } 
 import { useRouter } from 'expo-router';
 import * as Localization from 'expo-localization';
 import { I18n } from 'i18n-js';
-import storage from '../utils/storage';
 
 const i18n = new I18n({
   en: {
     welcome: 'Welcome to RestApart',
     start: 'START',
-    continueAs: (name: string) => `Continue as ${name}`,
     slogans: [
       'Find your perfect place',
       'Your next shared home is waiting',
@@ -19,7 +17,6 @@ const i18n = new I18n({
   es: {
     welcome: 'Bienvenido a RestApart',
     start: 'EMPEZAR',
-    continueAs: (name: string) => `Continuar como ${name}`,
     slogans: [
       'Encuentra tu piso ideal',
       'Tu próximo hogar compartido te espera',
@@ -36,21 +33,6 @@ export default function HomeScreen() {
   const [sloganIndex, setSloganIndex] = useState(0);
   const [fadeAnim] = useState(new Animated.Value(0));
   const [buttonScale] = useState(new Animated.Value(1));
-  const [isLoggedIn, setIsLoggedIn] = useState(false);
-  const [userName, setUserName] = useState('');
-
-  useEffect(() => {
-    const checkLogin = async () => {
-      const token = await storage.getItem('jwt');
-      const name = await storage.getItem('name');
-      if (token && name) {
-        setIsLoggedIn(true);
-        setUserName(name);
-      }
-    };
-    
-    checkLogin();
-  }, []);
 
   useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -67,11 +49,7 @@ export default function HomeScreen() {
   }, []);
 
   const handleStart = () => {
-    if (isLoggedIn) {
-      router.push('/welcome-screen');
-    } else {
-      router.push('/role-selection');
-    }
+    router.push('/role-selection');
   };
 
   const handlePressIn = () => {
@@ -106,7 +84,7 @@ export default function HomeScreen() {
       <Pressable onPressIn={handlePressIn} onPressOut={handlePressOut} onPress={handleStart}>
         <Animated.View style={[styles.button, { transform: [{ scale: buttonScale }] }]}>
           <Text style={styles.buttonText}>
-            {isLoggedIn ? `Continuar como ${userName}` : i18n.t('start')}
+            {i18n.t('start')}
           </Text>
         </Animated.View>
       </Pressable>
