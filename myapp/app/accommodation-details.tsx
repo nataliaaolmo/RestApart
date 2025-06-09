@@ -404,6 +404,24 @@ const fetchPastTenants = async () => {
     }
   };
 
+  const handleGoToStudents = async () => {
+    try {
+      const token = await storage.getItem('jwt');
+      if (!token) {
+        Alert.alert('Error', 'No hay sesión activa. Por favor, inicia sesión de nuevo.');
+        router.push('/login');
+        return;
+      }
+      router.push({
+        pathname: '/students-in-my-accommodations',
+        params: { token }
+      });
+    } catch (error) {
+      console.error('Error al navegar a la página de estudiantes:', error);
+      Alert.alert('Error', 'No se pudo acceder a la página de estudiantes');
+    }
+  };
+
   return (
     <View style={styles.container}>
 <LinearGradient colors={['#0D1B2A', '#1B263B']} style={styles.topBar}>
@@ -518,7 +536,7 @@ const fetchPastTenants = async () => {
             </Text>
 
             <TouchableOpacity
-              onPress={() => router.push('/favorites-or-students')}
+              onPress={handleGoToStudents}
               style={[styles.addCommentButton, { marginTop: 15, alignSelf: 'center' }]}
             >
               <Text style={styles.addCommentButtonText}>Ir a mis estudiantes</Text>

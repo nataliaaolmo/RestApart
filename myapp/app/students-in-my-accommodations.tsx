@@ -13,26 +13,45 @@ import {
   Modal,
 } from 'react-native';
 import api from '../app/api';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Picker } from '@react-native-picker/picker';
 import storage from '../utils/storage';
 
+const formatToSpanish = (dateString: string) => {
+  const date = new Date(dateString);
+  return date.toLocaleDateString('es-ES', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric',
+  });
+};
+
 export default function StudentsInMyAccommodations() {
+  const { token: navigationToken } = useLocalSearchParams();
   const [accommodations, setAccommodations] = useState<any[]>([]);
-  const [studentMap, setStudentMap] = useState<Record<number, any[]>>({});
-  const [bookingMap, setBookingMap] = useState<Record<number, Record<number, { startDate: string; endDate: string }>>>({});
+  const [studentMap, setStudentMap] = useState<Record<string, any[]>>({});
+  const [bookingMap, setBookingMap] = useState<Record<string, Record<string, any>>>({});
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
   const [totalStudents, setTotalStudents] = useState(0);
   const router = useRouter();
   const [modalVisible, setModalVisible] = useState(false);
-  const [selectedAccommodationId, setSelectedAccommodationId] = useState<number | null>(null);
+  const [selectedAccommodationId, setSelectedAccommodationId] = useState<string>('');
   const [firstName, setFirstName] = useState('');
   const [lastName, setLastName] = useState('');
   const [photo, setPhoto] = useState('');
   const [statusMessage, setStatusMessage] = useState('');
   const [filterError, setFilterError] = useState('');
+  const [availabilityMap, setAvailabilityMap] = useState<Record<string, any>>({});
+
+  const getAuthToken = async (): Promise<string> => {
+    const token = typeof navigationToken === 'string' ? navigationToken : await storage.getItem('jwt');
+    if (!token) {
+      throw new Error('No hay token de autenticación');
+    }
+    return token;
+  };
 
   function convertToBackendFormat(dateStr: string): string {
     const [dd, mm, yyyy] = dateStr.split('-');
@@ -46,8 +65,19 @@ export default function StudentsInMyAccommodations() {
   }
 
   useEffect(() => {
-    fetchAccommodations();
-  }, []);
+    const initializeData = async () => {
+      try {
+        const token = await getAuthToken();
+        await fetchAccommodations();
+      } catch (error) {
+        console.error('Error al inicializar datos:', error);
+        Alert.alert('Error', 'No hay sesión activa. Por favor, inicia sesión de nuevo.');
+        router.push('/login');
+      }
+    };
+
+    initializeData();
+  }, [navigationToken]);
 
   const fetchAccommodations = async () => {
     try {
@@ -63,6 +93,18 @@ export default function StudentsInMyAccommodations() {
 
       if (res.data && Array.isArray(res.data)) {
         setAccommodations(res.data);
+        // Inicializar el mapa de disponibilidad con los datos del alojamiento
+        const initialAvailabilityMap: Record<number, any> = {};
+        res.data.forEach((acc: any) => {
+          initialAvailabilityMap[acc.id] = {
+            startDate: acc.availability?.startDate,
+            endDate: acc.availability?.endDate,
+            availableSpots: acc.students,
+            isAvailable: true
+          };
+        });
+        setAvailabilityMap(initialAvailabilityMap);
+        // Obtener estudiantes para cada alojamiento
         await Promise.all(res.data.map(acc => fetchStudents(acc)));
       } else {
         console.error('Formato de respuesta inválido:', res.data);
@@ -82,27 +124,29 @@ export default function StudentsInMyAccommodations() {
         return;
       }
 
-      const today = new Date().toISOString().split('T')[0];
-      const start = startDate ? convertToBackendFormat(startDate) : today;
-      const end = endDate ? convertToBackendFormat(endDate) : '2100-01-01';
-      const url = `/accommodations/${accommodation.id}/students`;
-      const res = await api.get(url, {
-        params: {
-          startDate: toBackendFormatIfNeeded(start),
-          endDate: toBackendFormatIfNeeded(end)
-        },
+      const studentsRes = await api.get(`/bookings/${accommodation.id}/get-accommodation-bookings`, {
         headers: { 
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json'
         },
       });
 
-      if (res.data && Array.isArray(res.data)) {
-        setStudentMap(prev => ({ ...prev, [accommodation.id]: res.data }));
+      if (studentsRes.data && Array.isArray(studentsRes.data)) {
+        // Los datos que recibimos son directamente los estudiantes
+        const students = studentsRes.data.map((student: any) => ({
+          id: student.id,
+          firstName: student.firstName,
+          photo: student.photo,
+          userId: student.userId
+        }));
 
+        // Obtener las fechas de las reservas para cada estudiante
         const newBookingMap: Record<number, { startDate: string; endDate: string }> = {};
+        const today = new Date().toISOString().split('T')[0];
+        
+        // Obtener las reservas para cada estudiante
         await Promise.all(
-          res.data.map(async (student: any) => {
+          students.map(async (student: any) => {
             try {
               const bookingRes = await api.get(`/bookings/${student.id}`, {
                 headers: { 
@@ -123,14 +167,53 @@ export default function StudentsInMyAccommodations() {
             }
           })
         );
+
+        // Filtrar estudiantes con reservas activas
+        const activeStudents = students.filter(student => {
+          const booking = newBookingMap[student.id];
+          if (!booking) return false;
+          
+          const startDate = new Date(booking.startDate);
+          const endDate = new Date(booking.endDate);
+          const currentDate = new Date(today);
+          
+          return startDate <= currentDate && currentDate <= endDate;
+        });
+
+        // Actualizar el mapa de estudiantes con solo los activos
+        setStudentMap(prev => {
+          const newMap = { ...prev, [accommodation.id]: activeStudents };
+          // Calcular el total de estudiantes después de actualizar el mapa
+          let total = 0;
+          Object.values(newMap).forEach(students => {
+            if (Array.isArray(students)) {
+              total += students.length;
+            }
+          });
+          setTotalStudents(total);
+          return newMap;
+        });
+
+        // Actualizar plazas disponibles basado en estudiantes activos
+        const availableSpots = Math.max(0, accommodation.students - activeStudents.length);
+        setAvailabilityMap(prev => ({
+          ...prev,
+          [accommodation.id]: {
+            ...prev[accommodation.id],
+            availableSpots,
+            isAvailable: availableSpots > 0
+          }
+        }));
+
         setBookingMap(prev => ({ ...prev, [accommodation.id]: newBookingMap }));
-      } else {
-        console.error('Formato de respuesta inválido para estudiantes:', res.data);
-        Alert.alert('Error', 'No se pudieron cargar los estudiantes. Por favor, inténtalo de nuevo.');
       }
     } catch (err: any) {
       console.error(`Error al obtener estudiantes del alojamiento ${accommodation.id}:`, err);
       if (err.response) {
+        console.error('Detalles del error:', {
+          status: err.response.status,
+          data: err.response.data
+        });
         switch (err.response.status) {
           case 401:
           case 403:
@@ -181,7 +264,7 @@ export default function StudentsInMyAccommodations() {
     }
 
     try {
-      const token = await storage.getItem('jwt');
+      const token = await getAuthToken();
 
       try {
         const checkAvailabilityResponse = await api.get(
@@ -253,7 +336,7 @@ export default function StudentsInMyAccommodations() {
       setFirstName('');
       setLastName('');
       setPhoto('');
-      setSelectedAccommodationId(null);
+      setSelectedAccommodationId('');
       setStartDate('');
       setEndDate('');
     } catch (err: any) {
@@ -288,28 +371,162 @@ export default function StudentsInMyAccommodations() {
   };
 
   const applyDateFilter = () => {
+    if (!startDate || !endDate) {
+      Alert.alert('Error', 'Por favor, selecciona ambas fechas para filtrar');
+      return;
+    }
+
+    const dateRegex = /^\d{2}-\d{2}-\d{4}$/;
+    if (!dateRegex.test(startDate) || !dateRegex.test(endDate)) {
+      Alert.alert('Error', 'El formato de las fechas debe ser DD-MM-YYYY');
+      return;
+    }
+
+    const startDateObj = new Date(convertToBackendFormat(startDate));
+    const endDateObj = new Date(convertToBackendFormat(endDate));
+    if (startDateObj >= endDateObj) {
+      Alert.alert('Error', 'La fecha de inicio debe ser anterior a la fecha de fin');
+      return;
+    }
+
+    // Limpiar los mapas actuales
     setStudentMap({});
     setBookingMap({});
     setTotalStudents(0);
-    accommodations.forEach((acc) => fetchStudents(acc));
+
+    // Obtener estudiantes para cada alojamiento con las fechas filtradas
+    accommodations.forEach((acc) => {
+      fetchStudentsWithDates(acc, startDate, endDate);
+    });
   };
 
-  useEffect(() => {
-    let total = 0;
-    Object.values(studentMap).forEach((arr) => (total += arr.length));
-    setTotalStudents(total);
-  }, [studentMap]);
+  const fetchStudentsWithDates = async (accommodation: any, start: string, end: string) => {
+    try {
+      const token = await storage.getItem('jwt');
+      if (!token) {
+        console.error('No hay token de autenticación');
+        return;
+      }
+
+      const studentsRes = await api.get(`/bookings/${accommodation.id}/get-accommodation-bookings`, {
+        headers: { 
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        },
+      });
+
+      if (studentsRes.data && Array.isArray(studentsRes.data)) {
+        const students = studentsRes.data.map((student: any) => ({
+          id: student.id,
+          firstName: student.firstName,
+          photo: student.photo,
+          userId: student.userId
+        }));
+
+        const newBookingMap: Record<number, { startDate: string; endDate: string }> = {};
+        const filterStart = new Date(convertToBackendFormat(start));
+        const filterEnd = new Date(convertToBackendFormat(end));
+
+        await Promise.all(
+          students.map(async (student: any) => {
+            try {
+              const bookingRes = await api.get(`/bookings/${student.id}`, {
+                headers: { 
+                  Authorization: `Bearer ${token}`,
+                  'Content-Type': 'application/json'
+                },
+              });
+              const bookings = bookingRes.data;
+              const matchingBooking = bookings.find((b: any) => b.accommodationId === accommodation.id);
+              if (matchingBooking && matchingBooking.startDate && matchingBooking.endDate) {
+                const bookingStart = new Date(matchingBooking.startDate);
+                const bookingEnd = new Date(matchingBooking.endDate);
+                
+                // Verificar si la reserva se solapa con el rango de fechas seleccionado
+                if (bookingStart <= filterEnd && bookingEnd >= filterStart) {
+                  newBookingMap[student.id] = {
+                    startDate: matchingBooking.startDate,
+                    endDate: matchingBooking.endDate,
+                  };
+                }
+              }
+            } catch (err) {
+              console.error(`Error al obtener booking para estudiante ${student.id}:`, err);
+            }
+          })
+        );
+
+        // Filtrar estudiantes que tienen reservas en el rango de fechas
+        const filteredStudents = students.filter(student => newBookingMap[student.id]);
+
+        setStudentMap(prev => {
+          const newMap = { ...prev, [accommodation.id]: filteredStudents };
+          // Calcular el total de estudiantes después de actualizar el mapa
+          let total = 0;
+          Object.values(newMap).forEach(students => {
+            if (Array.isArray(students)) {
+              total += students.length;
+            }
+          });
+          setTotalStudents(total);
+          return newMap;
+        });
+
+        setBookingMap(prev => ({
+          ...prev,
+          [accommodation.id]: newBookingMap
+        }));
+
+        // Actualizar plazas disponibles
+        const availableSpots = Math.max(0, accommodation.students - filteredStudents.length);
+        setAvailabilityMap(prev => ({
+          ...prev,
+          [accommodation.id]: {
+            ...prev[accommodation.id],
+            availableSpots,
+            isAvailable: availableSpots > 0
+          }
+        }));
+      }
+    } catch (err) {
+      console.error(`Error al obtener estudiantes con fechas para alojamiento ${accommodation.id}:`, err);
+    }
+  };
 
   const renderAccommodation = ({ item }: { item: any }) => {
     const students = studentMap[item.id] || [];
     const bookingsForAcc = bookingMap[item.id] || {};
+    console.log("booking", bookingMap);
+    const availability = availabilityMap[item.id] || { availableSpots: item.students, isAvailable: true };
     const title = item.advertisement?.title || 'Sin título';
     const images = item.images?.length > 0 ? item.images : ['default.jpg'];
+    const currentDate = new Date();
+    const availablePlaces = item.capacity - students.length;
+    const isAvailable = availability.startDate && availability.endDate && 
+      new Date(availability.startDate) <= currentDate && 
+      new Date(availability.endDate) >= currentDate;
 
     return (
       <View style={styles.card}>
         <Image source={{ uri: `https://restapart.onrender.com/images/${images[0]}` }} style={styles.image} />
-        <Text style={styles.title}>{title}</Text>
+        <View style={styles.cardHeader}>
+          <Text style={styles.title}>{title}</Text>
+          <View style={styles.availabilityInfo}>
+            <Text style={[styles.availabilityText, { color: availability.isAvailable ? '#4CAF50' : '#E63946' }]}>
+              {availability.isAvailable ? 'Disponible' : 'No disponible'}
+            </Text>
+            <Text style={styles.placesText}>
+              {availability.availableSpots} plazas disponibles de {item.students}
+            </Text>
+            {availability.startDate && availability.endDate && (
+              <Text style={styles.datesText}>
+                Disponible desde: {formatToSpanish(availability.startDate)} hasta: {formatToSpanish(availability.endDate)}
+              </Text>
+            )}
+          </View>
+        </View>
+
+        <Text style={styles.sectionTitle}>Estudiantes actuales:</Text>
         {students.length > 0 ? (
           students.map((student, idx) => (
             <View key={idx} style={styles.studentRow}>
@@ -323,7 +540,7 @@ export default function StudentsInMyAccommodations() {
                 </Text>
                 {bookingsForAcc[student.id] ? (
                   <Text style={styles.stayDates}>
-                    {bookingsForAcc[student.id].startDate} → {bookingsForAcc[student.id].endDate}
+                    Estancia: {formatToSpanish(bookingsForAcc[student.id].startDate)} → {formatToSpanish(bookingsForAcc[student.id].endDate)}
                   </Text>
                 ) : (
                   <Text style={styles.stayDates}>Fechas no disponibles</Text>
@@ -344,7 +561,7 @@ export default function StudentsInMyAccommodations() {
             </View>
           ))
         ) : (
-          <Text style={styles.noStudents}>No hay estudiantes alojados.</Text>
+          <Text style={styles.noStudents}>No hay estudiantes alojados actualmente.</Text>
         )}
       </View>
     );
@@ -436,14 +653,14 @@ export default function StudentsInMyAccommodations() {
                 >
                   <Picker.Item 
                     label="Selecciona un alojamiento" 
-                    value={null} 
+                    value="" 
                     color="#AFC1D6"
                   />
                   {accommodations.map((acc) => (
                     <Picker.Item
                       key={acc.id}
                       label={acc.advertisement?.title || 'Sin título'}
-                      value={acc.id}
+                      value={acc.id.toString()}
                       color="#E0E1DD"
                     />
                   ))}
@@ -523,9 +740,12 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#0D1B2A',
+    width: '100%',
+    height: '100%',
   },
   scrollView: {
     flex: 1,
+    width: '100%',
   },
   header: {
     fontSize: 24,
@@ -540,13 +760,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
     gap: 10,
+    width: '100%',
   },
   input: {
     backgroundColor: '#1B263B',
     color: '#E0E1DD',
     padding: 12,
     borderRadius: 8,
-    width: Platform.OS === 'web' ? '30%' : '100%',
+    width: Platform.OS === 'web' ? '30%' : '90%',
     borderWidth: 1,
     borderColor: '#415A77',
   },
@@ -577,9 +798,11 @@ const styles = StyleSheet.create({
   },
   accommodationsContainer: {
     flex: 1,
+    width: '100%',
   },
   accommodationsList: {
     padding: 20,
+    width: '100%',
   },
   columnWrapper: {
     justifyContent: 'space-between',
@@ -667,6 +890,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    width: '100%',
+    height: '100%',
   },
   modalContent: {
     width: Platform.OS === 'web' ? '40%' : '90%',
@@ -684,6 +909,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     textAlign: 'center',
     marginBottom: 20,
+    color: '#E0E1DD',
   },
   formGroup: {
     marginBottom: 15,
@@ -691,19 +917,31 @@ const styles = StyleSheet.create({
   label: {
     marginBottom: 5,
     fontSize: 16,
+    color: '#E0E1DD',
   },
   modalInput: {
     padding: 12,
     borderRadius: 8,
     borderWidth: 1,
     borderColor: '#415A77',
+    color: '#E0E1DD',
   },
   pickerContainer: {
     overflow: 'hidden',
+    backgroundColor: '#162A40',
+    borderColor: '#415A77',
+    borderWidth: 1,
+    borderRadius: 8,
+    padding: 0,
+    marginBottom: 0,
   },
   picker: {
     margin: 0,
     padding: 0,
+    color: '#E0E1DD',
+    backgroundColor: '#162A40',
+    height: 50,
+    width: '100%',
   },
   modalButtons: {
     flexDirection: 'row',
@@ -727,5 +965,35 @@ const styles = StyleSheet.create({
     color: '#E0E1DD',
     fontWeight: 'bold',
     fontSize: 16,
+  },
+  cardHeader: {
+    marginBottom: 15,
+  },
+  availabilityInfo: {
+    marginTop: 8,
+    padding: 10,
+    backgroundColor: '#162A40',
+    borderRadius: 8,
+  },
+  availabilityText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginBottom: 5,
+  },
+  placesText: {
+    color: '#E0E1DD',
+    fontSize: 14,
+    marginBottom: 5,
+  },
+  datesText: {
+    color: '#AFC1D6',
+    fontSize: 14,
+  },
+  sectionTitle: {
+    color: '#E0E1DD',
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 10,
+    marginTop: 15,
   },
 });
