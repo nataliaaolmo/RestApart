@@ -22,7 +22,7 @@ public class UploadPhotosController {
     @Value("${app.base-url:https://restapart.onrender.com}")
     private String baseUrl;
 
-    private static final String UPLOAD_DIR = "src/main/resources/static/images/";
+    private static final String UPLOAD_DIR = "uploads/images/";
 
     @PostMapping("/upload")
     public ResponseEntity<List<String>> uploadImages(@RequestParam("files") MultipartFile[] files) {
@@ -40,6 +40,11 @@ public class UploadPhotosController {
                 String fileName = UUID.randomUUID().toString() + "_" + file.getOriginalFilename();
                 Path filePath = Paths.get(UPLOAD_DIR + fileName);
                 Files.write(filePath, file.getBytes());
+                
+                // Asegurar que el archivo tenga permisos de lectura
+                File uploadedFile = filePath.toFile();
+                uploadedFile.setReadable(true, false);
+                
                 uploadedFileNames.add(baseUrl + "/images/" + fileName);
             }
 

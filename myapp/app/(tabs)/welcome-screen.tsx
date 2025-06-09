@@ -415,6 +415,10 @@ function formatDateToISO(dateString: string | null): string | null {
 
   const renderAccommodation = ({ item }: { item: any }) => {
     const images = item.images?.length > 0 ? item.images : ['default.jpg'];
+    const getImageUrl = (img: string) => {
+      if (img.startsWith('http')) return img;
+      return `https://restapart.onrender.com/images/${img}`;
+    };
     return (
       <TouchableOpacity
         onPress={() =>
@@ -453,7 +457,7 @@ function formatDateToISO(dateString: string | null): string | null {
             horizontal
             keyExtractor={(img, index) => index.toString()}
             renderItem={({ item }) => (
-              <Image source={{ uri: `https://restapart.onrender.com/images/${item}` }} style={styles.cardImage} />
+              <Image source={{ uri: getImageUrl(item) }} style={styles.cardImage} />
             )}
             showsHorizontalScrollIndicator={false}
               />

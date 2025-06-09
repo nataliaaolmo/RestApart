@@ -1,0 +1,2 @@
+# Este archivo asegura que la carpeta de imágenes exista en el repositorio
+# Los permisos de la carpeta deben ser 755 (drwxr-xr-x) 

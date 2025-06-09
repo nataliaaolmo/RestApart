@@ -29,7 +29,7 @@ export default function AccommodationDetailsScreen() {
   const [latitude, setLatitude] = useState<number | null>(null);
   const [longitude, setLongitude] = useState<number | null>(null);
   const [zone, setZone] = useState('');
-  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [selectedImage, setSelectedImage] = useState<string>('');
   const [imageZoomVisible, setImageZoomVisible] = useState(false);
   const [filterError, setFilterError] = useState('');
   const [isOwner, setIsOwner] = useState(false);
@@ -258,9 +258,10 @@ const checkAlreadyLiving = async () => {
       });
       setOwner(response.data.owner);
       setDescription(response.data.description);
-      setImages(response.data.images || []);
-      if (response.data.images && response.data.images.length > 0) {
-        setSelectedImage(response.data.images[0]);
+      const validImages = (response.data.images || []).filter(Boolean);
+      setImages(validImages);
+      if (validImages.length > 0) {
+        setSelectedImage(validImages[0]);
       }      
       setLatitude(response.data.latitud);
       setLongitude(response.data.longitud);
@@ -268,6 +269,11 @@ const checkAlreadyLiving = async () => {
     } catch (error) {
       console.error('Error buscando alojamiento', error);
     }
+  };
+
+  const getImageUrl = (img: string) => {
+    if (img.startsWith('http')) return img;
+    return `https://restapart.onrender.com/images/${img}`;
   };
 
   const handleReservationConfirm = (start: string, end: string) => {
@@ -445,7 +451,7 @@ const fetchPastTenants = async () => {
   <>
     <TouchableOpacity onPress={() => setImageZoomVisible(true)}>
       <Image
-        source={{ uri: selectedImage ? `https://restapart.onrender.com/images/${selectedImage}` : '' }}
+        source={{ uri: getImageUrl(selectedImage) }}
         style={styles.mainImage}
         resizeMode="cover"
       />
@@ -455,7 +461,7 @@ const fetchPastTenants = async () => {
       {images.map((img, index) => (
         <TouchableOpacity key={index} onPress={() => setSelectedImage(img)}>
           <Image
-            source={{ uri: `https://restapart.onrender.com/images/${img}` }}
+            source={{ uri: getImageUrl(img) }}
             style={[
               styles.thumbnail,
               selectedImage === img && styles.thumbnailSelected,
@@ -834,19 +840,21 @@ const fetchPastTenants = async () => {
       </Modal>
       <Modal
   visible={imageZoomVisible}
-  transparent
-  animationType="fade"
+  transparent={true}
   onRequestClose={() => setImageZoomVisible(false)}
 >
-  <View style={styles.zoomContainer}>
+  <View style={styles.modalContainer}>
+    <TouchableOpacity
+      style={styles.closeButton}
+      onPress={() => setImageZoomVisible(false)}
+    >
+      <Ionicons name="close" size={30} color="#fff" />
+    </TouchableOpacity>
     <Image
-      source={{ uri: selectedImage ? `https://restapart.onrender.com/images/${selectedImage}` : '' }}
-      style={styles.zoomedImage}
+      source={{ uri: getImageUrl(selectedImage) }}
+      style={styles.fullscreenImage}
       resizeMode="contain"
     />
-    <TouchableOpacity style={styles.closeZoomButton} onPress={() => setImageZoomVisible(false)}>
-      <Ionicons name="close-circle" size={36} color="#fff" />
-    </TouchableOpacity>
   </View>
 </Modal>
       <Modal
@@ -1000,13 +1008,19 @@ const styles = StyleSheet.create({
   },
   modalContainer: {
     flex: 1,
-    backgroundColor: 'rgba(0,0,0,0.95)',
+    backgroundColor: 'rgba(0,0,0,0.9)',
     justifyContent: 'center',
     alignItems: 'center',
   },
+  closeButton: {
+    position: 'absolute',
+    top: 40,
+    right: 20,
+    zIndex: 1,
+  },
   fullscreenImage: {
-    width: Dimensions.get('window').width,
-    height: Dimensions.get('window').height,
+    width: '100%',
+    height: '100%',
   },
   arrowLeft: {
     position: 'absolute',
@@ -1019,11 +1033,6 @@ const styles = StyleSheet.create({
     right: 20,
     top: '50%',
     transform: [{ translateY: -20 }],
-  },
-  closeButton: {
-    position: 'absolute',
-    top: 40,
-    right: 20,
   },
   imageCounter: {
     position: 'absolute',
