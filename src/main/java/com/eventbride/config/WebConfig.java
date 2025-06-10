@@ -25,7 +25,10 @@ public class WebConfig implements WebMvcConfigurer {
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
         // Configurar el manejador para todas las imágenes
         registry.addResourceHandler("/images/**")
-                .addResourceLocations("file:uploads/images/")
+                .addResourceLocations(
+                    "file:uploads/images/",
+                    "classpath:/static/images/"
+                )
                 .setCachePeriod(3600)
                 .resourceChain(true)
                 .addResolver(new PathResourceResolver());

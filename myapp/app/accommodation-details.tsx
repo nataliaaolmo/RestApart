@@ -250,6 +250,12 @@ const checkAlreadyLiving = async () => {
     }
   }; 
 
+  const getImageUrl = (img: string) => {
+    if (!img) return 'https://restapart.onrender.com/images/default.jpg';
+    if (img.startsWith('http')) return img;
+    return `https://restapart.onrender.com/images/${img}`;
+  };
+
   const findAccommodation = async () => {
     try {
       const token = await storage.getItem('jwt');
@@ -262,6 +268,8 @@ const checkAlreadyLiving = async () => {
       setImages(validImages);
       if (validImages.length > 0) {
         setSelectedImage(validImages[0]);
+      } else {
+        setSelectedImage('default.jpg');
       }      
       setLatitude(response.data.latitud);
       setLongitude(response.data.longitud);
@@ -269,11 +277,6 @@ const checkAlreadyLiving = async () => {
     } catch (error) {
       console.error('Error buscando alojamiento', error);
     }
-  };
-
-  const getImageUrl = (img: string) => {
-    if (img.startsWith('http')) return img;
-    return `https://restapart.onrender.com/images/${img}`;
   };
 
   const handleReservationConfirm = (start: string, end: string) => {

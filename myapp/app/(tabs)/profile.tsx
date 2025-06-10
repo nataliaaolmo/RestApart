@@ -536,9 +536,11 @@ export default function ProfileScreen() {
     <ScrollView style={styles.container}>
       <TouchableOpacity disabled={!editing} onPress={handleImagePick}>
         <Image
-          source={{ uri: userData.profilePicture?.startsWith('http') 
-            ? userData.profilePicture 
-            : `https://restapart.onrender.com/images/${userData.profilePicture || 'default.jpg'}` 
+          source={{ uri: userData.profilePicture 
+            ? (userData.profilePicture.startsWith('http') 
+              ? userData.profilePicture 
+              : `https://restapart.onrender.com/images/${userData.profilePicture}`)
+            : 'https://restapart.onrender.com/images/default.jpg'
           }}
           style={styles.profileImage}
         />

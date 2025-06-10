@@ -416,6 +416,7 @@ function formatDateToISO(dateString: string | null): string | null {
   const renderAccommodation = ({ item }: { item: any }) => {
     const images = item.images?.length > 0 ? item.images : ['default.jpg'];
     const getImageUrl = (img: string) => {
+      if (!img) return 'https://restapart.onrender.com/images/default.jpg';
       if (img.startsWith('http')) return img;
       return `https://restapart.onrender.com/images/${img}`;
     };

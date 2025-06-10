@@ -47,7 +47,8 @@ public class SecurityConfig {
                     "/ws/info/**",
                     "/api/bookings/**",
                     "/resources/**",
-                    "/static/**"
+                    "/static/**",
+                    "/uploads/**"
                 ).permitAll()
                 .anyRequest().authenticated()
             )
