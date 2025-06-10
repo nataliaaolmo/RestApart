@@ -45,7 +45,8 @@ public class UploadPhotosController {
                 File uploadedFile = filePath.toFile();
                 uploadedFile.setReadable(true, false);
                 
-                uploadedFileNames.add(baseUrl + "/images/" + fileName);
+                // Devolver solo el nombre del archivo, no la URL completa
+                uploadedFileNames.add(fileName);
             }
 
             return ResponseEntity.ok(uploadedFileNames);

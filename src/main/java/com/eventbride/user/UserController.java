@@ -113,12 +113,12 @@ public class UserController {
 
             String oldFilename = user.getPhoto(); 
             if (oldFilename != null && !oldFilename.equals("default.png")) {
-                Path oldFilePath = Paths.get("src/main/resources/static/images", oldFilename);
+                Path oldFilePath = Paths.get("uploads/images", oldFilename);
                 Files.deleteIfExists(oldFilePath);
             }
 
-            String newFilename = UUID.randomUUID() + "_" + file.getOriginalFilename();
-            Path newFilePath = Paths.get("src/main/resources/static/images", newFilename);
+            String newFilename = UUID.randomUUID().toString() + "_" + file.getOriginalFilename();
+            Path newFilePath = Paths.get("uploads/images", newFilename);
             Files.copy(file.getInputStream(), newFilePath, StandardCopyOption.REPLACE_EXISTING);
 
             user.setPhoto(newFilename); 

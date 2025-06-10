@@ -7,6 +7,7 @@ import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import org.springframework.web.servlet.resource.PathResourceResolver;
 
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
@@ -22,12 +23,12 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        // Configurar el manejador para las imágenes de perfil
-        Path profileImagesDir = Paths.get("src/main/resources/static/images");
-        String profileImagesPath = profileImagesDir.toFile().getAbsolutePath();
-        
+        // Configurar el manejador para todas las imágenes
         registry.addResourceHandler("/images/**")
-                .addResourceLocations("file:" + profileImagesPath + "/", "file:uploads/images/");
+                .addResourceLocations("file:uploads/images/")
+                .setCachePeriod(3600)
+                .resourceChain(true)
+                .addResolver(new PathResourceResolver());
     }
 }
 

@@ -373,29 +373,28 @@ if (!form.title || !form.rooms || !form.beds || !form.pricePerDay || !form.price
       <Text style={styles.section}>Imágenes actuales</Text>
       <ScrollView horizontal>
       {images.map((img, index) => (
-  <View key={index} style={{ position: 'relative', marginRight: 10 }}>
-    <Image
-      source={{ uri: `https://restapart.onrender.com/images/${img}` }}
-      style={{ width: 80, height: 80, borderRadius: 10 }}
-    />
-    <TouchableOpacity
-      style={{
-        position: 'absolute',
-        top: 0,
-        right: 0,
-        backgroundColor: 'rgba(0,0,0,0.6)',
-        borderRadius: 10,
-        padding: 2,
-      }}
-      onPress={() => {
-        setImages(prev => prev.filter((_, i) => i !== index));
-      }}
-    >
-      <Ionicons name="close-circle" size={20} color="white" />
-    </TouchableOpacity>
-  </View>
-))}
-
+        <View key={index} style={{ position: 'relative', marginRight: 10 }}>
+          <Image
+            source={{ uri: `${process.env.NEXT_PUBLIC_API_URL || 'https://restapart.onrender.com'}/images/${img}` }}
+            style={{ width: 80, height: 80, borderRadius: 10 }}
+          />
+          <TouchableOpacity
+            style={{
+              position: 'absolute',
+              top: 0,
+              right: 0,
+              backgroundColor: 'rgba(0,0,0,0.6)',
+              borderRadius: 10,
+              padding: 2,
+            }}
+            onPress={() => {
+              setImages(prev => prev.filter((_, i) => i !== index));
+            }}
+          >
+            <Ionicons name="close-circle" size={20} color="white" />
+          </TouchableOpacity>
+        </View>
+      ))}
       </ScrollView>
 
       <TouchableOpacity style={styles.button} onPress={pickImage}>
