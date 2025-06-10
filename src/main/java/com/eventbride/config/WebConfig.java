@@ -22,11 +22,12 @@ public class WebConfig implements WebMvcConfigurer {
 
     @Override
     public void addResourceHandlers(ResourceHandlerRegistry registry) {
-        Path uploadDir = Paths.get("uploads/images");
-        String uploadPath = uploadDir.toFile().getAbsolutePath();
+        // Configurar el manejador para las imágenes de perfil
+        Path profileImagesDir = Paths.get("src/main/resources/static/images");
+        String profileImagesPath = profileImagesDir.toFile().getAbsolutePath();
         
         registry.addResourceHandler("/images/**")
-                .addResourceLocations("file:" + uploadPath + "/");
+                .addResourceLocations("file:" + profileImagesPath + "/", "file:uploads/images/");
     }
 }
 
