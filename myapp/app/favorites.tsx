@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, AppState } from 'react-native';
+import { View, Text, StyleSheet, FlatList, TouchableOpacity, Image, AppState, Platform } from 'react-native';
 import { useRouter, useFocusEffect } from 'expo-router';
 import api from './api';
 import storage from '../utils/storage';
@@ -123,6 +123,13 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#0D1B2A',
+    width: '100%',
+    height: '100%',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
   },
   header: {
     fontSize: 22,
@@ -130,12 +137,14 @@ const styles = StyleSheet.create({
     color: '#E0E1DD',
     padding: 20,
     textAlign: 'center',
+    marginTop: Platform.OS === 'ios' ? 50 : 20,
   },
   card: {
     backgroundColor: '#1B263B',
     borderRadius: 15,
     padding: 15,
     marginBottom: 20,
+    width: '100%',
   },
   image: {
     width: '100%',

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, Platform, Switch } from 'react-native';
+import { View, Text, TextInput, StyleSheet, TouchableOpacity, Alert, ActivityIndicator, Platform, Switch, ScrollView, KeyboardAvoidingView } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import api from '../app/api';
 import storage from '../utils/storage';
@@ -170,77 +170,98 @@ export default function AdminEditUser() {
   }
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Editar Usuario</Text>
-
-      <Text style={styles.label}>Nombre de usuario</Text>
-      <TextInput
-        style={styles.input}
-        value={user.username}
-        onChangeText={(text) => handleChange('username', text)}
-      />
-
-      <Text style={styles.label}>Nombre</Text>
-      <TextInput
-        style={styles.input}
-        value={user.firstName}
-        onChangeText={(text) => handleChange('firstName', text)}
-      />
-
-      <Text style={styles.label}>Apellido</Text>
-      <TextInput
-        style={styles.input}
-        value={user.lastName}
-        onChangeText={(text) => handleChange('lastName', text)}
-      />
-
-      <Text style={styles.label}>Email</Text>
-      <TextInput
-        style={styles.input}
-        value={user.email || ''}
-        onChangeText={(text) => handleChange('email', text)}
-      />
-
-      <Text style={styles.label}>Teléfono</Text>
-      <TextInput
-        style={styles.input}
-        value={user.telephone || ''}
-        onChangeText={(text) => handleChange('telephone', text)}
-      />
-
-      <Text style={styles.label}>Fecha de nacimiento (DD-MM-YYYY)</Text>
-      <TextInput
-        style={styles.input}
-        value={user.dateOfBirth || ''}
-        onChangeText={(text) => handleChange('dateOfBirth', text)}
-      />
-      
-      <Text style={styles.label}>Está verificado?</Text>
-      <Switch
-        value={isVerified}
-        onValueChange={setIsVerified}
-        trackColor={{ true: '#A8DADC', false: '#ccc' }}
-      />
-
-      <TouchableOpacity
-        style={styles.saveButton}
-        onPress={() => {
-          setSaving(true);
-          handleSave().finally(() => setSaving(false));
-        }}
-        disabled={saving}
+    <KeyboardAvoidingView 
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      style={styles.keyboardAvoidingView}
+    >
+      <ScrollView 
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollViewContent}
+        keyboardShouldPersistTaps="handled"
       >
-        <Text style={styles.saveButtonText}>{saving ? 'Guardando...' : 'Guardar cambios'}</Text>
-      </TouchableOpacity>
-    </View>
+        <View style={styles.container}>
+          <Text style={styles.title}>Editar Usuario</Text>
+
+          <Text style={styles.label}>Nombre de usuario</Text>
+          <TextInput
+            style={styles.input}
+            value={user.username}
+            onChangeText={(text) => handleChange('username', text)}
+          />
+
+          <Text style={styles.label}>Nombre</Text>
+          <TextInput
+            style={styles.input}
+            value={user.firstName}
+            onChangeText={(text) => handleChange('firstName', text)}
+          />
+
+          <Text style={styles.label}>Apellido</Text>
+          <TextInput
+            style={styles.input}
+            value={user.lastName}
+            onChangeText={(text) => handleChange('lastName', text)}
+          />
+
+          <Text style={styles.label}>Email</Text>
+          <TextInput
+            style={styles.input}
+            value={user.email || ''}
+            onChangeText={(text) => handleChange('email', text)}
+          />
+
+          <Text style={styles.label}>Teléfono</Text>
+          <TextInput
+            style={styles.input}
+            value={user.telephone || ''}
+            onChangeText={(text) => handleChange('telephone', text)}
+          />
+
+          <Text style={styles.label}>Fecha de nacimiento (DD-MM-YYYY)</Text>
+          <TextInput
+            style={styles.input}
+            value={user.dateOfBirth || ''}
+            onChangeText={(text) => handleChange('dateOfBirth', text)}
+          />
+          
+          <Text style={styles.label}>Está verificado?</Text>
+          <Switch
+            value={isVerified}
+            onValueChange={setIsVerified}
+            trackColor={{ true: '#A8DADC', false: '#ccc' }}
+          />
+
+          <TouchableOpacity
+            style={styles.saveButton}
+            onPress={() => {
+              setSaving(true);
+              handleSave().finally(() => setSaving(false));
+            }}
+            disabled={saving}
+          >
+            <Text style={styles.saveButtonText}>{saving ? 'Guardando...' : 'Guardar cambios'}</Text>
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
+  keyboardAvoidingView: {
+    flex: 1,
+    backgroundColor: '#0D1B2A',
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollViewContent: {
+    flexGrow: 1,
+  },
   container: {
     backgroundColor: '#0D1B2A',
-    flex: 1,
     padding: 20,
+    paddingBottom: 40, // Añadir padding extra al final
   },
   title: {
     fontSize: 22,
@@ -250,26 +271,27 @@ const styles = StyleSheet.create({
     textAlign: 'center',
   },
   label: {
-    color: '#AFC1D6',
-    fontWeight: 'bold',
-    marginTop: 15,
+    color: '#E0E1DD',
     marginBottom: 5,
+    fontSize: 16,
   },
   input: {
-    backgroundColor: '#E0E1DD',
+    backgroundColor: '#1B263B',
+    color: '#E0E1DD',
     padding: 10,
-    borderRadius: 8,
-    color: '#0D1B2A',
+    borderRadius: 5,
+    marginBottom: 15,
   },
   saveButton: {
-    backgroundColor: '#E0E1DD',
+    backgroundColor: '#A8DADC',
     padding: 15,
-    borderRadius: 10,
-    marginTop: 30,
+    borderRadius: 5,
+    marginTop: 20,
   },
   saveButtonText: {
     color: '#0D1B2A',
-    fontWeight: 'bold',
     textAlign: 'center',
+    fontWeight: 'bold',
+    fontSize: 16,
   },
 });
