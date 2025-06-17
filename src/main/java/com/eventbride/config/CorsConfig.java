@@ -15,7 +15,7 @@ public class CorsConfig {
             public void addCorsMappings(CorsRegistry registry) {
                 registry.addMapping("/**")
                         .allowedMethods("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS")
-                        .allowedOrigins( "http://localhost:8081", "https://restapart.onrender.com")
+                        .allowedOrigins( "http://localhost:8081", "https://restapart.onrender.com", "https://dist-chi-virid.vercel.app")
                         .allowedHeaders("*")
                         .allowCredentials(true);
             }
